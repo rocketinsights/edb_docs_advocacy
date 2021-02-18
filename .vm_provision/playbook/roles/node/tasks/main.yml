@@ -1,0 +1,16 @@
+- name: LOCAL | Add NodeJs source
+  shell: "curl -sL https://rpm.nodesource.com/setup_{{ nodejs_version }} | sudo -E bash -"
+  args:
+    warn: false
+
+- name: LOCAL | Install Node
+  yum:
+    name: nodejs
+    state: present
+
+- name: Install Global npm packages
+  npm:
+    name: "{{ item }}"
+    global: yes
+    state: present
+  loop: "{{ npm_packages }}"

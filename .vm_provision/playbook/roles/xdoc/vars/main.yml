@@ -1,0 +1,4 @@
+---
+xdoc_repo:
+  url: git@github.com:EnterpriseDB/docs.git
+  dest: '{{ home_dir }}/code'

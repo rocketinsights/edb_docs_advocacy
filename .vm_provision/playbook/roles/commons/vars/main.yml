@@ -1,0 +1,10 @@
+---
+common_packages:
+  - git
+  - curl
+  - gcc-c++
+  - make
+  - python3
+
+provision_dir: "{{ home_dir }}/provision"
+provision_ssh_file: "{{ provision_dir }}/copy/ssh-key.tar.gz"

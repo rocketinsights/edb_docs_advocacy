@@ -1,0 +1,37 @@
+---
+- name: register external source folder
+  stat:
+    path: /home/vagrant/code/external_sources
+  register: external_sources_dir
+
+- name: Install depedencies
+  shell: 'yarn'
+  args:
+    chdir: '{{ xdoc_repo.dest }}'
+
+- name: Pull icons shared files
+  shell: 'git submodule update --init'
+  args:
+    chdir: '{{ xdoc_repo.dest }}'
+
+- name: Configure doc resources
+  block:
+    - name: ensure dev source file exists
+      file:
+        path: '{{ xdoc_repo.dest }}/dev-sources.json'
+        state: touch
+    - name: Setup dev resources
+      lineinfile:
+        path: '{{ xdoc_repo.dest }}/dev-sources.json'
+        line: '{"docs": false, "k8s_docs": true, "barman": false}'
+        state: present
+    - name: Pull configured doc sources
+      shell: 'yarn pull-sources'
+      args:
+        chdir: '{{ xdoc_repo.dest }}'
+      when: not external_sources_dir.stat.exists
+
+- name: Clean up workspace to wrap up
+  shell: 'yarn clean'
+  args:
+    chdir: '{{ xdoc_repo.dest }}'

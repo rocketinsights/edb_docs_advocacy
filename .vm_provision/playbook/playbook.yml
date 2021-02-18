@@ -1,0 +1,12 @@
+---
+- hosts: all
+  vars:
+    home_dir: /home/vagrant
+    tmp_dir: /tmp
+  become_method: sudo
+  become_user: root
+  roles:
+    - commons
+    - node
+    - xdoc
+ 

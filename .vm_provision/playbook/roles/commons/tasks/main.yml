@@ -1,0 +1,5 @@
+- name: Install Common Packages
+  yum:
+    name: '{{ item }}'
+    state: present
+  loop: '{{ common_packages }}'

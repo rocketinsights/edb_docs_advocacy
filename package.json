@@ -10,6 +10,7 @@
     "clean": "gatsby clean",
     "clean-develop": "gatsby clean && gatsby develop",
     "develop": "gatsby develop",
+    "vm-ssh": "vagrant ssh -- -L 8000:localhost:8000",
     "config-sources": "python3 scripts/source/config_sources.py",
     "pull-sources": "python3 scripts/source/pull_sources.py",
     "format": "prettier --write src/**/*.js gatsby-*.js",

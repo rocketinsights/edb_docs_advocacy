@@ -1,0 +1,2 @@
+# run as localhost
+localhost ansible_connection=local
