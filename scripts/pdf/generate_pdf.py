@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-
 import os
 import re
 import sys
 from datetime import datetime
-from itertools import chain
 from pathlib import Path
 from subprocess import run
 
