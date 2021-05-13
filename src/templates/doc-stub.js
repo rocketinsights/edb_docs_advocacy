@@ -59,7 +59,7 @@ const determineCanonicalPath = (hasLatest, latestPath) => {
 };
 
 const DocTemplate = ({ data, pageContext }) => {
-  const { fields, body, tableOfContents } = data.mdx;
+  const { fields, body } = data.mdx;
   const { path, mtime } = fields;
   const {
     pagePath,
