@@ -1,0 +1,144 @@
+---
+title: "Performing an RPM Installation"
+legacyRedirects:
+  - "/edb-docs/d/edbplus/user-guides/edbplus-users-guide/38/rpm_installation"
+---
+
+<div id="rpm_installation" class="registered_link"></div>
+
+
+For detailed information about creating and using EDB repositories to install Advanced Server or its supporting components, see the *EDB Postgres Advanced Server Installation Guide available* at:
+
+<https://www.enterprisedb.com/docs>
+
+**Creating a Repository Configuration File**
+
+To create the repository configuration file, assume superuser privileges, and invoke the following command:
+
+- On RHEL or CentOS 7:
+
+  ```text    
+  yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+  ``` 
+
+- On RHEL or CentOS 8:
+
+  ```text
+  dnf -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+   ```
+
+The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
+
+After creating the `edb.repo` file, use your choice of editor to ensure that the value of the enabled parameter is 1, and
+replace the `username` and `password` placeholders in the baseurl specification with the name and password of a
+registered EDB user.
+
+```
+[edb]
+name=EnterpriseDB RPMs $releasever - $basearch
+baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
+```
+After saving your changes to the configuration file, you can use the following command to install EDB*Plus:
+
+- On RHEL or CentOS 7:
+
+  ```    
+  yum install edb-asxx-edbplus
+  ```
+
+- On RHEL or CentOS 8:
+
+  ```    
+  dnf install edb-asxx-edbplus   
+  ``` 
+
+Where, `xx` is the Advanced Server version.
+
+When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, entery, and press `Return` to continue.
+
+During the installation, yum may encounter a dependency that it cannot resolve. If it does, it will provide a list of the required dependencies that you must manually resolve.
+
+
+## Configuring an RPM Installation
+
+After performing an RPM installation of EDB\*Plus, you must set the values of environment variables that allow
+EDB\*Plus to locate your Java installation. Use the following commands to set variable values:
+
+```text
+export JAVA_HOME=<path_to_java>
+export PATH=<path_to_java>/bin:$PATH
+```
+
+By default, the `pg_hba.conf` file for the RPM installer enforces `IDENT` authentication. Before invoking EDB*Plus, you must either modify the `pg_hba.conf` file, changing the authentication method to a form other than `IDENT` (and restarting the server), or perform the following steps to ensure that an `IDENT` server is accessible:
+
+You must confirm that an `identd` server is installed and running. You can use the `yum` package manager to install an `identd` server by invoking the command:
+
+- On RHEL or CentOS 7:
+
+  ```text
+  yum install xinetd authd
+  ```
+
+- On RHEL or CentOS 8:
+
+  ```text
+  dnf install xinetd authd
+  ```
+
+The command should create a file named ``/etc/xinetd.d/auth`` that contains:
+
+```text
+service auth
+{
+      disable = yes
+      socket_type = stream
+wait =no
+user = ident
+cps = 4096 10
+instances = UNLIMITED
+server = /usr/sbin/in.authd server_args = -t60 --xerror -os
+}
+```
+
+!!! Note
+    If the file includes a `-E` argument at the end of the server arguments, please erase `-E`.
+
+Then, to start the `identd` server, invoke the following commands:
+
+```text
+systemctl enable xinetd
+systemctl start xinetd
+```
+
+Open the `pg_ident.conf` file and create a user mapping:
+
+```
+# map_name     system_username      postgres_username
+  edbas        enterprisedb         enterprisedb
+```
+
+Where:
+
+- The name specified in the map_name column is a user-defined name that will identify the mapping in the `pg_hba.conf` file.
+- The name specified in the system_username column is `enterprisedb`.
+- The name specified in the `postgres_username` column is `enterprisedb`.
+
+Then, open the `pg_hba.conf` file and modify the `IDENT` entries:
+
+- If you are using an IPv4 local connection, modify the file entry to read:
+
+  `host all all 127.0.0.0/0 ident map=edbas`
+
+- If you are using an IPv6 local connection, modify the file entry to read:
+
+  `host all all ::1/128 ident map=edbas`
+
+You must restart the Advanced Server service before invoking EDB\*Plus. For detailed information about controlling the Advanced Server service, see the *EDB Postgres Advanced Server Installation Guide*, available at:
+
+<https://www.enterprisedb.com/docs/>
+
+
+

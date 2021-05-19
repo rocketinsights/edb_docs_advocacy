@@ -1,0 +1,28 @@
+---
+navTitle: Language Pack
+title: "EDB Postgres Language Pack Guide"
+---
+
+This guide provides information about how to install and configure Language Pack, as well as how to use the procedural languages (PL/Perl, PL/Python, and PL/TCL).
+
+Language pack installers contain supported languages that may be used with EDB Postgres Advanced Server and EnterpriseDB PostgreSQL database installers. The language pack installer allows you to install Perl, TCL/TK, and Python without installing supporting software from third-party vendors.
+
+The Language Pack installer includes:
+
+-   TCL with TK version 8.6.8
+-   Perl version 5.26.2
+-   Python version 3.6.8
+
+The Perl package contains the `cpan` package manager, and Python contains `pip` and `easy_install` package managers. There is no package manager for TCL/TK.
+
+In previous Postgres releases, `plpython` was statically linked with ActiveState's python library. The Language Pack Installer dynamically links with our shared object for python. In ActiveState Linux installers for Python, there is no dynamic library. As a result of these changes, `plpython` will no longer work with ActiveState installers.
+
+**Convention Used in this Guide**
+
+The term *Postgres* refers to either PostgreSQL or EDB Postgres Advanced Server.
+
+<div class="toctree" maxdepth="3">
+
+supported_database_server_versions installing_language_pack using_the_procedural_languages uninstalling_language_pack conclusion
+
+</div>

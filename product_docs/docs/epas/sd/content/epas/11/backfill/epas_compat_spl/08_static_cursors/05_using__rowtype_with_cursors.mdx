@@ -1,0 +1,53 @@
+---
+title: "Using %ROWTYPE With Cursors"
+---
+
+<div id="[using]()%_rowtype_with_cursors" class="registered_link"></div>
+
+Using the `%ROWTYPE` attribute, a record can be defined that contains fields corresponding to all columns fetched from a cursor or cursor variable. Each field takes on the data type of its corresponding column. The `%ROWTYPE` attribute is prefixed by a cursor name or cursor variable name.
+
+```text
+<record> <cursor>%ROWTYPE;
+```
+
+`record` is an identifier assigned to the record. `cursor` is an explicitly declared cursor within the current scope.
+
+The following example shows how you can use a cursor with `%ROWTYPE` to get information about which employee works in which department.
+
+```text
+CREATE OR REPLACE PROCEDURE emp_info
+IS
+    CURSOR empcur IS SELECT ename, deptno FROM emp;
+    myvar           empcur%ROWTYPE;
+BEGIN
+    OPEN empcur;
+    LOOP
+        FETCH empcur INTO myvar;
+        EXIT WHEN empcur%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE( myvar.ename || ' works in department '
+            || myvar.deptno );
+    END LOOP;
+    CLOSE empcur;
+END;
+```
+
+The following is the output from this procedure.
+
+```text
+EXEC emp_info;
+
+SMITH works in department 20
+ALLEN works in department 30
+WARD works in department 30
+JONES works in department 20
+MARTIN works in department 30
+BLAKE works in department 30
+CLARK works in department 10
+SCOTT works in department 20
+KING works in department 10
+TURNER works in department 30
+ADAMS works in department 20
+JAMES works in department 30
+FORD works in department 20
+MILLER works in department 10
+```
