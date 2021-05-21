@@ -4,17 +4,15 @@ legacyRedirects:
   - "/edb-docs/d/postgresql/installation-getting-started/installation-guide/13.0/requirements_overview.html"
 ---
 
-
-
 ## Supported Platforms
 
 For information about the platforms and versions supported by PostgreSQL, visit the [EDB website](https://www.enterprisedb.com/services-support/edb-supported-products-and-platforms/)
 
-**Note**
+!!! Note
 
-PostgreSQL version 13.0 is no longer supported on CentOS/RHEL/OEL 6.x platforms. It is strongly recommended that EDB products running on these platforms be migrated to a supported platform.
+    PostgreSQL version 13.0 is no longer supported on CentOS/RHEL/OEL 6.x platforms. It is strongly recommended that EDB products running on these platforms be migrated to a supported platform.
 
-To download PostgreSQL installers for Windows, Mac, and the Linux versions listed above, visit the [EDB website](https://www.enterprisedb.com/downloads/postgresql)
+To download PostgreSQL installers for Windows, Mac, and the Linux versions, visit the [EDB website](https://www.enterprisedb.com/downloads/postgresql)
 
 PostgreSQL is also available for other Linux-based hosts. For more information, visit [PostgreSQL website](https://www.postgresql.org/download/).
 
@@ -28,22 +26,20 @@ The following installation requirements assume you have selected the default opt
 
 Additional disk space is required for data or supporting components.
 
-
-
-## Software Prerequisites
+## Installation Prerequisites
 
 **User Privileges**
 
-On a Mac system, you must have superuser privileges to perform a PostgreSQL installation. To perform an installation on a Windows system, you must have administrator privileges.
+To perform a PostgreSQL Server installation on a Mac system, you must have superuser privileges. To perform an installation on a Windows system, you must have administrative privileges.
 
 If you are installing PostgreSQL on a Windows system that is configured with User Account Control (UAC) enabled, you can assume sufficient privileges to invoke the graphical installer by clicking on the right side of the installer name and selecting `Run as administrator` from the context menu. If prompted, enter an administrator password to continue.
 
 **Windows-specific Software Requirements**
 
-Apply the Windows operating system updates before invoking the PostgreSQL installer. If the installer encounters errors during the installation process, exit the installation and ensure that your Windows version is up-to-date before restarting the installer.
+You should apply the Windows operating system updates before invoking the PostgreSQL installer. If (during the installation process) the installer encounters errors during the installation process, exit the installation and ensure that your Windows version is up-to-date before restarting the installer.
 
 **Mac OS X-specific Software Requirements**
 
-PostgreSQL installation on Mac OS X differs slightly from other platforms as the distribution is in a different format, and some additional configuration may be required.
+PostgreSQL installation on Mac OS X differs slightly from other platforms as the distribution is in a different format and some additional configuration may be required.
 
 The Mac OS X installer is an App Bundle (a set of files and directories in a prescribed format). The installer is available as a disk image (`.dmg`) file from the website or as an archive (`.zip`) from Stack Builder. To extract the installer, simply mount the disk image and copy the installer to the desired location, or run it directly from the disk image.
