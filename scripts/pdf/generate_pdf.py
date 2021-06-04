@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import os
 import re
 import sys
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from subprocess import run
@@ -19,36 +19,31 @@ ANSI_RED = "\033[31m"
 # import code; code.interact(local=dict(globals(), **locals()))
 
 
+@dataclass
 class ToCItem:
-    def __init__(self, filename, chapter):
-        self.filename = filename
-        self.chapter = chapter
-        self.title = ""
-        self.anchor = ""
+    filename: Path
+    chapter: str
+    title: str = ""
+    anchor: str = ""
 
 
-def putIndexFirst(e):
-    return e.filename.replace("index.mdx", "00_index.mdx")
+def putIndexFirst(path):
+    filename = str(path)
+    return filename.replace("index.mdx", "00_index.mdx")
 
 
-def putIndexFirst2(e):
-    return e.replace("index.mdx", "00_index.mdx")
-
-
-def getFilename(file):
-    return file.filename
-
-
-def filterList(filename):
-    if ".png" in filename or "images" in filename or ".DS_Store" in filename:
-        return False
-    else:
+def filterList(path):
+    if path.is_dir() and not path.match("*images*"):
         return True
+    elif path.suffix in [".mdx", ".md"]:
+        return True
+    else:
+        return False
 
 
 def getTitle(dirName):
-    indexPath = dirName + "/index.mdx"
-    if os.path.exists(indexPath):
+    indexPath = dirName / "index.mdx"
+    if indexPath.exists():
         indexFile = open(indexPath, "r")
         for line in indexFile.readlines():
             if "title: " in line:
@@ -61,24 +56,21 @@ def stripQuotes(str):
 
 
 def getListOfFiles(dirName, parentChapter):
-    # create a list of file and sub directories
-    # names in the given directory
-    listOfFiles = list(filter(filterList, os.listdir(dirName)))
-    listOfFiles.sort(key=putIndexFirst2)
+    # create a list of file and sub directories names in the given directory
+    listOfFiles = list(filter(filterList, dirName.iterdir()))
+    listOfFiles.sort(key=putIndexFirst)
     allFiles = list()
     chapter = 0
 
     # Iterate over all the entries
     for entry in listOfFiles:
-        # Create full path
-        fullPath = os.path.join(dirName, entry)
         # If entry is a directory then get the list of files in this directory
-        if os.path.isdir(fullPath):
+        if entry.is_dir():
             allFiles = allFiles + getListOfFiles(
-                fullPath, parentChapter + str(chapter) + "."
+                entry, f"{parentChapter}{str(chapter)}."
             )
-        elif ".mdx" in entry or ".md" in entry:
-            allFiles.append(ToCItem(fullPath, parentChapter + str(chapter)))
+        else:
+            allFiles.append(ToCItem(entry, parentChapter + str(chapter)))
 
         chapter += 1
     return allFiles
@@ -87,8 +79,7 @@ def getListOfFiles(dirName, parentChapter):
 def main():
     dirName = ""
     try:
-        dirName = sys.argv[1]
-        dirName = re.sub(r"\/$", "", dirName)
+        dirName = Path(sys.argv[1])
     except BaseException:
         print("directory not passed in")
         print("if running from yarn use `yarn build-pdf directory/path/here`")
@@ -102,32 +93,30 @@ def main():
     except BaseException:
         pass
 
-    splitDirName = dirName.split("/")
-    product = splitDirName[2]
-    version = splitDirName[3]
+    product = dirName.parts[2]
+    version = dirName.parts[3]
 
     fullProductPdf = True
     guide = None
-    if len(splitDirName) > 4:
+    if len(dirName.parts) > 4:
         fullProductPdf = False
-        guide = splitDirName[4]
+        guide = dirName.parts[4]
 
     _file_prefix = f"{dirName}/{product}_v{version}"
     _doc_prefix = f"{_file_prefix}_documentation"
-    mdxFilePath = f"{_doc_prefix}.mdx"
-    htmlFilePath = f"{_doc_prefix}.html"
-    coverFilePath = f"{_doc_prefix}_cover.html"
-    pdfFilePath = f"{_file_prefix}" "_{}documentation.pdf".format(
-        guide + "_" if guide else ""
+    mdxFilePath = Path(f"{_doc_prefix}.mdx")
+    htmlFilePath = Path(f"{_doc_prefix}.html")
+    coverFilePath = Path(f"{_doc_prefix}_cover.html")
+    pdfFilePath = Path(
+        f"{_file_prefix}" "_{}documentation.pdf".format(guide + "_" if guide else "")
     )
 
     print(f"{ANSI_BLUE}building {pdfFilePath}{ANSI_STOP}")
 
-    if not os.path.exists(dirName):
+    if not dirName.exists():
         raise Exception("directory does not exist")
 
-    if os.path.exists(mdxFilePath):
-        os.remove(mdxFilePath)
+    mdxFilePath.unlink(missing_ok=True)
 
     # Get the list of all files in directory tree at given path
     listOfFiles = getListOfFiles(dirName, "")
@@ -147,15 +136,13 @@ def main():
             if tag and len(elem.anchor) == 0:
                 elem.anchor = tag.group(1)
 
-    resourceSearchPaths = {dirName}
+    resourceSearchPaths = {str(dirName)}
 
     # Print the files
     with open(mdxFilePath, "w") as fp:
         for elem in listOfFiles:
             g = open(elem.filename, "r")
-
-            baseImagePath = os.path.split(elem.filename)[0]
-            resourceSearchPaths.add(baseImagePath)
+            resourceSearchPaths.add(elem.filename.parent)
 
             frontmatterCount = 2
             for line in g.readlines():
@@ -193,14 +180,14 @@ def main():
             "--self-contained",
             "--highlight-style=tango",
             f"--css={BASE_DIR / 'pdf-styles.css'}",
-            f"--resource-path={':'.join(resourceSearchPaths)}",
+            f"--resource-path={':'.join((str(p) for p in resourceSearchPaths))}",
             f"--output={htmlFilePath}",
         ]
     )
     output.check_returncode()
 
-    if not os.path.exists(htmlFilePath):
-        os.remove(mdxFilePath)
+    if not htmlFilePath.exists():
+        mdxFilePath.unlink()
         raise Exception(
             f"\033[91m html file failed to generate for {mdxFilePath} \033[0m"
         )
@@ -272,10 +259,10 @@ def main():
     if openPdf:
         run(["open", pdfFilePath])
 
-    os.remove(mdxFilePath)
+    mdxFilePath.unlink()
     if not html:
-        os.remove(htmlFilePath)
-        os.remove(coverFilePath)
+        htmlFilePath.unlink()
+        coverFilePath.unlink()
 
 
 if __name__ == "__main__":
