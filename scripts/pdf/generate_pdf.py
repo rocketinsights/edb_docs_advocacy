@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
+import argparse
 import re
-import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -15,89 +15,14 @@ ANSI_YELLOW = "\033[33m"
 ANSI_RED = "\033[31m"
 
 
-# magic snippet for inline repl
-# import code; code.interact(local=dict(globals(), **locals()))
-
-
-@dataclass
-class ToCItem:
-    filename: Path
-    chapter: str
-    title: str = ""
-    anchor: str = ""
-
-
-def putIndexFirst(path):
-    filename = str(path)
-    return filename.replace("index.mdx", "00_index.mdx")
-
-
-def filterList(path):
-    if path.is_dir() and not path.match("*images*"):
-        return True
-    elif path.suffix in [".mdx", ".md"]:
-        return True
-    else:
-        return False
-
-
-def getTitle(dirName):
-    indexPath = dirName / "index.mdx"
-    if indexPath.exists():
-        indexFile = open(indexPath, "r")
-        for line in indexFile.readlines():
-            if "title: " in line:
-                return stripQuotes(line.replace("title: ", ""))
-    return None
-
-
-def stripQuotes(str):
-    return str.strip().strip("'").strip('"')
-
-
-def getListOfFiles(dirName, parentChapter):
-    # create a list of file and sub directories names in the given directory
-    listOfFiles = list(filter(filterList, dirName.iterdir()))
-    listOfFiles.sort(key=putIndexFirst)
-    allFiles = list()
-    chapter = 0
-
-    # Iterate over all the entries
-    for entry in listOfFiles:
-        # If entry is a directory then get the list of files in this directory
-        if entry.is_dir():
-            allFiles = allFiles + getListOfFiles(
-                entry, f"{parentChapter}{str(chapter)}."
-            )
-        else:
-            allFiles.append(ToCItem(entry, parentChapter + str(chapter)))
-
-        chapter += 1
-    return allFiles
-
-
-def main():
-    dirName = ""
-    try:
-        dirName = Path(sys.argv[1])
-    except BaseException:
-        print("directory not passed in")
-        print("if running from yarn use `yarn build-pdf directory/path/here`")
-        sys.exit(1)
-
-    openPdf = False
-    html = False
-    try:
-        html = sys.argv[2] == "--html"
-        openPdf = sys.argv[2] == "--open"
-    except BaseException:
-        pass
-
+def main(args):
+    dirName = args.doc_path
     product = dirName.parts[2]
     version = dirName.parts[3]
 
     fullProductPdf = True
     guide = None
+    # GS 2021-06-04: I don't think this if condition is possible
     if len(dirName.parts) > 4:
         fullProductPdf = False
         guide = dirName.parts[4]
@@ -192,7 +117,7 @@ def main():
             f"\033[91m html file failed to generate for {mdxFilePath} \033[0m"
         )
 
-    if html:
+    if args.generate_html_only:
         run(["open", htmlFilePath])
     else:
         print("generating cover page")
@@ -256,14 +181,106 @@ def main():
         )
         output.check_returncode()
 
-    if openPdf:
+    if args.open_pdf:
         run(["open", pdfFilePath])
 
     mdxFilePath.unlink()
-    if not html:
+    if not args.generate_html_only:
         htmlFilePath.unlink()
         coverFilePath.unlink()
 
 
+def putIndexFirst(path):
+    filename = str(path)
+    return filename.replace("index.mdx", "00_index.mdx")
+
+
+def filterList(path):
+    if path.is_dir() and not path.match("*images*"):
+        return True
+    elif path.suffix in [".mdx", ".md"]:
+        return True
+    else:
+        return False
+
+
+def getTitle(dirName):
+    indexPath = dirName / "index.mdx"
+    if indexPath.exists():
+        indexFile = open(indexPath, "r")
+        for line in indexFile.readlines():
+            if "title: " in line:
+                return stripQuotes(line.replace("title: ", ""))
+    return None
+
+
+def stripQuotes(str):
+    return str.strip().strip("'").strip('"')
+
+
+def getListOfFiles(dirName, parentChapter):
+    # create a list of file and sub directories names in the given directory
+    listOfFiles = list(filter(filterList, dirName.iterdir()))
+    listOfFiles.sort(key=putIndexFirst)
+    allFiles = list()
+    chapter = 0
+
+    # Iterate over all the entries
+    for entry in listOfFiles:
+        # If entry is a directory then get the list of files in this directory
+        if entry.is_dir():
+            allFiles = allFiles + getListOfFiles(
+                entry, f"{parentChapter}{str(chapter)}."
+            )
+        else:
+            allFiles.append(ToCItem(entry, parentChapter + str(chapter)))
+
+        chapter += 1
+    return allFiles
+
+
+@dataclass
+class ToCItem:
+    filename: Path
+    chapter: str
+    title: str = ""
+    anchor: str = ""
+
+
+def cli():
+    parser = argparse.ArgumentParser(
+        description=(
+            "generate a PDF based on documentation files from a product directory"
+        )
+    )
+    parser.add_argument(
+        "doc_path",
+        metavar="doc-path",
+        type=path_type,
+        help="directory path for a specific product's documentation",
+    )
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--html",
+        dest="generate_html_only",
+        action="store_true",
+        help="generate the intermediate HTML instead of PDF",
+    )
+    group.add_argument(
+        "--open",
+        dest="open_pdf",
+        action="store_true",
+        help="open the PDF after generation",
+    )
+    return parser.parse_args()
+
+
+def path_type(arg):
+    p = Path(arg)
+    if not (p.exists() and p.is_dir()):
+        raise argparse.ArgumentTypeError(f'"{arg}" is not a valid directory')
+    return p
+
+
 if __name__ == "__main__":
-    main()
+    main(cli())
