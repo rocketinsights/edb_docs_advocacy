@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-import argparse
 import re
+from argparse import ArgumentParser, ArgumentTypeError
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -16,41 +16,28 @@ ANSI_RED = "\033[31m"
 
 
 def main(args):
-    dirName = args.doc_path
-    product = dirName.parts[2]
-    version = dirName.parts[3]
+    doc_path = args.doc_path
+    product = doc_path.parts[2]
+    version = doc_path.parts[3]
 
-    fullProductPdf = True
-    guide = None
-    # GS 2021-06-04: I don't think this if condition is possible
-    if len(dirName.parts) > 4:
-        fullProductPdf = False
-        guide = dirName.parts[4]
+    _file_prefix = f"{product}_v{version}_documentation"
 
-    _file_prefix = f"{dirName}/{product}_v{version}"
-    _doc_prefix = f"{_file_prefix}_documentation"
-    mdxFilePath = Path(f"{_doc_prefix}.mdx")
-    htmlFilePath = Path(f"{_doc_prefix}.html")
-    coverFilePath = Path(f"{_doc_prefix}_cover.html")
-    pdfFilePath = Path(
-        f"{_file_prefix}" "_{}documentation.pdf".format(guide + "_" if guide else "")
-    )
+    mdx_file = doc_path / f"{_file_prefix}.mdx"
+    html_file = doc_path / f"{_file_prefix}.html"
+    cover_file = doc_path / f"{_file_prefix}_cover.html"
+    pdf_file = doc_path / f"{_file_prefix}.pdf"
 
-    print(f"{ANSI_BLUE}building {pdfFilePath}{ANSI_STOP}")
+    print(f"{ANSI_BLUE}building {pdf_file}{ANSI_STOP}")
 
-    if not dirName.exists():
-        raise Exception("directory does not exist")
-
-    mdxFilePath.unlink(missing_ok=True)
+    mdx_file.unlink(missing_ok=True)
 
     # Get the list of all files in directory tree at given path
-    listOfFiles = getListOfFiles(dirName, "")
-    if len(listOfFiles) == 0:
-        raise Exception(f"no files in {dirName}")
-    if fullProductPdf:
-        listOfFiles.pop(0)  # remove base product index page, which are empty
+    files = list_files(doc_path, "")
+    if len(files) == 0:
+        raise Exception(f"no files in {doc_path}")
+    files.pop(0)  # remove base product index page, which are empty
 
-    for elem in listOfFiles:
+    for elem in files:
         g = open(elem.filename, "r")
         for line in g.readlines():
             if "title: " in line:
@@ -61,75 +48,71 @@ def main(args):
             if tag and len(elem.anchor) == 0:
                 elem.anchor = tag.group(1)
 
-    resourceSearchPaths = {str(dirName)}
+    resource_search_paths = {doc_path}
 
     # Print the files
-    with open(mdxFilePath, "w") as fp:
-        for elem in listOfFiles:
+    with open(mdx_file, "w") as fp:
+        for elem in files:
             g = open(elem.filename, "r")
-            resourceSearchPaths.add(elem.filename.parent)
+            resource_search_paths.add(elem.filename.parent)
 
-            frontmatterCount = 2
+            front_matter_count = 2
             for line in g.readlines():
-                newLine = line
+                new_line = line
 
                 if line[0:2] == "# ":
-                    newLine = "##" + line
+                    new_line = "##" + line
                 if line[0:3] == "## ":
-                    newLine = "#" + line
+                    new_line = "#" + line
                 if "toctree" in line:
-                    frontmatterCount = 3
-                if frontmatterCount == 0:
-                    fp.write(newLine)
+                    front_matter_count = 3
+                if front_matter_count == 0:
+                    fp.write(new_line)
                 if "title: " in line:
-                    newLine = (
+                    new_line = (
                         re.sub(r"\.0", "", elem.chapter)
                         + ("&nbsp;" * 10)
-                        + stripQuotes(line[7:])
+                        + strip_quotes(line[7:])
                         + "\n"
                     )
-                    fp.write(newLine)
-                if "---" in line and frontmatterCount > 0:
-                    frontmatterCount -= 1
-                    fp.write(newLine)
+                    fp.write(new_line)
+                if "---" in line and front_matter_count > 0:
+                    front_matter_count -= 1
+                    fp.write(new_line)
             fp.write("\n")
 
-    title = getTitle(dirName) or product
+    title = get_title(doc_path) or product
 
     print("generating docs html")
     output = run(
         [
             "pandoc",
-            mdxFilePath,
+            mdx_file,
             "--from=gfm",
             "--self-contained",
             "--highlight-style=tango",
             f"--css={BASE_DIR / 'pdf-styles.css'}",
-            f"--resource-path={':'.join((str(p) for p in resourceSearchPaths))}",
-            f"--output={htmlFilePath}",
+            f"--resource-path={':'.join((str(p) for p in resource_search_paths))}",
+            f"--output={html_file}",
         ]
     )
     output.check_returncode()
 
-    if not htmlFilePath.exists():
-        mdxFilePath.unlink()
-        raise Exception(
-            f"\033[91m html file failed to generate for {mdxFilePath} \033[0m"
-        )
+    if not html_file.exists():
+        mdx_file.unlink()
+        raise Exception(f"\033[91m html file failed to generate for {mdx_file} \033[0m")
 
     if args.generate_html_only:
-        run(["open", htmlFilePath])
+        run(["open", html_file])
     else:
         print("generating cover page")
-        with open(BASE_DIR / "cover.html") as source, open(
-            coverFilePath, "w"
-        ) as output:
+        with open(BASE_DIR / "cover.html") as source, open(cover_file, "w") as output:
             data = source.read()
             data = data.replace("[PRODUCT]", title)
             data = data.replace("[VERSION]", version)
             output.write(data)
 
-        headerFooterCommon = [
+        header_footer_common = [
             "--header-font-name",
             "Signika",
             "--header-font-size",
@@ -147,7 +130,7 @@ def main(args):
             "All rights reserved.",
         ]
 
-        headerFooterOptions = [
+        header_footer_options = [
             "--header-right",
             "[doctitle]",
             "--footer-right",
@@ -166,36 +149,36 @@ def main(args):
                 "15mm",
                 "--margin-bottom",
                 "15mm",
-                *headerFooterCommon,
-                coverFilePath,
+                *header_footer_common,
+                cover_file,
                 "--footer-right",
                 f"Built at {datetime.utcnow().replace(microsecond=0).isoformat()}",
                 "toc",
                 "--xsl-style-sheet",
                 "scripts/pdf/toc-style.xsl",
-                *headerFooterOptions,
-                htmlFilePath,
-                *headerFooterOptions,
-                pdfFilePath,
+                *header_footer_options,
+                html_file,
+                *header_footer_options,
+                pdf_file,
             ]
         )
         output.check_returncode()
 
     if args.open_pdf:
-        run(["open", pdfFilePath])
+        run(["open", pdf_file])
 
-    mdxFilePath.unlink()
+    mdx_file.unlink()
     if not args.generate_html_only:
-        htmlFilePath.unlink()
-        coverFilePath.unlink()
+        html_file.unlink()
+        cover_file.unlink()
 
 
-def putIndexFirst(path):
+def put_index_first(path):
     filename = str(path)
     return filename.replace("index.mdx", "00_index.mdx")
 
 
-def filterList(path):
+def filter_path(path):
     if path.is_dir() and not path.match("*images*"):
         return True
     elif path.suffix in [".mdx", ".md"]:
@@ -204,43 +187,41 @@ def filterList(path):
         return False
 
 
-def getTitle(dirName):
-    indexPath = dirName / "index.mdx"
-    if indexPath.exists():
-        indexFile = open(indexPath, "r")
-        for line in indexFile.readlines():
+def get_title(doc_path):
+    index_path = doc_path / "index.mdx"
+    if index_path.exists():
+        index_file = open(index_path, "r")
+        for line in index_file.readlines():
             if "title: " in line:
-                return stripQuotes(line.replace("title: ", ""))
+                return strip_quotes(line.replace("title: ", ""))
     return None
 
 
-def stripQuotes(str):
+def strip_quotes(str):
     return str.strip().strip("'").strip('"')
 
 
-def getListOfFiles(dirName, parentChapter):
+def list_files(doc_path, parent_chapter):
     # create a list of file and sub directories names in the given directory
-    listOfFiles = list(filter(filterList, dirName.iterdir()))
-    listOfFiles.sort(key=putIndexFirst)
-    allFiles = list()
+    files = list(filter(filter_path, doc_path.iterdir()))
+    files.sort(key=put_index_first)
+    all_files = list()
     chapter = 0
 
     # Iterate over all the entries
-    for entry in listOfFiles:
+    for entry in files:
         # If entry is a directory then get the list of files in this directory
         if entry.is_dir():
-            allFiles = allFiles + getListOfFiles(
-                entry, f"{parentChapter}{str(chapter)}."
-            )
+            all_files += list_files(entry, f"{parent_chapter}{str(chapter)}.")
         else:
-            allFiles.append(ToCItem(entry, parentChapter + str(chapter)))
+            all_files.append(TocItem(entry, parent_chapter + str(chapter)))
 
         chapter += 1
-    return allFiles
+    return all_files
 
 
 @dataclass
-class ToCItem:
+class TocItem:
     filename: Path
     chapter: str
     title: str = ""
@@ -248,7 +229,7 @@ class ToCItem:
 
 
 def cli():
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         description=(
             "generate a PDF based on documentation files from a product directory"
         )
@@ -278,7 +259,7 @@ def cli():
 def path_type(arg):
     p = Path(arg)
     if not (p.exists() and p.is_dir()):
-        raise argparse.ArgumentTypeError(f'"{arg}" is not a valid directory')
+        raise ArgumentTypeError(f'"{arg}" is not a valid directory')
     return p
 
 
