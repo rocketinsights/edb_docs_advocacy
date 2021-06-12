@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import re
 from argparse import ArgumentParser, ArgumentTypeError
 from dataclasses import dataclass
@@ -9,18 +10,20 @@ from typing import List
 
 BASE_DIR = Path(__file__).resolve().parent
 
-ANSI_STOP = "\033[0m"
 ANSI_BLUE = "\033[34m"
+ANSI_STOP = "\033[0m"
+ANSI_YELLOW = "\033[33m"
 
 
 def main(args):
     doc_path, product, version, mdx_file, html_file, cover_file, pdf_file = setup(args)
 
-    print(f"{ANSI_BLUE}building {pdf_file}{ANSI_STOP}")
-
     files = list_files(doc_path)
     if len(files) == 0:
-        raise Exception(f"no files in {doc_path}")
+        print(f"{ANSI_YELLOW}skipping {pdf_file}{ANSI_STOP}")
+        return
+
+    print(f"{ANSI_BLUE}building {pdf_file}{ANSI_STOP}")
 
     pattern = re.compile('div id="(.*?)" class="registered_link"')
     for elem in files:
@@ -91,11 +94,10 @@ def main(args):
         run(["open", html_file])
     else:
         print("generating cover page")
-        with open(BASE_DIR / "cover.html") as source, open(cover_file, "w") as output:
-            data = source.read()
-            data = data.replace("[PRODUCT]", title)
-            data = data.replace("[VERSION]", version)
-            output.write(data)
+        data = (BASE_DIR / "cover.html").read_text()
+        data = data.replace("[PRODUCT]", title)
+        data = data.replace("[VERSION]", version)
+        cover_file.write_text(data)
 
         header_footer_common = [
             "--header-font-name",
@@ -202,11 +204,15 @@ def filter_path(path):
     if path.is_dir() and not path.match("*images*"):
         return True
     elif path.suffix in [".mdx", ".md"]:
-        with open(path) as f:
-            content = re.sub(
-                "^---$.*?^---$", "", f.read(), flags=re.DOTALL | re.MULTILINE
-            ).strip()
-        return False if content == "" else True
+        content = re.sub(
+            "^---$.*?^---$", "", path.read_text(), flags=re.DOTALL | re.MULTILINE
+        ).strip()
+
+        no_content = content == "" or (
+            len(content.split(os.linesep)) == 1 and "StubCards" in content
+        )
+
+        return False if no_content else True
     else:
         return False
 
