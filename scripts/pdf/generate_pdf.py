@@ -22,49 +22,49 @@ def main(args):
     if len(files) == 0:
         raise Exception(f"no files in {doc_path}")
 
+    pattern = re.compile('div id="(.*?)" class="registered_link"')
     for elem in files:
-        g = open(elem.filename, "r")
-        for line in g.readlines():
-            if "title: " in line:
-                elem.title = line[7:].replace('"', "").replace("\n", "")
-            pattern = re.compile('div id="(.*?)" class="registered_link"')
+        with open(elem.filename, "r") as g:
+            for line in g:
+                if "title: " in line:
+                    elem.title = line[7:].replace('"', "").replace("\n", "")
 
-            tag = pattern.search(line)
-            if tag and len(elem.anchor) == 0:
-                elem.anchor = tag.group(1)
+                tag = pattern.search(line)
+                if tag and len(elem.anchor) == 0:
+                    elem.anchor = tag.group(1)
 
     resource_search_paths = {doc_path}
 
     # Print the files
     with open(mdx_file, "w") as fp:
         for elem in files:
-            g = open(elem.filename, "r")
-            resource_search_paths.add(elem.filename.parent)
+            with open(elem.filename, "r") as g:
+                resource_search_paths.add(elem.filename.parent)
 
-            front_matter_count = 2
-            for line in g.readlines():
-                new_line = line
+                front_matter_count = 2
+                for line in g:
+                    new_line = line
 
-                if line[0:2] == "# ":
-                    new_line = "##" + line
-                if line[0:3] == "## ":
-                    new_line = "#" + line
-                if "toctree" in line:
-                    front_matter_count = 3
-                if front_matter_count == 0:
-                    fp.write(new_line)
-                if "title: " in line:
-                    new_line = (
-                        re.sub(r"\.0", "", elem.chapter)
-                        + ("&nbsp;" * 10)
-                        + strip_quotes(line[7:])
-                        + "\n"
-                    )
-                    fp.write(new_line)
-                if "---" in line and front_matter_count > 0:
-                    front_matter_count -= 1
-                    fp.write(new_line)
-            fp.write("\n")
+                    if line[0:2] == "# ":
+                        new_line = "##" + line
+                    if line[0:3] == "## ":
+                        new_line = "#" + line
+                    if "toctree" in line:
+                        front_matter_count = 3
+                    if front_matter_count == 0:
+                        fp.write(new_line)
+                    if "title: " in line:
+                        new_line = (
+                            re.sub(r"\.0", "", elem.chapter)
+                            + ("&nbsp;" * 10)
+                            + strip_quotes(line[7:])
+                            + "\n"
+                        )
+                        fp.write(new_line)
+                    if "---" in line and front_matter_count > 0:
+                        front_matter_count -= 1
+                        fp.write(new_line)
+                fp.write("\n")
 
     title = get_title(doc_path) or product
 
@@ -219,9 +219,8 @@ def put_index_first(path):
 def get_title(doc_path):
     index_path = doc_path / "index.mdx"
     if index_path.exists():
-        index_file = open(index_path, "r")
-        for line in index_file.readlines():
-            if "title: " in line:
+        with open(index_path) as index_file:
+            for line in (line for line in index_file if "title: " in line):
                 return strip_quotes(line.replace("title: ", ""))
     return None
 
