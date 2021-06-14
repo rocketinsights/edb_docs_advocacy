@@ -1,32 +1,17 @@
 import React from 'react';
+import { Link } from '..';
+
 import Icon from '../icon';
 
-import OldDocsLink from './old-docs-link';
-import FullDocsLink from './full-docs-link';
+const environment = process.env.GATSBY_ENVIRONMENT_BRANCH;
 
-export default function Archive({
-  title,
-  product,
-  version,
-  fileName = '',
-  ...props
-}) {
+export default function Archive({ title, path, ...props }) {
+  const url = `https://github.com/EnterpriseDB/x-docs-archive-test/raw/${environment}/${path}`;
+
   return (
-    <>
-      {fileName === '' ? (
-        <FullDocsLink
-          {...{ title, product, version }}
-          fileIcon={PdfIcon}
-          {...props}
-        />
-      ) : (
-        <OldDocsLink
-          {...{ title, product, version, fileName }}
-          fileIcon={PdfIcon}
-          {...props}
-        />
-      )}
-    </>
+    <Link to={url} title={title} className="w-100 d-block" {...props}>
+      <PdfIcon /> {title}
+    </Link>
   );
 }
 

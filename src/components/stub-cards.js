@@ -29,7 +29,9 @@ const StubLink = ({ link }) => {
       </Link>{' '}
       <br></br>
       {link.pdf && link.href && (
-        <Archive title="Download PDF" href={link.pdf} />
+        <Link to={link.pdf} className="small">
+          <PdfIcon /> Download PDF
+        </Link>
       )}
     </li>
   );
