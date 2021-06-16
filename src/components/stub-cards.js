@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Archive } from './';
+import { Link } from './';
 import { Row, Col } from 'react-bootstrap';
 import { productStubs } from '../constants/product-stubs';
 import Icon from './icon';
