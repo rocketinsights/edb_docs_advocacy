@@ -74,9 +74,10 @@ yarn-error.log
 __pycache__
 
 # Project specific
+.project
+advocacy_docs/kubernetes/cloud_native_postgresql/*.md.in
 dev-sources.json
 product_docs/content/
 product_docs/content_build/
 static/nginx_redirects.generated
 temp_kubernetes/
-advocacy_docs/kubernetes/cloud_native_postgresql/*.md.in

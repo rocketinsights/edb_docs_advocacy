@@ -186,12 +186,12 @@ def list_files(doc_path, chapter=None):
     )
 
     for i, entry in enumerate(directory_contents):
-        if entry.is_dir():
-            chapter = chapter if i == 0 else advance_chapter(chapter)
-            all_files += list_files(entry, chapter)
-        else:
+        if entry.is_file():
             chapter = [*chapter, 0] if i == 0 else advance_chapter(chapter)
             all_files.append(TocItem(filename=entry, chapter=chapter))
+        else:
+            chapter = chapter if i == 0 else advance_chapter(chapter)
+            all_files += list_files(entry, chapter)
 
     return all_files
 
