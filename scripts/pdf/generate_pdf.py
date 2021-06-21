@@ -178,7 +178,7 @@ def setup(args):
     return doc_path, product, version, mdx_file, html_file, cover_file, pdf_file
 
 
-def list_files(doc_path, chapter=None):
+def list_files(doc_path, chapter=None, is_root_dir=True):
     chapter = [1] if chapter is None else chapter
     all_files = []
     directory_contents = sorted(
@@ -186,12 +186,20 @@ def list_files(doc_path, chapter=None):
     )
 
     for i, entry in enumerate(directory_contents):
+        chapter = (
+            advance_chapter(
+                chapter[:-1] if is_root_dir and len(chapter) > 1 else chapter
+            )
+            if i != 0
+            else [*chapter, 0]
+            if entry.is_file()
+            else chapter
+        )
+
         if entry.is_file():
-            chapter = [*chapter, 0] if i == 0 else advance_chapter(chapter)
             all_files.append(TocItem(filename=entry, chapter=chapter))
         else:
-            chapter = chapter if i == 0 else advance_chapter(chapter)
-            all_files += list_files(entry, chapter)
+            all_files += list_files(entry, chapter, is_root_dir=False)
 
     return all_files
 
