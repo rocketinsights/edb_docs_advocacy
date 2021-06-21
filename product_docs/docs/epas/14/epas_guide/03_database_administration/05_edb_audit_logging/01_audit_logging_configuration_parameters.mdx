@@ -20,11 +20,11 @@ Use the following configuration parameters to control database auditing. See [Su
 
 `edb_audit_archiver_filename_prefix`
 
- Specifies the file name of the audit file that needs to be archived; the file name must align with the `edb_audit_filename` parameter. The default file name will be `audit-`. The audit files with `edb_audit_archiver_filename_prefix` in the `edb_audit_directory` are eligible for compression and/or expiration.
+ Specifies the file name of an audit log file that needs to be archived; the file name must align with the `edb_audit_filename` parameter. The default value for `edb_audit_archiver_filename_prefix` will be `audit-`. The audit files with `edb_audit_archiver_filename_prefix` in the `edb_audit_directory` are eligible for compression and/or expiration.
 
 `edb_audit_archiver_compress_time_limit`
 
- Specifies the time in seconds after which audit logs are eligible for compression. To enable, set this parameter to 0.
+ Specifies the time in seconds after which audit logs are eligible for compression. The possible values to set this parameter are: `0` = compression starts as soon as the log file is not a current file, `-1` = compression of file on time basis will not occur.
 
 `edb_audit_archiver_compress_size_limit`
 
@@ -32,7 +32,7 @@ Use the following configuration parameters to control database auditing. See [Su
 
 `edb_audit_archiver_compress_command`
 
- Specifies the command to execute the compressing of the audit log files. The default file name will be `gzip %p`. The `gzip` provide a standard method of compressing files. The `%p` in the string is replaced by the path name of the file to archive.
+ Specifies the command to execute the compressing of the audit log files. The default value for `edb_audit_archiver_compress_command` is `gzip %p`. The `gzip` provides a standard method of compressing files. The `%p` in the string is replaced by the path name of the file to archive.
 
 `edb_audit_archiver_compress_suffix`
 
@@ -40,7 +40,7 @@ Use the following configuration parameters to control database auditing. See [Su
 
 `edb_audit_archiver_expire_time_limit`
 
- Specifies the time in seconds after which audit logs are eligible for expiration. To enable, set this parameter to 0.
+ Specifies the time in seconds after which audit logs are eligible for expiration. The possible values to set this parameter are: `0` = expiration starts as soon as the log file is not a current file, `-1` = expiration of file on time basis will not occur.
 
 `edb_audit_archiver_expire_size_limit` 
 
