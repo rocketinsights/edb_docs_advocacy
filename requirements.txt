@@ -10,11 +10,13 @@ click==8.0.1
     # via pip-tools
 iniconfig==1.1.1
     # via pytest
-packaging==20.9
+packaging==21.0
     # via pytest
-pep517==0.10.0
+pdftotext==2.1.6
+    # via -r requirements.in
+pep517==0.11.0
     # via pip-tools
-pip-tools==6.1.0
+pip-tools==6.2.0
     # via -r requirements.in
 pluggy==0.13.1
     # via pytest
@@ -25,9 +27,12 @@ pyparsing==2.4.7
 pytest==6.2.4
     # via -r requirements.in
 toml==0.10.2
-    # via
-    #   pep517
-    #   pytest
+    # via pytest
+tomli==1.0.4
+    # via pep517
+wheel==0.36.2
+    # via pip-tools
 
 # The following packages are considered to be unsafe in a requirements file:
 # pip
+# setuptools

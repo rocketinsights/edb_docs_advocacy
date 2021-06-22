@@ -6,6 +6,8 @@ import subprocess
 from itertools import zip_longest
 from pathlib import Path
 
+import pdftotext
+
 
 def main(args):
     pdfs = sorted(
@@ -14,12 +16,13 @@ def main(args):
     args.removed_pdfs = args.output_dir / "00_removed_pdfs.txt"
     args.removed_pdfs.unlink(missing_ok=True)
     with multiprocessing.Pool(int(multiprocessing.cpu_count() * 2 / 3)) as pool:
-        pool.starmap(diff_pdfs, zip_longest(pdfs, [], fillvalue=args), chunksize=1)
+        pool.starmap(process_pdf, zip_longest(pdfs, [], fillvalue=args), chunksize=1)
 
-    print(f'See removed PDFs in "{args.removed_pdfs}"')
+    if args.removed_pdfs.exists():
+        print(f'See removed PDFs in "{args.removed_pdfs}"')
 
 
-def diff_pdfs(pdf1, args):
+def process_pdf(pdf1, args):
     pdf2 = args.dir2 / pdf1.name
 
     if not pdf2.is_file():
@@ -28,11 +31,28 @@ def diff_pdfs(pdf1, args):
             print(pdf1.name, file=of)
         return
 
+    print(f"👷‍♀️ {pdf1.name}")
+    if args.should_output_text:
+        generate_pdf_text(pdf1, pdf2, args)
+    else:
+        diff_pdfs(pdf1, pdf2, args)
+    print(f"✅ {pdf1.name}")
+
+
+def generate_pdf_text(pdf1, pdf2, args):
+    for i, pdf in enumerate([pdf1, pdf2], start=1):
+        output = args.output_dir / f"dir{i}" / f"{pdf.stem}.txt"
+        with open(pdf, "rb") as f:
+            content = pdftotext.PDF(f)
+        output.parent.mkdir(exist_ok=True)
+        with open(output, "w+") as of:
+            of.write("\n".join(content))
+
+
+def diff_pdfs(pdf1, pdf2, args):
     diff = args.output_dir / pdf1.name
     cmd = shlex.split(f"diff-pdf -s -m -g --output-diff={diff} {pdf1} {pdf2}")
-    print(f"👷‍♀️ {pdf1.name}")
     subprocess.run(cmd, capture_output=True)
-    print(f"✅ {pdf1.name}")
 
 
 def cli():
@@ -40,7 +60,16 @@ def cli():
     parser.add_argument("dir1", type=path_type, help="first directory of PDFs")
     parser.add_argument("dir2", type=path_type, help="second directory of PDFs")
     parser.add_argument(
-        "output_dir", type=output_type, help="directory to store diff PDFs"
+        "output_dir", type=output_type, help="directory to store visual PDF diffs"
+    )
+    parser.add_argument(
+        "--text",
+        dest="should_output_text",
+        action="store_true",
+        help=(
+            "generate raw text (instead of visual diffs) "
+            "from source PDFs for manual diff-ing"
+        ),
     )
     return parser.parse_args()
 
