@@ -25,17 +25,6 @@ def main(args):
 
     print(f"{ANSI_BLUE}building {pdf_file}{ANSI_STOP}")
 
-    pattern = re.compile('div id="(.*?)" class="registered_link"')
-    for elem in files:
-        with open(elem.filename, "r") as g:
-            for line in g:
-                if "title: " in line:
-                    elem.title = line[7:].replace('"', "").replace("\n", "")
-
-                tag = pattern.search(line)
-                if tag and len(elem.anchor) == 0:
-                    elem.anchor = tag.group(1)
-
     resource_search_paths = {doc_path}
 
     # Print the files
@@ -247,8 +236,6 @@ def strip_quotes(str):
 class TocItem:
     filename: Path
     chapter: List[int]
-    title: str = ""
-    anchor: str = ""
 
     def __post_init__(self):
         self.chapter = ".".join((str(c) for c in self.chapter if c > 0))
