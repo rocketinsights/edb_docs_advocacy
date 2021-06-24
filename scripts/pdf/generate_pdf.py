@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import re
 from argparse import ArgumentParser, ArgumentTypeError
 from dataclasses import dataclass
 from datetime import datetime
@@ -24,40 +23,10 @@ def main(args):
         return
 
     print(f"{ANSI_BLUE}building {pdf_file}{ANSI_STOP}")
+    with open(mdx_file, "w") as output:
+        resource_search_paths = {doc_path, *combine_mdx(files, output)}
 
-    resource_search_paths = {doc_path}
-
-    # Print the files
-    with open(mdx_file, "w") as fp:
-        for elem in files:
-            with open(elem.filename, "r") as g:
-                resource_search_paths.add(elem.filename.parent)
-
-                front_matter_count = 2
-                for line in g:
-                    new_line = line
-
-                    if line[0:2] == "# ":
-                        new_line = "##" + line
-                    if line[0:3] == "## ":
-                        new_line = "#" + line
-                    if "toctree" in line:
-                        front_matter_count = 3
-                    if front_matter_count == 0:
-                        fp.write(new_line)
-                    if "title: " in line:
-                        new_line = (
-                            re.sub(r"\.0", "", elem.chapter)
-                            + ("&nbsp;" * 10)
-                            + strip_quotes(line[7:])
-                            + "\n"
-                        )
-                        fp.write(new_line)
-                    if "---" in line and front_matter_count > 0:
-                        front_matter_count -= 1
-                        fp.write(new_line)
-                fp.write("\n")
-
+    # TODO: Pick up refactoring from this point
     title = get_title(doc_path) or product
 
     print("generating docs html")
@@ -193,6 +162,44 @@ def list_files(doc_path, chapter=None, is_root_dir=True):
     return all_files
 
 
+def combine_mdx(files, output):
+    resource_search_paths = set()
+
+    for item in files:
+        resource_search_paths.add(item.filename.parent)
+        front_matter, content = parse_mdx(item.filename)
+        write_front_matter(front_matter, item.chapter, output)
+        write_content(content, output)
+
+    return resource_search_paths
+
+
+def write_front_matter(front_matter, chapter, output):
+    title_marker = "title: "
+
+    print("---", file=output)
+
+    for line in [
+        line for line in front_matter.split(os.linesep) if title_marker in line
+    ]:
+        title = strip_quotes(line.replace(title_marker, ""))
+        print(f'{chapter}{"&nbsp;" * 10}{title}', file=output)
+
+    print("---", file=output)
+    output.write(os.linesep)
+
+
+def write_content(content, output):
+    lines = []
+    for line in content.split(os.linesep):
+        if "toctree" in line:
+            break
+        line = f"#{line}" if (line.startswith("# ") or line.startswith("## ")) else line
+        lines.append(line + os.linesep)
+    output.writelines(lines)
+    output.write(os.linesep)
+
+
 def advance_chapter(chapter):
     return [*chapter[:-1], chapter[-1] + 1]
 
@@ -201,17 +208,18 @@ def filter_path(path):
     if path.is_dir() and not path.match("*images*"):
         return True
     elif path.suffix in [".mdx", ".md"]:
-        content = re.sub(
-            "^---$.*?^---$", "", path.read_text(), flags=re.DOTALL | re.MULTILINE
-        ).strip()
-
+        _, content = parse_mdx(path)
         no_content = content == "" or (
             len(content.split(os.linesep)) == 1 and "StubCards" in content
         )
-
-        return False if no_content else True
+        return not no_content
     else:
         return False
+
+
+def parse_mdx(mdx_file):
+    front_matter, _, content = mdx_file.read_text().partition("---")[2].partition("---")
+    return front_matter.strip(), content.strip()
 
 
 def put_index_first(path):
