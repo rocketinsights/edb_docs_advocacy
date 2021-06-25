@@ -52,7 +52,7 @@ Enforces a timeout in seconds when a database attempts to archive a log file. Th
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies the file name of an audit log file that needs to be archived; the file name must align with the `edb_audit_filename` parameter. The default value for `edb_audit_archiver_filename_prefix` will be `audit-`. The audit files with `edb_audit_archiver_filename_prefix` in the `edb_audit_directory` are eligible for compression and/or expiration.
+Specifies the file name of an audit log file that needs to be archived; the file name must align with the `edb_audit_filename` parameter. The default value for `edb_audit_archiver_filename_prefix` is `audit-`. The audit files with `edb_audit_archiver_filename_prefix` in the `edb_audit_directory` are eligible for compression and/or expiration.
 
 ## edb_audit_archiver_compress_time_limit
 
@@ -68,7 +68,7 @@ Specifies the file name of an audit log file that needs to be archived; the file
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies the time in seconds after which audit logs are eligible for compression. The possible values to set this parameter are: `0` = compression starts as soon as the log file is not a current file, `-1` = compression of file on time basis will not occur.
+Specifies the time in seconds after which audit logs are eligible for compression. The possible values to set this parameter are: `0` = compression starts as soon as the log file is not a current file, `-1` = compression of the log file on a timely basis does not occur.
 
 ## edb_audit_archiver_compress_size_limit
 
@@ -84,7 +84,7 @@ Specifies the time in seconds after which audit logs are eligible for compressio
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies a file size threshold in megabytes after which audit logs will be eligible for compression. If the parameter is set to -1, compression of the file on a size basis will not occur.
+Specifies a file size threshold in megabytes, after which audit logs are eligible for compression. If the parameter is set to -1, compression of the log file on a size basis does not occur.
 
 ## edb_audit_archiver_compress_command
 
@@ -100,7 +100,7 @@ Specifies a file size threshold in megabytes after which audit logs will be elig
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies the command to execute the compressing of the audit log files. The default value for `edb_audit_archiver_compress_command` is `gzip %p`. The `gzip` provides a standard method of compressing files. The `%p` in the string is replaced by the path name of the file to archive.
+Specifies the command to execute compressing of the audit log files. The default value for `edb_audit_archiver_compress_command` is `gzip %p`. The `gzip` provides a standard method of compressing files. The `%p` in the string is replaced by the path name of the file to archive.
 
 ## edb_audit_archiver_compress_suffix
 
@@ -116,7 +116,7 @@ Specifies the command to execute the compressing of the audit log files. The def
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies the file name of an already compressed log file; the file name must align with `edb_audit_archiver_compress_command`. The default file name will be `.gz`. 
+Specifies the file name of an already compressed log file; the file name must align with `edb_audit_archiver_compress_command`. The default file name is `.gz`. 
 
 ## edb_audit_archiver_expire_time_limit
 
@@ -132,7 +132,7 @@ Specifies the file name of an already compressed log file; the file name must al
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies the time in seconds after which audit logs are eligible for expiration. The possible values to set this parameter are: `0` = expiration starts as soon as the log file is not a current file, `-1` = expiration of file on time basis will not occur.
+Specifies the time in seconds after which audit logs are eligible for expiration. The possible values to set this parameter are: `0` = expiration starts as soon as the log file is not a current file, `-1` = expiration of the log file on a timely basis does not occur.
 
 # edb_audit_archiver_expire_size_limit 
 
@@ -148,7 +148,7 @@ Specifies the time in seconds after which audit logs are eligible for expiration
 
 **Required Authorization to Activate:** EPAS service account
 
-Specifies a file size threshold in megabytes after which audit logs will be eligible for expiration. If the parameter is set to -1, the expiration of a file on the size basis will not occur.
+Specifies a file size threshold in megabytes, after which audit logs are eligible for expiration. If the parameter is set to -1, the expiration of a log file on the size basis does not occur.
 
 ## edb_audit_archiver_expire_command 
 
