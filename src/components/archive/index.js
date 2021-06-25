@@ -6,7 +6,7 @@ import Icon from '../icon';
 const environment = process.env.GATSBY_ENVIRONMENT_BRANCH;
 
 export default function Archive({ title, path, ...props }) {
-  const url = `https://github.com/EnterpriseDB/x-docs-archive-test/raw/${environment}/${path}`;
+  const url = `https://github.com/EnterpriseDB/docs-archive/raw/${environment}${path}`;
 
   return (
     <Link to={url} title={title} className="w-100 d-block" {...props}>
