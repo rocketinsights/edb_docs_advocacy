@@ -5,7 +5,7 @@ from tempfile import mkdtemp
 
 import pytest
 
-from ..generate_pdf import list_files
+from ...generate_pdf import list_files
 
 base = Path(__file__).parent
 base_package = ".".join(__name__.split(".")[:-1])
@@ -18,7 +18,7 @@ def test_empty():
     tmp_path.rmdir()
 
 
-@pytest.fixture(params=(base / "list_files_test_cases").iterdir())
+@pytest.fixture(params=(base / "test_cases").iterdir())
 def test_case(request):
     expected_module = ".".join(
         ["", *str(request.param.relative_to(base)).split("/"), "expected"]

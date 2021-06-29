@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ....generate_pdf import TocItem
+from .....generate_pdf import TocItem
 
 expected = [
     TocItem(filename=Path(__file__).parent / "1.mdx", chapter=[1]),
