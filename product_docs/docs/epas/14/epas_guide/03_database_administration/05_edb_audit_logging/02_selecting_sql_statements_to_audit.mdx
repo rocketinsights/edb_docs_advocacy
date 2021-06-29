@@ -402,6 +402,18 @@ Password for user adminuser:
 psql.bin (14.0.0)
 Type "help" for help.
 
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+ edb_audit_statement 
+---------------------
+ all
+(1 row)
+
 auditdb=# SET search_path TO edb;
 SET
 auditdb=> CREATE TABLE dept
@@ -415,32 +427,28 @@ auditdb=> INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
 INSERT 0 1
 auditdb=> INSERT INTO dept VALUES (30, 'SALES', 'CHICAGO');
 INSERT 0 1
-auditdb=> INSERT INTO dept VALUES (40, 'OPERATIONS', 'BOSTON');
-INSERT 0 1
-auditdb=> 
-auditdb=>  UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 40;
+auditdb=>  UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
 UPDATE 1
 auditdb=> SELECT * FROM dept;
  deptno |   dname    |   loc    
 --------+------------+----------
      10 | ACCOUNTING | NEW YORK
-     20 | RESEARCH   | DALLAS
      30 | SALES      | CHICAGO
-     40 | OPERATIONS | BEDFORD
-(4 rows)
+     20 | RESEARCH   | BEDFORD
+(3 rows)
+
 auditdb=> DELETE FROM emp WHERE deptno = 40;
 ERROR:  relation "emp" does not exist
 LINE 1: DELETE FROM emp WHERE deptno = 40;
                     ^
-auditdb=> DELETE FROM dept WHERE deptno = 40;
+auditdb=> DELETE FROM dept WHERE deptno = 10;
 DELETE 1
 auditdb=> SELECT * FROM dept;
- deptno |   dname    |   loc    
---------+------------+----------
-     10 | ACCOUNTING | NEW YORK
-     20 | RESEARCH   | DALLAS
-     30 | SALES      | CHICAGO
-(3 rows)
+ deptno |  dname   |   loc   
+--------+----------+---------
+     30 | SALES    | CHICAGO
+     20 | RESEARCH | BEDFORD
+(2 rows)
 ```
 
 The resulting audit log file contains the following.
@@ -448,43 +456,62 @@ The resulting audit log file contains the following.
 Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
 
 ```text
-2021-06-23 06:08:59.027 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,1,"authentication",2021-06-23 06:08:59 EDT,4/19,0,AUDIT,00000,"connection authorized: 
+2021-06-23 06:06:59.027 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,1,"authentication",2021-06-23 06:06:59 IST,4/19,0,AUDIT,00000,"connection authorized: 
 user=adminuser database=auditdb",,,,,,,,,"","client backend",,"","","connect"
-2021-06-23 06:09:27.613 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,2,"idle",2021-06-23 06:08:59 EDT,4/21,0,AUDIT,00000,"statement: CREATE TABLE dept
+
+2021-06-23 06:07:33.192 IST,"adminuser","auditdb",66316,"[local]",60daab0c.
+1030c,2,"idle",2021-06-23 06:07:33 IST,4/16,0,AUDIT,00000,"statement: SHOW edb_audit_connect;
+",,,,,,,,,"psql","client backend",,"SHOW","","sql statement"
+
+2021-06-23 06:08:12.474 IST,"adminuser","auditdb",66316,"[local]",60daab0c.
+1030c,3,"idle",2021-06-23 06:08:12 IST,4/17,0,AUDIT,00000,"statement: SHOW edb_audit_statement;
+",,,,,,,,,"psql","client backend",,"SHOW","","sql statement"
+
+2021-06-23 06:08:20.519 IST,"adminuser","auditdb",66922,"[local]",60dab036.
+1056a,4,"idle",2021-06-23 06:08:20 IST,4/15,0,AUDIT,00000,"statement: SET search_path TO edb;
+",,,,,,,,,"psql","client backend",,"SET","","set"
+
+2021-06-23 06:09:27.613 IST,"adminuser","auditdb",60218,"[local]",60dab117.
+10602,5,"idle",2021-06-23 06:09:59 IST,4/21,0,AUDIT,00000,"statement: CREATE TABLE dept
        (deptno NUMBER(2),
         dname VARCHAR2(14),
         loc VARCHAR2(13) );",,,,,,,,,"psql","client backend",,"CREATE TABLE","","create"
-2021-06-23 06:09:39.238 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,3,"idle",2021-06-23 06:08:59 EDT,4/22,0,AUDIT,00000,"statement: INSERT INTO 
+
+2021-06-23 06:09:39.238 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,6,"idle",2021-06-23 06:09:29 IST,4/22,0,AUDIT,00000,"statement: INSERT INTO 
 dept VALUES (10, 'ACCOUNTING', 'NEW YORK');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
-2021-06-23 06:09:39.242 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,4,"idle",2021-06-23 06:08:59 EDT,4/23,0,AUDIT,00000,"statement: INSERT INTO 
+
+2021-06-23 06:09:39.242 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,7,"idle",2021-06-23 06:09:29 IST,4/23,0,AUDIT,00000,"statement: INSERT INTO 
 dept VALUES (20, 'RESEARCH', 'DALLAS');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
-2021-06-23 06:09:39.247 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,5,"idle",2021-06-23 06:08:59 EDT,4/24,0,AUDIT,00000,"statement: INSERT INTO 
+
+2021-06-23 06:09:39.247 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,8,"idle",2021-06-23 06:08:35 IST,4/24,0,AUDIT,00000,"statement: INSERT INTO 
 dept VALUES (30, 'SALES', 'CHICAGO');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
-2021-06-23 06:09:39.251 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,6,"idle",2021-06-23 06:08:59 EDT,4/25,0,AUDIT,00000,"statement: INSERT INTO 
-dept VALUES (40, 'OPERATIONS', 'BOSTON');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
-2021-06-23 06:10:04.849 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,7,"idle",2021-06-23 06:08:59 EDT,4/26,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' 
-WHERE deptno = 40;",,,,,,,,,"psql","client backend",,"UPDATE","","update"
-2021-06-23 06:10:16.045 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,8,"idle",2021-06-23 06:08:59 EDT,4/27,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
+
+2021-06-23 06:10:04.849 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,9,"idle",2021-06-23 06:08:59 IST,4/25,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' 
+WHERE deptno = 20;",,,,,,,,,"psql","client backend",,"UPDATE","","update"
+
+2021-06-23 06:10:16.045 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,10,"idle",2021-06-23 06:08:59 IST,4/26,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
 "psql","client backend",,"SELECT","","select"
-2021-06-23 06:10:40.593 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,9,"idle",2021-06-23 06:08:59 EDT,4/28,0,AUDIT,00000,"statement: DELETE FROM emp WHERE deptno = 40;
+
+2021-06-23 06:10:40.593 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,11,"idle",2021-06-23 06:08:59 IST,4/27,0,AUDIT,00000,"statement: DELETE FROM emp WHERE deptno = 40;
 ",,,,,,,,,"psql","client backend",,"DELETE","","delete"
-2021-06-23 06:10:40.594 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,10,"DELETE",2021-06-23 06:08:59 EDT,4/28,0,ERROR,42P01,"relation ""emp"" does not exist",,,,,,
+
+2021-06-23 06:10:40.594 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,12,"DELETE",2021-06-23 06:08:59 IST,4/27,0,ERROR,42P01,"relation ""emp"" does not exist",,,,,,
 "DELETE FROM emp WHERE deptno = 40;",13,,"psql","client backend",,"DELETE","","error"
-2021-06-23 06:11:02.563 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,11,"idle",2021-06-23 06:08:59 EDT,4/29,0,AUDIT,00000,"statement: DELETE FROM dept WHERE deptno = 40;
+
+2021-06-23 06:11:02.563 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,13,"idle",2021-06-23 06:08:59 IST,4/28,0,AUDIT,00000,"statement: DELETE FROM dept WHERE deptno = 10;
 ",,,,,,,,,"psql","client backend",,"DELETE","","delete"
-2021-06-23 06:11:14.585 EDT,"adminuser","auditdb",60218,"[local]",60d3083b.
-eb3a,12,"idle",2021-06-23 06:08:59 EDT,4/30,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
+
+2021-06-23 06:11:14.585 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,14,"idle",2021-06-23 06:08:59 IST,4/29,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
 "psql","client backend",,"SELECT","","select"
 ```
 
@@ -505,7 +532,7 @@ ALTER USER carol SET edb_audit_statement = "none";
 ```
 
 !!! Note
-    The database administrator can allow a certain user to audit any SQL statements by specifying the `ALTER USER` command and setting the `edb_audit_statement` parameter to any desired value.
+    The database administrator can allow a specific user to audit any SQL statements by specifying the `ALTER USER` command and setting the `edb_audit_statement` parameter to any desired value.
     
 The database session that occurs is the following:
 
@@ -514,6 +541,18 @@ $ psql auditdb carol
 Password for user carol:
 psql.bin (14.0.0)
 Type "help" for help.
+
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+ edb_audit_statement 
+---------------------
+ none
+(1 row)
 
 auditdb=# SET search_path TO edb;
 SET
@@ -527,7 +566,15 @@ INSERT INTO salgrade VALUES (2, 1201, 1400);
 INSERT INTO salgrade VALUES (3, 1401, 2000);
 ```
 
-Setting the `edb_audit_statement` parameter to `none` does not allow auditing any of the SQL statements for `carol` and thereby no audit logs are generated.
+The resulting audit log file contains only the connection authentication information. The setting the `edb_audit_statement` parameter to `none` does not allow auditing any of the SQL statements for `carol`, and thereby no audit logs are generated.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2021-06-29 02:27:26.240 IST,"carol","auditdb",68072,"[local]",60dabd4e.
+109e8,1,"authentication",2021-06-29 02:27:26 IST,4/13,0,AUDIT,00000,"connection authorized: user=carol 
+database=auditdb",,,,,,,,,"","client backend",,"","","connect"
+```
 
 ## Data Manipulation Language Statements
 
