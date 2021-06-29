@@ -15,7 +15,7 @@ CREATE TABLE [ schema. ]<table_name>
    <table_definition>
    PARTITION BY LIST(<column>) [ AUTOMATIC ]
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...)] 
-   [ SUBPARTITION TEMPLATE ]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]
    (<list_partition_definition>[, <list_partition_definition>]...);
 
 Where list_partition_definition is:
@@ -24,6 +24,13 @@ Where list_partition_definition is:
         VALUES (<value>[, <value>]...)
         [TABLESPACE <tablespace_name>]
         [(<subpartition>, ...)]
+
+Where subpartition_template_description is:
+
+      SUBPARTITION TEMPLATE
+        SUBPARTITION [<subpartition_name>] 
+        VALUES (<value>[, <value>]...) 
+        [TABLESPACE <tablespace_name>, ...]
 ```
 
 **Range Partitioning Syntax**
@@ -36,7 +43,7 @@ CREATE TABLE [ schema. ]<table_name>
    PARTITION BY RANGE(<column>[, <column> ]...)
    [INTERVAL (<constant> | <expression>)]
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...)] 
-   [ SUBPARTITION TEMPLATE ]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]
    (<range_partition_definition>[, <range_partition_definition>]...);
 
 Where range_partition_definition is:
@@ -45,6 +52,13 @@ Where range_partition_definition is:
         VALUES LESS THAN (<value>[, <value>]...)
         [TABLESPACE <tablespace_name>]
         [(<subpartition>, ...)]
+
+Where subpartition_template_description is:
+
+      SUBPARTITION TEMPLATE
+        SUBPARTITION [<subpartition_name>] 
+        VALUES LESS THAN (<value>[, <value>]...)
+        [TABLESPACE <tablespace_name>, ...]
 ```
 
 **Hash Partitioning Syntax**
@@ -56,7 +70,7 @@ CREATE TABLE [ schema. ]<table_name>
    <table_definition>
    PARTITION BY HASH(<column>[, <column> ]...)
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...)] 
-   [ SUBPARTITION TEMPLATE ]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]
    [SUBPARTITIONS <num>] [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ]]
    [PARTITIONS <num>] [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ] |
    (<hash_partition_definition>[, <hash_partition_definition>]...);
@@ -66,6 +80,12 @@ Where hash_partition_definition is:
       [PARTITION <partition_name>]
         [TABLESPACE <tablespace_name>]
         [(<subpartition>, ...)]
+
+Where subpartition_template_description is:
+
+      SUBPARTITION TEMPLATE
+        SUBPARTITION [<subpartition_name>] 
+        [TABLESPACE <tablespace_name>, ...]
 ```
 
 **Subpartitioning Syntax**
@@ -92,20 +112,6 @@ where hash_subpartition is:
       SUBPARTITION <subpartition_name>
         [TABLESPACE <tablespace_name>] |
       SUBPARTITIONS <num> [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ]
-```
-
-**Subpartition Template Syntax** 
-
-where subpartition template is:
-
-```text
-[PARTITION <partition_name>]
-  [TABLESPACE <tablespace_name>]
-PARTITION BY (<partition_strategy> ( <column> ) )
-[SUBPARTITION BY (<subpart_strategy>( <column> ) )]
-[SUBPARTITION TEMPLATE]
-  ( <subpartition_description> )
-( <partition_description> )
 ```
 
 **Description**
@@ -167,14 +173,6 @@ Use the `SUBPARTITION TEMPLATE` with a list, range, or hash subpartitioning to c
 `subpartition_name`
 
  The name of the subpartition to be created. Subpartition names must be unique amongst all partitions and subpartitions, and must follow the naming conventions for object identifiers.
-
-`partition_strategy`
-
- The `partition_strategy` specifies partition either by list, range, or hash partitioning method.
-
-`subpart_strategy`
-
- The `subpart_strategy` specifies subpartition either by list, range, or hash subpartitioning method.
 
 `num`
 
