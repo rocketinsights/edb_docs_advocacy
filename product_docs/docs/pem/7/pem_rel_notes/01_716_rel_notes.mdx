@@ -18,65 +18,65 @@ Features, enhancements, bug fixes, and other changes in PEM 7.16 include:
  | Added High Contrast (Beta) theme support. | Enhancement |
  | A warning now alerts the user when connecting to a server version that is no longer supported. | Enhancement |
  | The management user interface for EDB Ark is no longer distributed with PEM. | Change |
- |  Generate new session-id on successful login & login to fix the “Session Fixation” security issue. (1035935) | Bug |
- | Transaction ID or timestamp must be provided during BART restore point-in time recovery operation. (#1067393)| Bug |
- | Allow to take an incremental backup from a parent backup of ‘tar.gz’ format. (1059420) | Bug |
- | Fixed the 'MIB' file validation issue. (900679) | Bug |
- | Updated the “Linux Installation Guide” to point to the correct EPEL repository for each platform. (1025602)  | Bug |
- | Updated the Boost version to avoid segfault in the pemWorker binary. (999681) | Bug |
- | Use the correct local time zone information of the data points in monitoring dashboard line charts. (1023887) | Bug |
- | Fixed potential data type migration problem when upgrading PEM Server to PG v.12. (1044052) | Bug |
- | Fixed configure script issue for Google Cloud instance running RHEL7. | Bug |
- | Fixed the issue related to parenthesis around SQL conditions in the query and also fixed reverse engineering SQL where parenthesis is not properly arranged for View and Materialized View definition. (315838) | Bug |
- | Fixed the pemAgent crash issue by updating the Boost library for each platform. (999681) | Bug |
- | Fixed current and previous alert state related issue during alert script execution when alert state gets clear. (1078828) | Bug |
- | Fixed security issue related to information exposed in Server response header. (1035935) | Bug |
- | Fixed the XSS security issue in the Capacity Manager report. (1035935) | Bug |
- | Fixed the security issue related to PEM configure script where sensitive information should not be logged in the log file. (1035935) | Bug |
- | Fixed security issue related to secure flag for the session cookies. (1035935) | Bug |
- | Fixed security issue related to Content Security Policy (CSP) configuration. (1035935) | Bug |
- | Fixed security issue related to directory listing. (1035935) | Bug |
- | Fixed security issue related to HTTP Strict Transport Security (HSTS) in server response header. (1035935) | Bug |
- | Ensure that the original file format should be retained when saving the same file in SQL editor. | Bug |
- | Added missing comments in reverse engineering SQL for each column of a view. | Bug |
- | Fixed an issue where debugger doesn't work if the search path is set other than 'public'. | Bug |
- | Ensure that schema names starting with 'pg' should be visible in the browser tree when standard_conforming_strings is set to off. | Bug |
- | Fixed SSH tunnel hang issue when the user tries to disconnect the server. | Bug |
- | Fixed an issue where the user is not able to insert the data if the table and columns name contains special characters. | Bug |
- | Fixed an issue where the user is not able to save the new row if the table is empty. | Bug |
- | Fixed save button enable issue when focusing in and out of numeric input field. | Bug |
- | Adjusted the height of the jobstep code block to use maximum space. | Bug |
- | Ensure that the Dictionaries drop-down shows all the dictionaries in the FTS configuration dialog. | Bug |
- | Fixed an issue where copying and pasting a cell with multiple line data will result in multiple rows. | Bug |
- | Ensure that the referenced table should be displayed on foreign key constraints. | Bug |
- | Fixed an issue where conversion of bytea to the binary string results in an error. | Bug |
- | Fixed reverse engineered SQL for partitions when storage parameters are specified. | Bug |
- | Fixed an issue where the entire logs is in red text when the user runs backup and restore. | Bug |
- | Ensure that the user will be able to modify the start value of the Identity column. | Bug |
- | Ensure that RLS Policy node should be searchable using search object. | Bug |
- | Modified the 'Commit' and 'Rollback' query tool button icons. | Bug |
- | Added missing dependencies/dependent and corrected some wrongly identified. | Bug |
- | Fixed an issue where the error message does not have a close button on utility dialogs. | Bug |
- | Fixed CSRF errors when PEM opened in an iframe on Safari browser. | Bug |
- | Fixed text color issue in Explain Analyze for the dark theme. | Bug |
- | Fixed issue where the user was not able to update policy if the policy is created with space. | Bug |
- | Added the 'ORDER BY' clause for the privileges type to fix schema diff issue. | Bug |
- | Fixed an issue when comparing the table with a trigger throwing error in schema diff. | Bug |
- | Corrected DROP SQL syntax for catalog. | Bug |
- | Fixed an issue where AJAX call continues to fire even after disconnecting the database server. | Bug |
- | Ensure that the user should be able to drop the database even if it is connected. | Bug |
- | Clarify some of the differences when running in server mode in documentation. | Bug |
- | Resolve schema diff dependencies by selecting the appropriate node automatically and maintain the order in the generated script. | Bug |
- | Fixed some accessibility issues. | Bug |
- | Update the description of GIN and GiST indexes in the documentation. | Bug |
- | Fixed an issue where --load-server does not allow loading connections that use pg_services. | Bug |
- | Fixed incorrect reverse engineering SQL for foreign key when creating a table. | Bug |
- | Fixed an issue where schema diff is not working when providing the options to Foreign Data Wrapper, Foreign Server, and User Mapping. | Bug |
- | Fixed SQL for Row Level Security which is incorrectly generated. | Bug |
- | Fixed an issue in the query tool when columns are having the same name as JavaScript object internal functions. | Bug |
- | Fixed string indices must be an integer issue for PostgreSQL < 9.3. | Bug |
- | Remove illegal argument from trigger function in trigger DDL statement. | Bug |
- | Fixed excessive CPU usage by stopping the indefinite growth of the graph dataset. | Bug |
- | Fixed an issue where clicking on the 'Generate script' button shows a forever spinner due to pop up blocker. | Bug |
- | Ensure that the 'CREATE SCHEMA' statement should be present in the generated script if the schema is not present in the target database. | Bug |
- | Fixed an issue where custom sequences are not visible when show system objects are set to false. | Bug |
+ |  Generate new session-id on successful login & login to fix the “Session Fixation” security issue. (1035935) | Bug Fix |
+ | Transaction ID or timestamp must be provided during BART restore point-in time recovery operation. (#1067393)| Bug Fix |
+ | Allow to take an incremental backup from a parent backup of ‘tar.gz’ format. (1059420) | Bug Fix |
+ | Fixed the 'MIB' file validation issue. (900679) | Bug Fix |
+ | Updated the “Linux Installation Guide” to point to the correct EPEL repository for each platform. (1025602)  | Bug Fix |
+ | Updated the Boost version to avoid segfault in the pemWorker binary. (999681) | Bug Fix |
+ | Use the correct local time zone information of the data points in monitoring dashboard line charts. (1023887) | Bug Fix |
+ | Fixed potential data type migration problem when upgrading PEM Server to PG v.12. (1044052) | Bug Fix |
+ | Fixed configure script issue for Google Cloud instance running RHEL7. | Bug Fix |
+ | Fixed the issue related to parenthesis around SQL conditions in the query and also fixed reverse engineering SQL where parenthesis is not properly arranged for View and Materialized View definition. (315838) | Bug Fix |
+ | Fixed the pemAgent crash issue by updating the Boost library for each platform. (999681) | Bug Fix |
+ | Fixed current and previous alert state related issue during alert script execution when alert state gets clear. (1078828) | Bug Fix |
+ | Fixed security issue related to information exposed in Server response header. (1035935) | Bug Fix |
+ | Fixed the XSS security issue in the Capacity Manager report. (1035935) | Bug Fix |
+ | Fixed the security issue related to PEM configure script where sensitive information should not be logged in the log file. (1035935) | Bug Fix |
+ | Fixed security issue related to secure flag for the session cookies. (1035935) | Bug Fix |
+ | Fixed security issue related to Content Security Policy (CSP) configuration. (1035935) | Bug Fix |
+ | Fixed security issue related to directory listing. (1035935) | Bug Fix |
+ | Fixed security issue related to HTTP Strict Transport Security (HSTS) in server response header. (1035935) | Bug Fix |
+ | Ensure that the original file format should be retained when saving the same file in SQL editor. | Bug Fix |
+ | Added missing comments in reverse engineering SQL for each column of a view. | Bug Fix |
+ | Fixed an issue where debugger doesn't work if the search path is set other than 'public'. | Bug Fix |
+ | Ensure that schema names starting with 'pg' should be visible in the browser tree when standard_conforming_strings is set to off. | Bug Fix |
+ | Fixed SSH tunnel hang issue when the user tries to disconnect the server. | Bug Fix |
+ | Fixed an issue where the user is not able to insert the data if the table and columns name contains special characters. | Bug Fix |
+ | Fixed an issue where the user is not able to save the new row if the table is empty. | Bug Fix |
+ | Fixed save button enable issue when focusing in and out of numeric input field. | Bug Fix |
+ | Adjusted the height of the jobstep code block to use maximum space. | Bug Fix |
+ | Ensure that the Dictionaries drop-down shows all the dictionaries in the FTS configuration dialog. | Bug Fix |
+ | Fixed an issue where copying and pasting a cell with multiple line data will result in multiple rows. | Bug Fix |
+ | Ensure that the referenced table should be displayed on foreign key constraints. | Bug Fix |
+ | Fixed an issue where conversion of bytea to the binary string results in an error. | Bug Fix |
+ | Fixed reverse engineered SQL for partitions when storage parameters are specified. | Bug Fix |
+ | Fixed an issue where the entire logs is in red text when the user runs backup and restore. | Bug Fix |
+ | Ensure that the user will be able to modify the start value of the Identity column. | Bug Fix |
+ | Ensure that RLS Policy node should be searchable using search object. | Bug Fix |
+ | Modified the 'Commit' and 'Rollback' query tool button icons. | Bug Fix |
+ | Added missing dependencies/dependent and corrected some wrongly identified. | Bug Fix |
+ | Fixed an issue where the error message does not have a close button on utility dialogs. | Bug Fix |
+ | Fixed CSRF errors when PEM opened in an iframe on Safari browser. | Bug Fix |
+ | Fixed text color issue in Explain Analyze for the dark theme. | Bug Fix |
+ | Fixed issue where the user was not able to update policy if the policy is created with space. | Bug Fix |
+ | Added the 'ORDER BY' clause for the privileges type to fix schema diff issue. | Bug Fix |
+ | Fixed an issue when comparing the table with a trigger throwing error in schema diff. | Bug Fix |
+ | Corrected DROP SQL syntax for catalog. | Bug Fix |
+ | Fixed an issue where AJAX call continues to fire even after disconnecting the database server. | Bug Fix |
+ | Ensure that the user should be able to drop the database even if it is connected. | Bug Fix |
+ | Clarify some of the differences when running in server mode in documentation. | Bug Fix |
+ | Resolve schema diff dependencies by selecting the appropriate node automatically and maintain the order in the generated script. | Bug Fix |
+ | Fixed some accessibility issues. | Bug Fix |
+ | Update the description of GIN and GiST indexes in the documentation. | Bug Fix |
+ | Fixed an issue where --load-server does not allow loading connections that use pg_services. | Bug Fix |
+ | Fixed incorrect reverse engineering SQL for foreign key when creating a table. | Bug Fix |
+ | Fixed an issue where schema diff is not working when providing the options to Foreign Data Wrapper, Foreign Server, and User Mapping. | Bug Fix |
+ | Fixed SQL for Row Level Security which is incorrectly generated. | Bug Fix |
+ | Fixed an issue in the query tool when columns are having the same name as JavaScript object internal functions. | Bug Fix |
+ | Fixed string indices must be an integer issue for PostgreSQL < 9.3. | Bug Fix |
+ | Remove illegal argument from trigger function in trigger DDL statement. | Bug Fix |
+ | Fixed excessive CPU usage by stopping the indefinite growth of the graph dataset. | Bug Fix |
+ | Fixed an issue where clicking on the 'Generate script' button shows a forever spinner due to pop up blocker. | Bug Fix |
+ | Ensure that the 'CREATE SCHEMA' statement should be present in the generated script if the schema is not present in the target database. | Bug Fix |
+ | Fixed an issue where custom sequences are not visible when show system objects are set to false. | Bug Fix |

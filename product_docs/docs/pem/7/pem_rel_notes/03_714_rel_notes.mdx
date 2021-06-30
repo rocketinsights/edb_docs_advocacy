@@ -16,80 +16,80 @@ Features, enhancements, bug fixes, and other changes in PEM 7.14 include:
  | Added support for parameter toast_tuple_target and parallel_workers of the table | Enhancement |
  | Added the ability to warn the user if an unsupported, deprecated or unknown browser is detected | Enhancement |
 | Introduced a new v3 version of REST API, which includes SNMP v3 support | Enhancement |
-| Check for proper PEM schema version before running BART specific functions for backward compatibility [981208] | Bug |
-| SQL profiler plugin was not able to load the profiler traces on ppcle machine [991929] | Bug |
-| Fixed server registration through newer version pemWorker to work with an older version of PEM Server [771096] | Bug |
- | PEM SSL certificates and JDBC issue [889103/891270/893358/954539]: User will be able to use JDBC using the certificates generated using sslutils v1.3 | Bug |
-| User is now able to save two filters with same column name in SQL Profiler filter window [987042] | Bug |
-| PEMAgent service should not get disabled after upgrading [994563] | Bug |
-| Fixed an issue where user was not able to change the email group from Agent dialog [995734] | Bug |
-| Ensure all object types have a "System XXX?" property. | Bug |
-| Ensure that the password prompt should not be visible if the database server is in trust authentication mode. | Bug |
-| Fixed an issue where the query tool was unable to load the file which contains the BOM marker. | Bug |
-| Fixed an issue where right-clicking a browser object does not apply to the object on which right-click was fired. | Bug |
-| Ensure that the start and end date should be deleted when clear the selection for pgAgent Job. | Bug |
-| Added multiple drop/delete functionality for the table constraints. | Bug |
-| Fixed copy-paste row issues in View/Edit Data. | Bug |
-| Modified keyboard shortcuts in Query Tool for OSX native support. | Bug |
-| Fixed cursor disappeared issue in the query editor for some of the characters when zoomed out. | Bug |
-| Fixed mouse click issue where it does not select an object in Browser unless the pointer is over the object. | Bug |
-| Fix an issue where the user can not change the value of DateTime picker control using the keyboard. | Bug |
-| Ensure the DROP statements in reverse engineered SQL are properly quoted for all objects. | Bug |
-| Ensure all object names in the title line of the reverse-engineered SQL are not quoted. | Bug |
-| Fixed an issue where like options should be disabled if the relation is not selected while creating a table. | Bug |
-| Fixed calendar opening issue on the exception tab inside the schedules tab of pgAgent. | Bug |
-| Ensure that if the delimiter is set other than comma then download the file as '.txt' file. | Bug |
-| Fixed some accessibility issues in the dialogs. | Bug |
-| Fixed encoding issue while saving data in encoded charset other than 'utf-8'. | Bug |
-| Added schema-qualified dictionary names in FTS configuration to avoid confusion of duplicate names. | Bug |
-| Enable the save button by default when a query tool is opened with CREATE or other scripts. | Bug |
-| Fixed python exception error when a user tries to download the CSV and there is a connection issue. | Bug |
-| Fixed an issue when changing the comments of the procedure with arguments gives error in case of overloading. | Bug |
-| Fixed an issue when the user creates a temporary table with 'on commit drop as' clause. | Bug |
-| Changed the color of selected and hovered item for Select2 dropdown. | Bug |
-| Ensure that Constraint Trigger, Deferrable, Deferred option should be disabled when the user selects EDB-SPL function for the trigger. | Bug |
-| Fixed an issue where changing the values of columns with JSONB or JSON types to NULL. | Bug |
-| Improve the style of the highlighted code after query execution for Dark mode. | Bug |
-| Ensure index dropdown should have existing indexes while creating unique constraints. | Bug |
-| Fixed an issue where columns names should be visible in the order of their creation in the browser tree. | Bug |
-| Fixed an issue where changing the columns in the existing view throws an error. | Bug |
-| Ensure that AlertifyJS should not be visible as a title for alert dialog. | Bug |
-| Changed background pattern for geometry viewer to use #fff for all themes. | Bug |
-| Fix an issue where debugger not showing all arguments anymore after hitting SQL error while debugging. | Bug |
-| Fix an issue where command and statements were parsed incorrectly for Rules. | Bug |
-| Ensure that all the transactions should be canceled before closing the connections when a server is disconnected using PEM. | Bug |
-| Fix accessibility issues for the maximize button of the Alertify dialog. | Bug |
-| Ensure that default sort order should be using the primary key in View/Edit data. | Bug |
-| Fixed an issue where the autovacuum_enabled parameter is added automatically in the RE-SQL when the table has been created using the WITH clause. | Bug |
-| Fixed Firefox monospaced issue by updating the font to the latest version. | Bug |
-| Fixed an issue when the user performs refresh on a large size materialized view. | Bug |
-| Update Flask-SQLAlchemy and SQLAlchemy package which is not working on Windows with Python 3.8. | Bug |
-| Fix syntax error when changing the event type for the existing rule. | Bug |
-| Improve logic to get the DDL statements as a part of the comparison. | Bug |
-| Fixed an issue where users cannot be added if many users already exist. | Bug |
-| Fixed tab key navigation issue for Grant Wizard. | Bug |
-| Fixed generated SQL when any token in FTS Configuration or any option in FTS Dictionary is changed. | Bug |
-| Ensure that OID should be shown in properties for Synonyms. | Bug |
-| Fixed tab key navigation issue for parameters in table dialog. | Bug |
-| Fixed Unicode character issue causing the error on the Python2 environment. | Bug |
-| Fixed an issue where difference SQL is not seen in the schema diff tool for Types. | Bug |
-| Ensure that the switch cell is in sync with switch control for accessibility. | Bug |
-| Fixed an issue where schema diff showing changes in the identical domain constraints. | Bug |
-| Fixed an issue where schema diff marks an identical table as different. | Bug |
-| Fixed the rightmost and bottom tooltip crop issues in the explain query plan. | Bug |
-| Fixed modified SQL issue while adding an exception in pgAgent job schedule. | Bug |
-| Fixes an issue where PEM GUI does not display properly in IE 11. | Bug |
-| Fixed an issue where the identical packages and sequences visible as different in the schema diff tool. | Bug |
-| Added alert message to Reset Layout if any of the panels from Query Tool failed to load. | Bug |
-| Fixed tab key navigation for some dialogs. | Bug |
-| Fixed an issue where the Mode cell of argument grid does not appear completely in the Functions dialog. | Bug |
-| Fixed syntax error while refreshing the existing synonyms. | Bug |
-| Fixed an issue where the mode is not shown in the properties dialog of functions/procedures if all the arguments are "IN" arguments. | Bug |
-| Fixed an issue where the search object module was unable to locate the object in the browser tree. | Bug |
-| Fixed internal server error when the database server is logged in with a non-super user. | Bug |
-| Fixed search object issue when the object name contains special characters. | Bug |
-| Fixed an issue while removing the package body showing wrong modified SQL. | Bug |
-| Fixed an issue where the search object not able to locate pg_toast_* tables in the pg_toast schema. | Bug |
-| Ensure that the query tool context menu should work on the collection nodes. | Bug |
-| Fixed failed to fetch utility error when click on refresh(any option) materialized view. | Bug |
+| Check for proper PEM schema version before running BART specific functions for backward compatibility [981208] | Bug Fix |
+| SQL profiler plugin was not able to load the profiler traces on ppcle machine [991929] | Bug Fix |
+| Fixed server registration through newer version pemWorker to work with an older version of PEM Server [771096] | Bug Fix |
+ | PEM SSL certificates and JDBC issue [889103/891270/893358/954539]: User will be able to use JDBC using the certificates generated using sslutils v1.3 | Bug Fix |
+| User is now able to save two filters with same column name in SQL Profiler filter window [987042] | Bug Fix |
+| PEMAgent service should not get disabled after upgrading [994563] | Bug Fix |
+| Fixed an issue where user was not able to change the email group from Agent dialog [995734] | Bug Fix |
+| Ensure all object types have a "System XXX?" property. | Bug Fix |
+| Ensure that the password prompt should not be visible if the database server is in trust authentication mode. | Bug Fix |
+| Fixed an issue where the query tool was unable to load the file which contains the BOM marker. | Bug Fix |
+| Fixed an issue where right-clicking a browser object does not apply to the object on which right-click was fired. | Bug Fix |
+| Ensure that the start and end date should be deleted when clear the selection for pgAgent Job. | Bug Fix |
+| Added multiple drop/delete functionality for the table constraints. | Bug Fix |
+| Fixed copy-paste row issues in View/Edit Data. | Bug Fix |
+| Modified keyboard shortcuts in Query Tool for OSX native support. | Bug Fix |
+| Fixed cursor disappeared issue in the query editor for some of the characters when zoomed out. | Bug Fix |
+| Fixed mouse click issue where it does not select an object in Browser unless the pointer is over the object. | Bug Fix |
+| Fix an issue where the user can not change the value of DateTime picker control using the keyboard. | Bug Fix |
+| Ensure the DROP statements in reverse engineered SQL are properly quoted for all objects. | Bug Fix |
+| Ensure all object names in the title line of the reverse-engineered SQL are not quoted. | Bug Fix |
+| Fixed an issue where like options should be disabled if the relation is not selected while creating a table. | Bug Fix |
+| Fixed calendar opening issue on the exception tab inside the schedules tab of pgAgent. | Bug Fix |
+| Ensure that if the delimiter is set other than comma then download the file as '.txt' file. | Bug Fix |
+| Fixed some accessibility issues in the dialogs. | Bug Fix |
+| Fixed encoding issue while saving data in encoded charset other than 'utf-8'. | Bug Fix |
+| Added schema-qualified dictionary names in FTS configuration to avoid confusion of duplicate names. | Bug Fix |
+| Enable the save button by default when a query tool is opened with CREATE or other scripts. | Bug Fix |
+| Fixed python exception error when a user tries to download the CSV and there is a connection issue. | Bug Fix |
+| Fixed an issue when changing the comments of the procedure with arguments gives error in case of overloading. | Bug Fix |
+| Fixed an issue when the user creates a temporary table with 'on commit drop as' clause. | Bug Fix |
+| Changed the color of selected and hovered item for Select2 dropdown. | Bug Fix |
+| Ensure that Constraint Trigger, Deferrable, Deferred option should be disabled when the user selects EDB-SPL function for the trigger. | Bug Fix |
+| Fixed an issue where changing the values of columns with JSONB or JSON types to NULL. | Bug Fix |
+| Improve the style of the highlighted code after query execution for Dark mode. | Bug Fix |
+| Ensure index dropdown should have existing indexes while creating unique constraints. | Bug Fix |
+| Fixed an issue where columns names should be visible in the order of their creation in the browser tree. | Bug Fix |
+| Fixed an issue where changing the columns in the existing view throws an error. | Bug Fix |
+| Ensure that AlertifyJS should not be visible as a title for alert dialog. | Bug Fix |
+| Changed background pattern for geometry viewer to use #fff for all themes. | Bug Fix |
+| Fix an issue where debugger not showing all arguments anymore after hitting SQL error while debugging. | Bug Fix |
+| Fix an issue where command and statements were parsed incorrectly for Rules. | Bug Fix |
+| Ensure that all the transactions should be canceled before closing the connections when a server is disconnected using PEM. | Bug Fix |
+| Fix accessibility issues for the maximize button of the Alertify dialog. | Bug Fix |
+| Ensure that default sort order should be using the primary key in View/Edit data. | Bug Fix |
+| Fixed an issue where the autovacuum_enabled parameter is added automatically in the RE-SQL when the table has been created using the WITH clause. | Bug Fix |
+| Fixed Firefox monospaced issue by updating the font to the latest version. | Bug Fix |
+| Fixed an issue when the user performs refresh on a large size materialized view. | Bug Fix |
+| Update Flask-SQLAlchemy and SQLAlchemy package which is not working on Windows with Python 3.8. | Bug Fix |
+| Fix syntax error when changing the event type for the existing rule. | Bug Fix |
+| Improve logic to get the DDL statements as a part of the comparison. | Bug Fix |
+| Fixed an issue where users cannot be added if many users already exist. | Bug Fix |
+| Fixed tab key navigation issue for Grant Wizard. | Bug Fix |
+| Fixed generated SQL when any token in FTS Configuration or any option in FTS Dictionary is changed. | Bug Fix |
+| Ensure that OID should be shown in properties for Synonyms. | Bug Fix |
+| Fixed tab key navigation issue for parameters in table dialog. | Bug Fix |
+| Fixed Unicode character issue causing the error on the Python2 environment. | Bug Fix |
+| Fixed an issue where difference SQL is not seen in the schema diff tool for Types. | Bug Fix |
+| Ensure that the switch cell is in sync with switch control for accessibility. | Bug Fix |
+| Fixed an issue where schema diff showing changes in the identical domain constraints. | Bug Fix |
+| Fixed an issue where schema diff marks an identical table as different. | Bug Fix |
+| Fixed the rightmost and bottom tooltip crop issues in the explain query plan. | Bug Fix |
+| Fixed modified SQL issue while adding an exception in pgAgent job schedule. | Bug Fix |
+| Fixes an issue where PEM GUI does not display properly in IE 11. | Bug Fix |
+| Fixed an issue where the identical packages and sequences visible as different in the schema diff tool. | Bug Fix |
+| Added alert message to Reset Layout if any of the panels from Query Tool failed to load. | Bug Fix |
+| Fixed tab key navigation for some dialogs. | Bug Fix |
+| Fixed an issue where the Mode cell of argument grid does not appear completely in the Functions dialog. | Bug Fix |
+| Fixed syntax error while refreshing the existing synonyms. | Bug Fix |
+| Fixed an issue where the mode is not shown in the properties dialog of functions/procedures if all the arguments are "IN" arguments. | Bug Fix |
+| Fixed an issue where the search object module was unable to locate the object in the browser tree. | Bug Fix |
+| Fixed internal server error when the database server is logged in with a non-super user. | Bug Fix |
+| Fixed search object issue when the object name contains special characters. | Bug Fix |
+| Fixed an issue while removing the package body showing wrong modified SQL. | Bug Fix |
+| Fixed an issue where the search object not able to locate pg_toast_* tables in the pg_toast schema. | Bug Fix |
+| Ensure that the query tool context menu should work on the collection nodes. | Bug Fix |
+| Fixed failed to fetch utility error when click on refresh(any option) materialized view. | Bug Fix |
 

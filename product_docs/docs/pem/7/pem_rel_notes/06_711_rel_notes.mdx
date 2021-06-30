@@ -8,13 +8,13 @@ Features, enhancements, bug fixes, and other changes in PEM 7.11 include:
 | --------- | -----|
 |Added configuration options to avoid a security risk in some environments running shell/batch scripts. The PEM Agent runs shell/batch probes and tasks under its service user account which is typically root (Administrator on Windows). The new options require system administrators to explicitly enable this functionality in the Agent configuration file if required. Note, this change may require users to update their PEM Agent configuration if they are using shell/batch tasks or probes. To return to the behaviour in prior versions of PEM on Windows, set AllowBatchJobSteps to true. To return to the behaviour in prior versions of PEM on Linux, set batch_script_user to root. | Enhancement |
 | Query Plan Analyzer - Analyze query plans in the Graphical Explain tab in the Query Tool. It shows the time spent by each plan node and highlights misestimations between actual and plan. It also shows statistics for each plan node and each table.  | Enhancement |
-| User with 'super_pem_admin' role should be able to see all servers and agents. (922716) | Bug |
-| Ensure backup a partition table should not backup the whole database. | Bug |
-| Fix issue where backup fails for schema name that needs quoting. | Bug |
-| Fix issue where export job fails when deselecting all the columns. | Bug |
-| Fix an error where 'false' string is displayed when we add a new parameter in the Parameters tab, also clear the old value when the user changes the parameter name. | Bug |
-| Ensure the search path is not quoted for Databases. | Bug |
-| Ensure the search path is not quoted for Functions, Procedures and Trigger Functions. | Bug |
-| Fix issue where VALID foreign keys show as NOT VALID in the SQL tab for tables. | Bug |
-| Fixed potential error in the properties dialog for the Code tab. | Bug |
-| Fixed an issue where Datetimepicker control opens when clicking on the label. | Bug |
+| User with 'super_pem_admin' role should be able to see all servers and agents. (922716) | Bug Fix |
+| Ensure backup a partition table should not backup the whole database. | Bug Fix |
+| Fix issue where backup fails for schema name that needs quoting. | Bug Fix |
+| Fix issue where export job fails when deselecting all the columns. | Bug Fix |
+| Fix an error where 'false' string is displayed when we add a new parameter in the Parameters tab, also clear the old value when the user changes the parameter name. | Bug Fix |
+| Ensure the search path is not quoted for Databases. | Bug Fix |
+| Ensure the search path is not quoted for Functions, Procedures and Trigger Functions. | Bug Fix |
+| Fix issue where VALID foreign keys show as NOT VALID in the SQL tab for tables. | Bug Fix |
+| Fixed potential error in the properties dialog for the Code tab. | Bug Fix |
+| Fixed an issue where Datetimepicker control opens when clicking on the label. | Bug Fix |

@@ -12,48 +12,48 @@ Features, enhancements, bug fixes, and other changes in PEM 8.0.1 include:
 | Fixed a regression restoring BART backup when agent is not bound with the BART server. | Enhancement |
 | In addition to the above-listed items, a few other minor bugs have also been fixed. | Enhancement |
 | Option to hide or unhide the Dashboard, Statistics, Dependents, and Dependencies tabs. | Enhancement |
-| Dashboard refresh not displaying BART backups. [Support Ticket # 1046037] | Bug |
-| Allow superuser name containing "-" provided during configuring configure-pem-server.sh script. [Support Ticket # 1055435] | Bug |
-| Close the operating system resources properly during batch probe and command execution to avoid 'too many open files' error. [Support Ticket # 1048713] | Bug |
-| Bundle pgaevent.dll in agent windows installer to suppress event message log error. [Support Ticket # 1106021] | Bug |
-| Fixed the Unicode string handling support in pemAgent. [Support Ticket # 1153153] | Bug |
-| Fixed the issue where BART restore was failing when the agent was not bound with the BART server. [Support Ticket # 1129454] | Bug |
-| Statistics, Dependencies, and Dependants tabs are now closable. Users can add them back using the 'Add panel' option. | Bug |
-| Fixed an issue where pressing the back button will show another instance of the main page inside of the Query Tool tab. | Bug |
-| Added 'Count Rows' option to the partition sub tables. | Bug |
-| Improve the explain plan details by showing popup instead of tooltip on clicking of the specified node. | Bug |
-| Fixed an issue where the focus is not properly set on the filter text editor after closing the error dialog. | Bug |
-| Ensure that username should be visible in the 'Connect to Server' popup when service and user name are both specified. | Bug |
-| Ensure that the 'template1' database should not be visible after pg_upgrade. | Bug |
-| Fixed a false error which is shown while adding a new foreign key from the table dialog when a foreign key already exists and Auto FK Index set to true. | Bug |
-| Fixed an issue where the Save button is enabled by default in Macro. | Bug |
-| Remove the extra line after the Manage Macros menu while clearing all macros. | Bug |
-| Ensure that 'Clear All Rows' should not work if there is no existing macro available and the user does not specify any value. | Bug |
-| Fixed an issue where the server is disconnected with an error message displayed if the user creates Macro with invalid SQL. | Bug |
-| Ensure that the macro query result should be downloaded properly. | Bug |
-| Added appropriate help message and a placeholder for letting users know about the account password expiry for Login/Group Role. | Bug |
-| Ensure that dirty indicator (*) should not be visible when renaming the tabs. | Bug |
-| Fixed an issue where the escape character is shown when the server/database name has some special characters. | Bug |
-| Updated Flask-BabelEx to the latest. | Bug |
-| Fixed an issue where schema diff doesn't show the result of compare if source schema has tables with RLS. | Bug |
-| Fixed an issue where an illegal argument is showing for trigger SQL when a trigger is created for View. | Bug |
-| Fixed autocomplete issue where it is not showing any suggestions if the schema name contains escape characters. | Bug |
-| Fixed an issue where the state of the Save File icon does not match the dirty editor indicator. | Bug |
-| Fixed an issue where the dirty indicator stays active even if all changes were undone. | Bug |
-| Ensure that the rename panel should be disabled when the SQL file opened in the query tool. | Bug |
-| Fixed extra parentheses issue around joins for Views. | Bug |
-| Fixed accessibility issues in schema diff module. | Bug |
-| Fixed an issue on refreshing files in Query Tool. | Bug |
-| Fixed accessibility issues in various dialogs. | Bug |
-| Fixed TypeError exception in schema diff when selected any identical object. | Bug |
-| Fixed an issue where the dependencies tab showing multiple owners for the objects having shared dependencies. | Bug |
-| Fixed an issue of deleting records when the user tries to delete multiple records. | Bug |
-| Ensure that the user should be able to specify an older date for the account expiration of the role/user. | Bug |
-| Fixed an issue where the database list in the new connection window is not visible. | Bug |
-| Added informative message when there is no difference found for schema diff. | Bug |
-| Fixed an issue where sequences are not created. | Bug |
-| Ensure that verbose logs should be visible for Utility (Backup, Maintenance) jobs. | Bug |
-| Ensure that the current value of the sequence should be ignored while comparing using schema diff. | Bug |
-| Fixed an issue where strikethrough is not visible for rows selected for deletion after scrolling. | Bug |
-| Fixed an issue where the user was unable to change the background color for a server. | Bug |
-| Fixed an issue where utility (Backup, Maintenance) jobs are failing when the log level is set to DEBUG. | Bug |
+| Dashboard refresh not displaying BART backups. [Support Ticket # 1046037] | Bug Fix |
+| Allow superuser name containing "-" provided during configuring configure-pem-server.sh script. [Support Ticket # 1055435] | Bug Fix |
+| Close the operating system resources properly during batch probe and command execution to avoid 'too many open files' error. [Support Ticket # 1048713] | Bug Fix |
+| Bundle pgaevent.dll in agent windows installer to suppress event message log error. [Support Ticket # 1106021] | Bug Fix |
+| Fixed the Unicode string handling support in pemAgent. [Support Ticket # 1153153] | Bug Fix |
+| Fixed the issue where BART restore was failing when the agent was not bound with the BART server. [Support Ticket # 1129454] | Bug Fix |
+| Statistics, Dependencies, and Dependants tabs are now closable. Users can add them back using the 'Add panel' option. | Bug Fix |
+| Fixed an issue where pressing the back button will show another instance of the main page inside of the Query Tool tab. | Bug Fix |
+| Added 'Count Rows' option to the partition sub tables. | Bug Fix |
+| Improve the explain plan details by showing popup instead of tooltip on clicking of the specified node. | Bug Fix |
+| Fixed an issue where the focus is not properly set on the filter text editor after closing the error dialog. | Bug Fix |
+| Ensure that username should be visible in the 'Connect to Server' popup when service and user name are both specified. | Bug Fix |
+| Ensure that the 'template1' database should not be visible after pg_upgrade. | Bug Fix |
+| Fixed a false error which is shown while adding a new foreign key from the table dialog when a foreign key already exists and Auto FK Index set to true. | Bug Fix |
+| Fixed an issue where the Save button is enabled by default in Macro. | Bug Fix |
+| Remove the extra line after the Manage Macros menu while clearing all macros. | Bug Fix |
+| Ensure that 'Clear All Rows' should not work if there is no existing macro available and the user does not specify any value. | Bug Fix |
+| Fixed an issue where the server is disconnected with an error message displayed if the user creates Macro with invalid SQL. | Bug Fix |
+| Ensure that the macro query result should be downloaded properly. | Bug Fix |
+| Added appropriate help message and a placeholder for letting users know about the account password expiry for Login/Group Role. | Bug Fix |
+| Ensure that dirty indicator (*) should not be visible when renaming the tabs. | Bug Fix |
+| Fixed an issue where the escape character is shown when the server/database name has some special characters. | Bug Fix |
+| Updated Flask-BabelEx to the latest. | Bug Fix |
+| Fixed an issue where schema diff doesn't show the result of compare if source schema has tables with RLS. | Bug Fix |
+| Fixed an issue where an illegal argument is showing for trigger SQL when a trigger is created for View. | Bug Fix |
+| Fixed autocomplete issue where it is not showing any suggestions if the schema name contains escape characters. | Bug Fix |
+| Fixed an issue where the state of the Save File icon does not match the dirty editor indicator. | Bug Fix |
+| Fixed an issue where the dirty indicator stays active even if all changes were undone. | Bug Fix |
+| Ensure that the rename panel should be disabled when the SQL file opened in the query tool. | Bug Fix |
+| Fixed extra parentheses issue around joins for Views. | Bug Fix |
+| Fixed accessibility issues in schema diff module. | Bug Fix |
+| Fixed an issue on refreshing files in Query Tool. | Bug Fix |
+| Fixed accessibility issues in various dialogs. | Bug Fix |
+| Fixed TypeError exception in schema diff when selected any identical object. | Bug Fix |
+| Fixed an issue where the dependencies tab showing multiple owners for the objects having shared dependencies. | Bug Fix |
+| Fixed an issue of deleting records when the user tries to delete multiple records. | Bug Fix |
+| Ensure that the user should be able to specify an older date for the account expiration of the role/user. | Bug Fix |
+| Fixed an issue where the database list in the new connection window is not visible. | Bug Fix |
+| Added informative message when there is no difference found for schema diff. | Bug Fix |
+| Fixed an issue where sequences are not created. | Bug Fix |
+| Ensure that verbose logs should be visible for Utility (Backup, Maintenance) jobs. | Bug Fix |
+| Ensure that the current value of the sequence should be ignored while comparing using schema diff. | Bug Fix |
+| Fixed an issue where strikethrough is not visible for rows selected for deletion after scrolling. | Bug Fix |
+| Fixed an issue where the user was unable to change the background color for a server. | Bug Fix |
+| Fixed an issue where utility (Backup, Maintenance) jobs are failing when the log level is set to DEBUG. | Bug Fix |
