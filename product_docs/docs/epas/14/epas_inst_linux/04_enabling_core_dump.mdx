@@ -1,0 +1,230 @@
+---
+title: "Enabling Core Dumps"
+---
+
+<div id="enabling_core_dumps" class="registered_link"></div>
+
+You can use core dumps to diagnose or debug errors. A core dump is a file containing a process's address space (memory) when the process terminates unexpectedly. Core dumps may be produced on-demand (such as by a debugger) or automatically upon termination.
+
+## Enabling Core Dumps on a CentOS or RHEL Host
+
+On a CentOS or RHEL 7.x or 8.x, core file creation is disabled by default. To enable the core file generation, follow the following commands:
+
+-   Identify the system's current limit using the `ulimit -c` or `ulimit -a` command. `0` indicates that core file generation is disabled.
+
+    ```text
+    # ulimit -c
+    0
+
+    # ulimit -a
+    core file size          (blocks, -c) 0
+    data seg size           (kbytes, -d) unlimited
+    scheduling priority             (-e) 0
+    file size               (blocks, -f) unlimited
+    pending signals                 (-i) 3756
+    max locked memory       (kbytes, -l) 64
+    max memory size         (kbytes, -m) unlimited
+    open files                      (-n) 1024
+    pipe size            (512 bytes, -p) 8
+    POSIX message queues     (bytes, -q) 819200
+    real-time priority              (-r) 0
+    stack size              (kbytes, -s) 8192
+    cpu time               (seconds, -t) unlimited
+    max user processes              (-u) 3756
+    virtual memory          (kbytes, -v) unlimited
+    file locks                      (-x) unlimited
+    ```
+
+-   Create a new directory to store the core dumps and modify `kernel.core_pattern` to store the dumps in a specified directory:
+
+    ```text
+    mkdir -p /var/coredumps
+    chmod a+w /var/coredumps
+
+    sysctl kernel.core_pattern=/var/coredumps/core-%e-%p
+    kernel.core_pattern = /var/coredumps/core-%e-%p
+    ```
+
+-   Use the following command to persist the `kernel.core_pattern` setting across reboots:
+
+    ```text
+    echo 'kernel.core_pattern=/var/coredumps/core-%e-%p' >> /etc/sysctl.conf
+    ```
+
+-   Enable core dumps in `/etc/security/limits.conf` to allow a user to create core files. Each line describes a limit for a user in the following form:
+
+    ```text
+    <domain>  <type>  <item>  <value>
+       *       soft    core    unlimited
+    ```
+
+    Use `*` to enable the core dump size to unlimited.
+
+-   Set the limit of core file size to `UNLIMITED` by using the following command:
+
+    ```text
+    ulimit -c unlimited
+
+    ulimit -c
+    unlimited
+    ```
+
+-   To set a core limit for the services, add the following setting in `/usr/lib/systemd/system/edb-as-14.service`.
+
+    ```text
+    [Service]
+    LimitCore=Infinity
+    ```
+
+-   Reload the service configuration:
+
+    ```text
+    systemctl daemon-reload
+    ```
+
+-   Modify the global default limit using `systemd`, add the following setting in `/etc/systemd/system.conf`.
+
+    ```
+    DefaultLimitCORE=Infinity
+    ```
+
+-   Restart the `systemd`:
+
+    ```text
+    systemctl daemon-reexec
+    ```
+
+-   Stop and then start Advanced Server:
+
+   ```text
+   systemctl stop edb-as-14
+   systemctl start edb-as-14
+   ```
+
+-   Now, the core dumps are enabled, install the `gdb` tool and debug packages using the following command:   
+
+    ```text
+    yum install gdb
+    debuginfo-install edb-as14 edb-as14-server-contrib edb-as14-server edb-as14-libs
+    ```
+
+-   Replace the path to a core dump file before proceeding to get a backtrace using the `bt` command to analyze output:
+
+    ```text
+    gdb /usr/edb/as14/bin /var/coredumps/core-edb-postgres-65499
+    (gdb) bt full
+    ```
+
+## Enabling Core Dumps on a Debian or Ubuntu Host
+
+On Debian 9, 10 or Ubuntu 18, 20, core file creation is disabled by default. To enable the core file generation, follow the following commands:
+
+-   Identify the system's current limit using the `ulimit -c` or `ulimit -a` command. `0` indicates that core file generation is disabled.
+
+    ```text
+    # ulimit -c
+    0
+
+    # ulimit -a
+    core file size          (blocks, -c) 0
+    data seg size           (kbytes, -d) unlimited
+    scheduling priority             (-e) 0
+    file size               (blocks, -f) unlimited
+    pending signals                 (-i) 7617
+    max locked memory       (kbytes, -l) 65536
+    max memory size         (kbytes, -m) unlimited
+    open files                      (-n) 1024
+    pipe size            (512 bytes, -p) 8
+    POSIX message queues     (bytes, -q) 819200
+    real-time priority              (-r) 0
+    stack size              (kbytes, -s) 8192
+    cpu time               (seconds, -t) unlimited
+    max user processes              (-u) 7617
+    virtual memory          (kbytes, -v) unlimited
+    file locks                      (-x) unlimited
+    ```
+
+-   Create a new directory to store the core dumps and modify `kernel.core_pattern` to store the dumps in a specified directory:
+
+    ```text
+    mkdir -p /var/coredumps
+    chmod a+w /var/coredumps
+
+    sysctl kernel.core_pattern=/var/coredumps/core-%e-%p
+    kernel.core_pattern = /var/coredumps/core-%e-%p
+    ```
+
+-   Use the following command to persist the `kernel.core_pattern` setting across reboots:
+
+    ```text
+    echo 'kernel.core_pattern=/var/coredumps/core-%e-%p' >> /etc/sysctl.conf
+    ```
+
+-   Enable core dumps in `/etc/security/limits.conf` to allow a user to create core files. Each line describes a limit for a user in the following form:
+
+    ```text
+    <domain>  <type>  <item>  <value>
+       *       soft    core    unlimited
+    ```
+
+    Use `*` to enable the core dump size to unlimited.
+
+-   Set the limit of core file size to `UNLIMITED` by using the following command:
+
+    ```text
+    ulimit -c unlimited
+
+    ulimit -c
+    unlimited
+    ```
+
+-   To set a core limit for the services, add the following setting in `/lib/systemd/system/edb-as@.service`.
+
+    ```text
+    [Service]
+    LimitCore=Infinity
+    ```
+
+-   Reload the service configuration:
+
+    ```text
+    systemctl daemon-reload
+    ```
+
+-   Modify the global default limit using `systemd`, add the following setting in `/etc/systemd/system.conf`.
+
+    ```
+    DefaultLimitCORE=Infinity
+    ```
+
+-   Restart the `systemd`:
+
+    ```text
+    systemctl daemon-reexec
+    ```
+
+-   Stop and then start Advanced Server:
+
+   ```text
+   systemctl stop edb-as@14.service
+   systemctl start edb-as@14.service
+   ```
+
+-   Now, the core dumps are enabled, install the `gdb` tool and debug symbols using the following command:   
+
+    ```text
+    apt-get install gdb
+    apt-get install edb-as14 edb-as-contrib edb-as14-server edb-debugger-dbgsym
+    ```
+    
+-   Replace the path to a core dump file before proceeding to get a backtrace using the `bt` command to analyze output:
+
+    ```text
+    gdb /usr/lib/edb-as/14/bin /var/coredumps/core-edb-postgres-21638
+    (gdb) bt full
+    ```
+
+!!! Note
+    -   The debug info packages name on a Debian or Ubuntu host may vary and include `-dbgsym` or `-dbg` suffix. For more information about setting `sources.list` and installing the debug info packages, visit Debian or Ubuntu wiki at <https://wiki.debian.org/HowToGetABacktrace> or <https://wiki.ubuntu.com/Debug%20Symbol%20Packages> respectively.
+    -   The core files can be huge depending on the memory usage, enabling the core dumps on a system may fill up its mass storage over time.
+    

@@ -1,0 +1,24 @@
+---
+title: "Defining the Parent/Child Relationship"
+---
+
+<div id="defining_the_parent_child_relationship" class="registered_link"></div>
+
+For any given row, its parent and its children are determined by the `CONNECT BY` clause. The `CONNECT BY` clause must consist of two expressions compared with the equals (=) operator. In addition, one of these two expressions must be preceded by the keyword, `PRIOR`.
+
+For any given row, to determine its children:
+
+1.  Evaluate `parent_expr` on the given row.
+
+2.  Evaluate `child_expr` on any other row resulting from the evaluation of *table_expression*.
+
+3.  If `parent_expr = child_expr`, then this row is a child node of the given parent row.
+
+4.  Repeat the process for all remaining rows in `table_expression`. All rows that satisfy the equation in step 3 are the children nodes of the given parent row.
+
+!!! Note
+    The evaluation process to determine if a row is a child node occurs on every row returned by `table_expression` before the `WHERE` clause is applied to `table_expression`.
+
+By iteratively repeating this process treating each child node found in the prior steps as a parent, an inverted tree of nodes is constructed. The process is complete when the final set of child nodes has no children of their own - these are the leaf nodes.
+
+A `SELECT` command that includes a `CONNECT BY` clause typically includes the `START WITH` clause. The `START WITH` clause determines the rows that are to be the root nodes - i.e., the rows that are the initial parent nodes upon which the algorithm described previously is to be applied. This is further explained in the following section.

@@ -1,0 +1,27 @@
+---
+title: "Configuring Advanced Server"
+---
+
+<div id="configuring_advanced_server" class="registered_link"></div>
+
+You can easily update parameters that determine the behavior of Advanced Server and supporting components by modifying the following configuration files:
+
+-   The `postgresql.conf` file determines the initial values of Advanced Server configuration parameters.
+-   The `pg_hba.conf` file specifies your preferences for network authentication and authorization.
+-   The `pg_ident.conf` file maps operating system identities (user names) to Advanced Server identities (roles) when using `ident`-based authentication.
+
+For more information about Modifying the postgresql.conf file and Modifying the pg_hba.conf file, see the *EDB Postgres Advanced Server Guide* available from the EDB website at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)
+
+You can use your editor of choice to open a configuration file, or on Windows navigate through the `EDB Postgres` menu to open a file.
+
+![Accessing the configuration files through the Windows system menu](../images/accessing_configuration_files.png)
+
+<div style="text-align: center"> Fig. 1: Accessing the configuration files through the Windows system menu </div>
+
+<div class="toctree" maxdepth="3">
+
+setting_advanced_server_environment_variables connecting_to_advanced_server_with_psql connecting_to_advanced_server_with_the_pgadmin_4_client
+
+</div>

@@ -1,0 +1,105 @@
+---
+title: "Object Type Body Syntax"
+---
+
+<div id="object_type_body_syntax" class="registered_link"></div>
+
+The following is the syntax of the object type body:
+
+```text
+CREATE [ OR REPLACE ] TYPE BODY <name>
+  { IS | AS }
+  <method_spec> [...]
+  [<constructor>] [...]
+END;
+```
+
+where `method_spec` is the following:
+
+`subprogram_spec`
+
+and `subprogram_spec` is the following:
+
+```text
+{ MEMBER | STATIC }
+{ PROCEDURE <proc_name>
+    [ ( [  SELF [ IN | IN OUT ] <name> ]
+        [, parm1 [ IN | IN OUT | OUT ] datatype1
+                 [ DEFAULT value1 ] ]
+        [, parm2 [ IN | IN OUT | OUT ] datatype2
+                 [ DEFAULT value2 ]
+        ] ...)
+    ]
+{ IS | AS }
+  [ PRAGMA AUTONOMOUS_TRANSACTION; ]
+  [ <declarations> ]
+  BEGIN
+    <statement>; ...
+[ EXCEPTION
+    WHEN ... THEN
+      <statement>; ...]
+  END;
+|
+  FUNCTION <func_name>
+    [ ( [  SELF [ IN | IN OUT ] <name> ]
+        [, parm1 [ IN | IN OUT | OUT ] datatype1
+                 [ DEFAULT value1 ] ]
+        [, parm2 [ IN | IN OUT | OUT ] datatype2
+                 [ DEFAULT value2 ]
+        ] ...)
+    ]
+  RETURN <return_type>
+{ IS | AS }
+  [ PRAGMA AUTONOMOUS_TRANSACTION; ]
+  [ <declarations> ]
+  BEGIN
+    <statement>; ...
+[ EXCEPTION
+    WHEN ... THEN
+      <statement>; ...]
+  END;
+```
+
+where `constructor` is:
+
+```text
+CONSTRUCTOR <func_name>
+  [ ( [  SELF [ IN | IN OUT ] <name> ]
+      [, parm1 [ IN | IN OUT | OUT ] datatype1
+               [ DEFAULT value1 ] ]
+      [, parm2 [ IN | IN OUT | OUT ] datatype2
+               [ DEFAULT value2 ]
+      ] ...)
+  ]
+RETURN self AS RESULT
+{ IS | AS }
+[ <declarations> ]
+BEGIN
+  <statement>; ...
+[ EXCEPTION
+  WHEN ... THEN
+    <statement>; ...]
+END;
+```
+
+`name` is an identifier (optionally schema-qualified) assigned to the object type.
+
+`method_spec` denotes the implementation of an instantiable method that was specified in the `CREATE TYPE` command.
+
+If `INSTANTIABLE` was specified or omitted in `method_spec` of the `CREATE TYPE` command, then there must be a `method_spec` for this method in the `CREATE TYPE BODY` command.
+
+If `NOT INSTANTIABLE` was specified in `method_spec` of the `CREATE TYPE` command, then there must be no `method_spec` for this method in the `CREATE TYPE BODY` command.
+
+`subprogram_spec` denotes the specification of a procedure or function and begins with the specification of either `MEMBER` or `STATIC`. The same qualifier must be used as was specified in `subprogram_spec` of the `CREATE TYPE` command.
+
+`proc_name` is an identifier of a procedure specified in the `CREATE TYPE` command. The parameter declarations have the same meaning as described for the `CREATE TYPE` command, and must be specified in the `CREATE TYPE BODY` command in the same manner as specified in the `CREATE TYPE` command.
+
+Include the `CONSTRUCTOR` keyword and function definition to define a constructor function.
+
+`func_name` is an identifier of a function specified in the `CREATE TYPE` command. The parameter declarations have the same meaning as described for the `CREATE TYPE` command, and must be specified in the `CREATE TYPE BODY` command in the same manner as specified in the `CREATE TYPE` command. `return_type` is the data type of the value the function returns and must match `return_type` given in the `CREATE TYPE` command.
+
+`PRAGMA AUTONOMOUS_TRANSACTION` is the directive that sets the procedure or function as an autonomous transaction.
+
+`declarations` are variable, cursor, type, or subprogram declarations. If subprogram declarations are included, they must be declared after all other variable, cursor, and type declarations.
+
+`statement` is an SPL program statement.

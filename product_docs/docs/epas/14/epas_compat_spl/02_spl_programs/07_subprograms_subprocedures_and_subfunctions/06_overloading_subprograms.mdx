@@ -1,0 +1,156 @@
+---
+title: "Overloading Subprograms"
+---
+
+<div id="overloading_subprograms" class="registered_link"></div>
+
+Generally, subprograms of the same type (subprocedure or subfunction) with the same name, and same formal parameter specification can appear multiple times within the same standalone program as long as they are not sibling blocks (that is, the subprograms are not declared in the same local block).
+
+Each subprogram can be individually invoked depending upon the use of qualifiers and the location where the subprogram invocation is made as discussed in the previous sections.
+
+It is however possible to declare subprograms, even as siblings, that are of the same subprogram type and name as long as certain aspects of the formal parameters differ. These characteristics (subprogram type, name, and formal parameter specification) is generally known as a program’s *signature*.
+
+The declaration of multiple subprograms where the signatures are identical except for certain aspects of the formal parameter specification is referred to as subprogram *overloading*.
+
+Thus, the determination of which particular overloaded subprogram is to be invoked is determined by a match of the actual parameters specified by the subprogram invocation and the formal parameter lists of the overloaded subprograms.
+
+Any of the following differences permit overloaded subprograms:
+
+-   The number of formal parameters are different.
+-   At least one pair of data types of the corresponding formal parameters (that is, compared according to the same order of appearance in the formal parameter list) are different, but are not aliases. Data type aliases are discussed later in this section.
+
+Note that the following differences alone do not permit overloaded subprograms:
+
+-   Different formal parameter names
+-   Different parameter modes `(IN, IN OUT, OUT)` for the corresponding formal parameters
+-   For subfunctions, different data types in the `RETURN` clause
+
+As previously indicated, one of the differences allowing overloaded subprograms are different data types.
+
+However, certain data types have alternative names referred to as *aliases*, which can be used for the table definition.
+
+For example, there are fixed length character data types that can be specified as `CHAR` or `CHARACTER`. There are variable length character data types that can be specified as `CHAR VARYING, CHARACTER VARYING, VARCHAR,` or `VARCHAR2`. For integers, there are `BINARY_INTEGER, PLS_INTEGER,` and `INTEGER` data types. For numbers, there are `NUMBER, NUMERIC, DEC,` and `DECIMAL` data types.
+
+For detailed information about the data types supported by Advanced Server, see the *Database Compatibility for Oracle Developers Reference Guide,* available from EDB at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/epas_compat_reference/)
+
+Thus, when attempting to create overloaded subprograms, the formal parameter data types are not considered different if the specified data types are aliases of each other.
+
+It can be determined if certain data types are aliases of other types by displaying the table definition containing the data types in question.
+
+For example, the following table definition contains some data types and their aliases.
+
+```text
+CREATE TABLE data_type_aliases (
+    dt_BLOB             BLOB,
+    dt_LONG_RAW         LONG RAW,
+    dt_RAW              RAW(4),
+    dt_BYTEA            BYTEA,
+    dt_INTEGER          INTEGER,
+    dt_BINARY_INTEGER   BINARY_INTEGER,
+    dt_PLS_INTEGER      PLS_INTEGER,
+    dt_REAL             REAL,
+    dt_DOUBLE_PRECISION DOUBLE PRECISION,
+    dt_FLOAT            FLOAT,
+    dt_NUMBER           NUMBER,
+    dt_DECIMAL          DECIMAL,
+    dt_NUMERIC          NUMERIC,
+    dt_CHAR             CHAR,
+    dt_CHARACTER        CHARACTER,
+    dt_VARCHAR2         VARCHAR2(4),
+    dt_CHAR_VARYING     CHAR VARYING(4),
+    dt_VARCHAR          VARCHAR(4)
+);
+```
+
+Using the PSQL `\d` command to display the table definition, the Type column displays the data type internally assigned to each column based upon its data type in the table definition:
+
+```text
+\d data_type_aliases
+       Column        |         Type         | Modifiers
+---------------------+----------------------+-----------
+ dt_blob             | bytea                |
+ dt_long_raw         | bytea                |
+ dt_raw              | bytea(4)             |
+ dt_bytea            | bytea                |
+ dt_integer          | integer              |
+ dt_binary_integer   | integer              |
+ dt_pls_integer      | integer              |
+ dt_real             | real                 |
+ dt_double_precision | double precision     |
+ dt_float            | double precision     |
+ dt_number           | numeric              |
+ dt_decimal          | numeric              |
+ dt_numeric          | numeric              |
+ dt_char             | character(1)         |
+ dt_character        | character(1)         |
+ dt_varchar2         | character varying(4) |
+ dt_char_varying     | character varying(4) |
+ dt_varchar          | character varying(4) |
+```
+
+In the example, the base set of data types are `bytea, integer, real, double precision, numeric, character`, and `character varying`.
+
+When attempting to declare overloaded subprograms, a pair of formal parameter data types that are aliases would not be sufficient to allow subprogram overloading. Thus, parameters with data types `INTEGER` and `PLS_INTEGER` cannot overload a pair of subprograms, but data types `INTEGER` and `REAL`, or `INTEGER` and `FLOAT`, or `INTEGER` and `NUMBER` can overload the subprograms.
+
+!!! Note
+    The overloading rules based upon formal parameter data types are not compatible with Oracle databases. Generally, the Advanced Server rules are more flexible, and certain combinations are allowed in Advanced Server that would result in an error when attempting to create the procedure or function in Oracle databases.
+
+For certain pairs of data types used for overloading, casting of the arguments specified by the subprogram invocation may be required to avoid an error encountered during runtime of the subprogram. Invocation of a subprogram must include the actual parameter list that can specifically identify the data types. Certain pairs of overloaded data types may require the `CAST` function to explicitly identify data types. For example, pairs of overloaded data types that may require casting during the invocation are `CHAR` and `VARCHAR2`, or `NUMBER` and `REAL`.
+
+The following example shows a group of overloaded subfunctions invoked from within an anonymous block. The executable section of the anonymous block contains the use of the `CAST` function to invoke overloaded functions with certain data types.
+
+```text
+DECLARE
+    FUNCTION add_it (
+        p_add_1     IN BINARY_INTEGER,
+        p_add_2     IN BINARY_INTEGER
+    ) RETURN VARCHAR2
+    IS
+    BEGIN
+        RETURN 'add_it BINARY_INTEGER: ' || TO_CHAR(p_add_1 + p_add_2,9999.9999);
+    END add_it;
+    FUNCTION add_it (
+        p_add_1     IN NUMBER,
+        p_add_2     IN NUMBER
+    ) RETURN VARCHAR2
+    IS
+    BEGIN
+        RETURN 'add_it NUMBER: ' || TO_CHAR(p_add_1 + p_add_2,999.9999);
+    END add_it;
+    FUNCTION add_it (
+        p_add_1     IN REAL,
+        p_add_2     IN REAL
+    ) RETURN VARCHAR2
+    IS
+    BEGIN
+        RETURN 'add_it REAL: ' || TO_CHAR(p_add_1 + p_add_2,9999.9999);
+    END add_it;
+    FUNCTION add_it (
+        p_add_1     IN DOUBLE PRECISION,
+        p_add_2     IN DOUBLE PRECISION
+    ) RETURN VARCHAR2
+    IS
+    BEGIN
+        RETURN 'add_it DOUBLE PRECISION: ' || TO_CHAR(p_add_1 + p_add_2,9999.9999);
+    END add_it;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE(add_it (25, 50));
+    DBMS_OUTPUT.PUT_LINE(add_it (25.3333, 50.3333));
+    DBMS_OUTPUT.PUT_LINE(add_it (TO_NUMBER(25.3333), TO_NUMBER(50.3333)));
+    DBMS_OUTPUT.PUT_LINE(add_it (CAST('25.3333' AS REAL), CAST('50.3333' AS REAL)));
+    DBMS_OUTPUT.PUT_LINE(add_it (CAST('25.3333' AS DOUBLE PRECISION),
+        CAST('50.3333' AS DOUBLE PRECISION)));
+END;
+```
+
+The following is the output displayed from the anonymous block:
+
+```text
+add_it BINARY_INTEGER:    75.0000
+add_it NUMBER:   75.6666
+add_it NUMBER:   75.6666
+add_it REAL:    75.6666
+add_it DOUBLE PRECISION:    75.6666
+```

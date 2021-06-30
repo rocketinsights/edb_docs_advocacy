@@ -1,0 +1,555 @@
+---
+title: "CREATE PUBLIC DATABASE LINK"
+---
+
+<div id="create_public_database_link" class="registered_link"></div>
+
+**Name**
+
+`CREATE [PUBLIC] DATABASE LINK` -- create a new database link.
+
+**Synopsis**
+
+```text
+CREATE [ PUBLIC ] DATABASE LINK <name>
+  CONNECT TO { CURRENT_USER |
+               <username> IDENTIFIED BY '<password>'}
+  USING { postgres_fdw '<fdw_connection_string>' |
+        [ oci ] '<oracle_connection_string>' }
+```
+
+**Description**
+
+`CREATE DATABASE LINK` creates a new database link. A database link is an object that allows a reference to a table or view in a remote database within a `DELETE`, `INSERT`, `SELECT` or `UPDATE` command. A database link is referenced by appending `@dblink` to the table or view name referenced in the SQL command where `dblink` is the name of the database link.
+
+Database links can be public or private. A `public database link` is one that can be used by any user. A `private database link` can be used only by the database link’s owner. Specification of the `PUBLIC` option creates a public database link. If omitted, a private database link is created.
+
+When the `CREATE DATABASE LINK` command is given, the database link name and the given connection attributes are stored in the Advanced Server system table named, `pg_catalog.edb_dblink`. When using a given database link, the database containing the `edb_dblink` entry defining this database link is called the `local database`. The server and database whose connection attributes are defined within the `edb_dblink` entry is called the `remote database`.
+
+A SQL command containing a reference to a database link must be issued while connected to the local database. When the SQL command is executed, the appropriate authentication and connection is made to the remote database to access the table or view to which the `@dblink` reference is appended.
+
+!!! Note
+    A database link cannot be used to access a remote database within a standby database server. Standby database servers are used for high availability, load balancing, and replication.
+
+For information about high availability, load balancing, and replication for Postgres database servers, see the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/high-availability.html>
+
+!!! Note
+    -  For Advanced Server 12, the `CREATE DATABASE LINK` command is tested against and certified for use with Oracle version 10g Release 2 (10.2), Oracle version 11g Release 2 (11.2), and Oracle version 12c Release 1 (12.1).
+    -  The `edb_dblink_oci.rescans` GUC can be set to `SCROLL` or `SERIALIZABLE` at the server level in `postgresql.conf` file. It can also be set at session level using the `SET` command, but the setting will not be applied to existing dblink connections due to dblink connection caching.
+    -  When executing `SELECT` on LOB data of more than 4000 characters, it is advisable to use `edb_dblink_oci.rescans=serializable` to free up the temporary PGA memory and avoid exceeding the `PGA_AGGREGATE_LIMIT`.
+    
+The `edb_dblink_oci` supports both types of rescans: `SCROLL` and `SERIALIZABLE`. By default it is set to `SERIALIZABLE`. When set to `SERIALIZABLE`, `edb_dblink_oci` uses the `SERIALIZABLE` transaction isolation level on the Oracle side, which corresponds to PostgreSQL’s `REPEATABLE READ`.
+
+-   This is necessary as a single PostgreSQL statement can lead to multiple Oracle queries and thereby uses a serializable isolation level to provide consistent results.
+-   A serialization failure may occur due to a table modification concurrent with long-running DML transactions (for example `ADD`, `UPDATE`, or `DELETE` statements). If such a failure occurs, the OCI reports `ORA-08177: can't serialize access for this transaction`, and the application must retry the transaction.
+-   A `SCROLL` rescan will be quick, but with each iteration will reset the current row position to `1`. A `SERIALIZABLE` rescan has performance benefits over a `SCROLL` rescan.
+
+**Parameters**
+
+`PUBLIC`
+
+ Create a public database link that can be used by any user. If omitted, then the database link is private and can only be used by the database link’s owner.
+
+`name`
+
+ The name of the database link.
+
+`username`
+
+ The username to be used for connecting to the remote database.
+
+`CURRENT_USER`
+
+ Include `CURRENT_USER` to specify that Advanced Server should use the user mapping associated with the role that is using the link when establishing a connection to the remote server.
+
+`password`
+
+ The password for `username`.
+
+`postgres_fdw`
+
+ Specifies foreign data wrapper `postgres_fdw` as the connection to a remote Advanced Server database. If `postgres_fdw` has not been installed on the database, use the `CREATE EXTENSION` command to install `postgres_fdw`. For more information, see the `CREATE EXTENSION` command in the PostgreSQL Core documentation at: <https://www.postgresql.org/docs/current/static/sql-createextension.html>
+
+`fdw_connection_string`
+
+ Specify the connection information for the `postgres_fdw` foreign data wrapper.
+
+`oci`
+
+ Specifies a connection to a remote Oracle database. This is Advanced Server’s default behavior.
+
+`oracle_connection_string`
+
+ Specify the connection information for an oci connection.
+
+**Notes**
+
+To create a non-public database link you must have the `CREATE DATABASE LINK` privilege. To create a public database link you must have the `CREATE PUBLIC DATABASE LINK` privilege.
+
+**Setting up an Oracle Instant Client for oci-dblink**
+
+In order to use oci-dblink, an Oracle instant client must be downloaded and installed on the host running the Advanced Server database in which the database link is to be created.
+
+An instant client can be downloaded from the following site:
+
+<http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html>
+
+**Oracle Instant Client for Linux**
+
+The following instructions apply to Linux hosts running Advanced Server.
+
+Be sure the `libaio` library (the Linux-native asynchronous I/O facility) has already been installed on the Linux host running Advanced Server.
+
+The `libaio` library can be installed with the following command:
+
+```text
+yum install libaio
+```
+
+If the Oracle instant client that you've downloaded does not include the file specifically named `libclntsh.so` without a version number suffix, you must create a symbolic link named `libclntsh.so` that points to the downloaded version of the library file. Navigate to the instant client directory and execute the following command:
+
+```text
+ln -s libclntsh.so.version libclntsh.so
+```
+
+Where `version` is the version number of the `libclntsh.so` library. For example:
+
+```text
+ln -s libclntsh.so.12.1 libclntsh.so
+```
+
+When you are executing a SQL command that references a database link to a remote Oracle database, Advanced Server must know where the Oracle instant client library resides on the Advanced Server host.
+
+The `LD_LIBRARY_PATH` environment variable must include the path to the Oracle client installation directory containing the `libclntsh.so` file. For example, assuming the installation directory containing `libclntsh.so` is `/tmp/instantclient`:
+
+```text
+export LD_LIBRARY_PATH=/tmp/instantclient:$LD_LIBRARY_PATH
+```
+
+!!! Note
+    The `LD_LIBRARY_PATH` environment variable setting must be in effect when the `pg_ctl` utility is executed to start or restart Advanced Server.
+
+If you are running the current session as the user account (for example, `enterprisedb`) that will directly invoke `pg_ctl` to start or restart Advanced Server, then be sure to set `LD_LIBRARY_PATH` before invoking `pg_ctl`.
+
+You can set `LD_LIBRARY_PATH` within the `.bash_profile` file under the home directory of the `enterprisedb` user account (that is, set `LD_LIBRARY_PATH` within file `~enterprisedb/.bash_profile`). This ensures that `LD_LIBRARY_PATH` will be set when you log in as `enterprisedb`.
+
+If you are using a Linux service script with the `systemctl` or `service` command to start or restart Advanced Server, you must set `LD_LIBRARY_PATH` so it is in effect when the script invokes the `pg_ctl utility`.
+
+For example, to set an environment variable for Advanced Server, you can create a file named `/etc/systemd/system/edb-as-14.service`; include `/lib/systemd/system/edb-as-14.service` within the file.
+
+Assuming the `LD_LIBRARY_PATH=/tmp/instantclient` you can now include the environment variable by specifying:
+
+```text
+[Service]
+Environment=LD_LIBRARY_PATH=/tmp/instantclient:$LD_LIBRARY_PATH
+Environment=ORACLE_HOME=/tmp/instantclient
+```
+
+Then, use the following command to reload `systemd`:
+
+```text
+systemctl daemon-reload
+```
+
+Then, restart the Advanced Server service with the following command:
+
+```text
+systemctl restart edb-as-14
+```
+
+The particular script file that needs to be modified to include the `LD_LIBRARY_PATH` setting depends upon the Advanced Server version, the Linux system on which it was installed, and whether it was installed with the graphical installer or an RPM package.
+
+See the appropriate version of the *EDB Postgres Advanced Server Installation Guide* to determine the service script that affects the startup environment. The installation guides can be found at the following location:
+
+<https://www.enterprisedb.com/docs>
+
+**Oracle Instant Client for Windows**
+
+The following instructions apply to Windows hosts running Advanced Server.
+
+When you are executing a SQL command that references a database link to a remote Oracle database, Advanced Server must know where the Oracle instant client library resides on the Advanced Server host.
+
+Set the Windows `PATH` system environment variable to include the Oracle client installation directory that contains the `oci.dll` file.
+
+As an alternative you, can set the value of the `oracle_home` configuration parameter in the `postgresql.conf` file. The value specified in the `oracle_home` configuration parameter will override the Windows `PATH` environment variable.
+
+To set the `oracle_home` configuration parameter in the `postgresql.conf` file, edit the file, adding the following line:
+
+```text
+oracle_home = 'lib_directory'
+```
+
+Substitute the name of the Windows directory that contains `oci.dll` for `lib_directory`. For example:
+
+```text
+oracle_home = 'C:/tmp/instantclient_10_2'
+```
+
+After setting the `PATH` environment variable or the `oracle_home` configuration parameter, you must restart the server for the changes to take effect. Restart the server from the Windows Services console.
+
+!!! Note
+    If `tnsnames.ora` is configured in failover mode, and a client:server failure occurs, the client connection will be established with a secondary server (usually a backup server). Later, when the primary server resumes, the client will retain their connection to a secondary server until a new session is established. The new client connections will automatically be established with the primary server. If the primary and secondary servers are out-of-sync, then there is a possibility that the clients that have established a connection to the secondary server and the clients which later connected to the primary server can see a different database view.
+
+**Examples**
+
+**Creating an oci-dblink Database Link**
+
+The following example demonstrates using the `CREATE DATABASE LINK` command to create a database link (named `chicago`) that connects an instance of Advanced Server to an Oracle server via an oci-dblink connection. The connection information tells Advanced Server to log in to Oracle as user `admin`, whose password is `mypassword`. Including the `oci` option tells Advanced Server that this is an oci-dblink connection; the connection string, `'//127.0.0.1/acctg'` specifies the server address and name of the database.
+
+```text
+CREATE DATABASE LINK chicago
+  CONNECT TO admin IDENTIFIED BY 'mypassword'
+  USING oci '//127.0.0.1/acctg';
+```
+
+!!! Note
+    You can specify a hostname in the connection string (in place of an IP address).
+
+**Creating a postgres_fdw Database Link**
+
+The following example demonstrates using the `CREATE DATABASE LINK` command to create a database link (named `bedford`) that connects an instance of Advanced Server to another Advanced Server instance via a `postgres_fdw` foreign data wrapper connection. The connection information tells Advanced Server to log in as user `admin`, whose password is `mypassword`. Including the `postgres_fdw` option tells Advanced Server that this is a `postgres_fdw` connection; the connection string, `'host=127.0.0.1 port=5444 dbname=marketing'` specifies the server address and name of the database.
+
+```text
+CREATE DATABASE LINK bedford
+  CONNECT TO admin IDENTIFIED BY 'mypassword'
+  USING postgres_fdw 'host=127.0.0.1 port=5444 dbname=marketing';
+```
+
+!!! Note
+    You can specify a hostname in the connection string (in place of an IP address).
+
+**Using a Database Link**
+
+The following examples demonstrate using a database link with Advanced Server to connect to an Oracle database. The examples assume that a copy of the Advanced Server sample application’s `emp` table has been created in an Oracle database and a second Advanced Server database cluster with the sample application is accepting connections at port `5443`.
+
+Create a public database link named, `oralink`, to an Oracle database named, `xe`, located at `127.0.0.1` on port `1521`. Connect to the Oracle database with username, `edb`, and password, `password`.
+
+```text
+CREATE PUBLIC DATABASE LINK oralink CONNECT TO edb IDENTIFIED BY 'password'
+USING '//127.0.0.1:1521/xe';
+```
+
+Issue a `SELECT` command on the `emp` table in the Oracle database using database link, `oralink`.
+
+```text
+SELECT * FROM emp@oralink;
+
+ empno | ename  |    job    | mgr  |      hiredate      | sal  | comm | deptno
+-------+--------+-----------+------+--------------------+------+------+--------
+  7369 | SMITH  | CLERK     | 7902 | 17-DEC-80 00:00:00 |  800 |      |     20
+  7499 | ALLEN  | SALESMAN  | 7698 | 20-FEB-81 00:00:00 | 1600 |  300 |     30
+  7521 | WARD   | SALESMAN  | 7698 | 22-FEB-81 00:00:00 | 1250 |  500 |     30
+  7566 | JONES  | MANAGER   | 7839 | 02-APR-81 00:00:00 | 2975 |      |     20
+  7654 | MARTIN | SALESMAN  | 7698 | 28-SEP-81 00:00:00 | 1250 | 1400 |     30
+  7698 | BLAKE  | MANAGER   | 7839 | 01-MAY-81 00:00:00 | 2850 |      |     30
+  7782 | CLARK  | MANAGER   | 7839 | 09-JUN-81 00:00:00 | 2450 |      |     10
+  7788 | SCOTT  | ANALYST   | 7566 | 19-APR-87 00:00:00 | 3000 |      |     20
+  7839 | KING   | PRESIDENT |      | 17-NOV-81 00:00:00 | 5000 |      |     10
+  7844 | TURNER | SALESMAN  | 7698 | 08-SEP-81 00:00:00 | 1500 |    0 |     30
+  7876 | ADAMS  | CLERK     | 7788 | 23-MAY-87 00:00:00 | 1100 |      |     20
+  7900 | JAMES  | CLERK     | 7698 | 03-DEC-81 00:00:00 |  950 |      |     30
+  7902 | FORD   | ANALYST   | 7566 | 03-DEC-81 00:00:00 | 3000 |      |     20
+  7934 | MILLER | CLERK     | 7782 | 23-JAN-82 00:00:00 | 1300 |      |     10
+(14 rows)
+```
+
+Create a private database link named, `fdwlink`, to the Advanced Server database named, `edb`, located on host `192.168.2.22` running on port `5444`. Connect to the Advanced Server database with username, `enterprisedb`, and password, `password`.
+
+```text
+CREATE DATABASE LINK fdwlink CONNECT TO enterprisedb IDENTIFIED BY
+'password' USING postgres_fdw 'host=192.168.2.22 port=5444 dbname=edb';
+```
+
+Display attributes of database links, `oralink` and `fdwlink`, from the local `edb_dblink` system table:
+
+```text
+SELECT lnkname, lnkuser, lnkconnstr FROM pg_catalog.edb_dblink;
+
+ lnkname |   lnkuser    |               lnkconnstr
+---------+--------------+----------------------------------------
+ oralink | edb          | //127.0.0.1:1521/xe
+ fdwlink | enterprisedb |
+(2 rows)
+```
+
+Perform a join of the `emp` table from the Oracle database with the `dept` table from the Advanced Server database:
+
+```text
+SELECT d.deptno, d.dname, e.empno, e.ename, e.job, e.sal, e.comm FROM
+emp@oralink e, dept@fdwlink d WHERE e.deptno = d.deptno ORDER BY 1, 3;
+
+ deptno |   dname    | empno | ename  |    job    | sal  | comm
+--------+------------+-------+--------+-----------+------+------
+     10 | ACCOUNTING |  7782 | CLARK  | MANAGER   | 2450 |
+     10 | ACCOUNTING |  7839 | KING   | PRESIDENT | 5000 |
+     10 | ACCOUNTING |  7934 | MILLER | CLERK     | 1300 |
+     20 | RESEARCH   |  7369 | SMITH  | CLERK     |  800 |
+     20 | RESEARCH   |  7566 | JONES  | MANAGER   | 2975 |
+     20 | RESEARCH   |  7788 | SCOTT  | ANALYST   | 3000 |
+     20 | RESEARCH   |  7876 | ADAMS  | CLERK     | 1100 |
+     20 | RESEARCH   |  7902 | FORD   | ANALYST   | 3000 |
+     30 | SALES      |  7499 | ALLEN  | SALESMAN  | 1600 |  300
+     30 | SALES      |  7521 | WARD   | SALESMAN  | 1250 |  500
+     30 | SALES      |  7654 | MARTIN | SALESMAN  | 1250 | 1400
+     30 | SALES      |  7698 | BLAKE  | MANAGER   | 2850 |
+     30 | SALES      |  7844 | TURNER | SALESMAN  | 1500 |    0
+     30 | SALES      |  7900 | JAMES  | CLERK     |  950 |
+(14 rows)
+```
+
+**Pushdown for an oci Database Link**
+
+When the oci-dblink is used to execute SQL statements on a remote Oracle database, there are certain circumstances where pushdown of the processing occurs on the foreign server.
+
+`Pushdown` refers to the occurrence of processing on the foreign (that is, the remote) server instead of the local client where the SQL statement was issued. Pushdown can result in performance improvement since the data is processed on the remote server before being returned to the local client.
+
+Pushdown applies to statements with the standard SQL join operations (inner join, left outer join, right outer join, and full outer join). Pushdown still occurs even when a sort is specified on the resulting data set.
+
+In order for pushdown to occur, certain basic conditions must be met. The tables involved in the join operation must belong to the same foreign server and use the identical connection information to the foreign server (that is, the same database link defined with the `CREATE DATABASE LINK` command).
+
+In order to determine if pushdown is to be used for a SQL statement, display the execution plan by using the `EXPLAIN` command.
+
+For information about the `EXPLAIN` command, see the PostgreSQL Core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-explain.html>
+
+The following examples use the database link created as shown by the following:
+
+```text
+CREATE PUBLIC DATABASE LINK oralink CONNECT TO edb IDENTIFIED BY 'password'
+USING '//192.168.2.23:1521/xe';
+```
+
+The following example shows the execution plan of an inner join:
+
+```text
+EXPLAIN (verbose,costs off) SELECT d.deptno, d.dname, e.empno, e.ename FROM
+dept@oralink d, emp@oralink e WHERE d.deptno = e.deptno ORDER BY 1, 3;
+
+                                        QUERY PLAN
+--------------------------------------------------------------------------------
+ Foreign Scan
+   Output: d.deptno, d.dname, e.empno, e.ename
+   Relations: (_dblink_dept_1 d) INNER JOIN (_dblink_emp_2 e)
+   Remote Query: SELECT r1.deptno, r1.dname, r2.empno, r2.ename FROM (dept r1 INNER 
+JOIN emp r2 ON ((r1.deptno = r2.deptno))) ORDER BY r1.deptno ASC NULLS LAST, r2.empno ASC NULLS LAST
+(4 rows)
+```
+
+Note that the `INNER JOIN` operation occurs under the Foreign Scan section. The output of this join is the following:
+
+```text
+deptno |   dname    | empno | ename
+-------+------------+-------+--------
+    10 | ACCOUNTING |  7782 | CLARK
+    10 | ACCOUNTING |  7839 | KING
+    10 | ACCOUNTING |  7934 | MILLER
+    20 | RESEARCH   |  7369 | SMITH
+    20 | RESEARCH   |  7566 | JONES
+    20 | RESEARCH   |  7788 | SCOTT
+    20 | RESEARCH   |  7876 | ADAMS
+    20 | RESEARCH   |  7902 | FORD
+    30 | SALES      |  7499 | ALLEN
+    30 | SALES      |  7521 | WARD
+    30 | SALES      |  7654 | MARTIN
+    30 | SALES      |  7698 | BLAKE
+    30 | SALES      |  7844 | TURNER
+    30 | SALES      |  7900 | JAMES
+(14 rows)
+```
+
+The following shows the execution plan of a left outer join:
+
+```text
+EXPLAIN (verbose,costs off) SELECT d.deptno, d.dname, e.empno, e.ename FROM
+dept@oralink d LEFT OUTER JOIN emp@oralink e ON d.deptno = e.deptno ORDER BY 1, 3;
+
+                                        QUERY PLAN
+--------------------------------------------------------------------------------
+ Foreign Scan
+   Output: d.deptno, d.dname, e.empno, e.ename
+   Relations: (_dblink_dept_1 d) LEFT JOIN (_dblink_emp_2 e)
+   Remote Query: SELECT r1.deptno, r1.dname, r2.empno, r2.ename FROM (dept r1 LEFT JOIN 
+emp r2 ON ((r1.deptno = r2.deptno))) ORDER BY r1.deptno ASC NULLS LAST, r2.empno ASC NULLS LAST
+(4 rows)
+```
+
+The output of this join is the following:
+
+```text
+deptno |   dname    | empno | ename
+-------+------------+-------+--------
+    10 | ACCOUNTING |  7782 | CLARK
+    10 | ACCOUNTING |  7839 | KING
+    10 | ACCOUNTING |  7934 | MILLER
+    20 | RESEARCH   |  7369 | SMITH
+    20 | RESEARCH   |  7566 | JONES
+    20 | RESEARCH   |  7788 | SCOTT
+    20 | RESEARCH   |  7876 | ADAMS
+    20 | RESEARCH   |  7902 | FORD
+    30 | SALES      |  7499 | ALLEN
+    30 | SALES      |  7521 | WARD
+    30 | SALES      |  7654 | MARTIN
+    30 | SALES      |  7698 | BLAKE
+    30 | SALES      |  7844 | TURNER
+    30 | SALES      |  7900 | JAMES
+    40 | OPERATIONS |       |
+(15 rows)
+```
+
+The following example shows a case where the entire processing is not pushed down because the `emp` joined table resides locally instead of on the same foreign server.
+
+```text
+EXPLAIN (verbose,costs off) SELECT d.deptno, d.dname, e.empno, e.ename FROM
+dept@oralink d LEFT OUTER JOIN emp e ON d.deptno = e.deptno ORDER BY 1, 3;
+
+                            QUERY PLAN
+------------------------------------------------------------------
+ Sort
+   Output: d.deptno, d.dname, e.empno, e.ename
+   Sort Key: d.deptno, e.empno
+   ->  Hash Left Join
+         Output: d.deptno, d.dname, e.empno, e.ename
+         Hash Cond: (d.deptno = e.deptno)
+         ->  Foreign Scan on _dblink_dept_1 d
+               Output: d.deptno, d.dname, d.loc
+               Remote Query: SELECT deptno, dname, NULL FROM dept
+         ->  Hash
+               Output: e.empno, e.ename, e.deptno
+               ->  Seq Scan on public.emp e
+                     Output: e.empno, e.ename, e.deptno
+(13 rows)
+```
+
+The output of this join is the same as the previous left outer join example.
+
+**Creating a Foreign Table from a Database Link**
+
+!!! Note
+    The procedure described in this section is not compatible with Oracle databases.
+
+After you have created a database link, you can create a foreign table based upon this database link. The foreign table can then be used to access the remote table referencing it with the foreign table name instead of using the database link syntax. Using the database link requires appending `@dblink` to the table or view name referenced in the SQL command where `dblink` is the name of the database link.
+
+This technique can be used for either an oci-dblink connection for remote Oracle access, or a `postgres_fdw` connection for remote Postgres access.
+
+The following example shows the creation of a foreign table to access a remote Oracle table.
+
+First, create a database link as previously described. The following is the creation of a database link named `oralink` for connecting to the Oracle database.
+
+```text
+CREATE PUBLIC DATABASE LINK oralink CONNECT TO edb IDENTIFIED BY 'password'
+USING '//127.0.0.1:1521/xe';
+```
+
+The following query shows the database link:
+
+```text
+SELECT lnkname, lnkuser, lnkconnstr FROM pg_catalog.edb_dblink;
+
+ lnkname | lnkuser |     lnkconnstr
+---------+---------+---------------------
+ oralink | edb     | //127.0.0.1:1521/xe
+(1 row)
+```
+
+When you create the database link, Advanced Server creates a corresponding foreign server. The following query displays the foreign server:
+
+```text
+SELECT srvname, srvowner, srvfdw, srvtype, srvoptions FROM
+pg_foreign_server;
+
+ srvname | srvowner | srvfdw | srvtype |          srvoptions
+---------+----------+--------+---------+-------------------------------
+ oralink |       10 |  14005 |         | {connstr=//127.0.0.1:1521/xe}
+(1 row)
+```
+
+For more information about foreign servers, see the `CREATE SERVER` command in the PostgreSQL Core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createserver.html>
+
+Create the foreign table as shown by the following:
+
+```text
+CREATE FOREIGN TABLE emp_ora (
+    empno           NUMERIC(4),
+    ename           VARCHAR(10),
+    job             VARCHAR(9),
+    mgr             NUMERIC(4),
+    hiredate        TIMESTAMP WITHOUT TIME ZONE,
+    sal             NUMERIC(7,2),
+    comm            NUMERIC(7,2),
+    deptno          NUMERIC(2)
+)
+  SERVER oralink
+  OPTIONS (table_name 'emp', schema_name 'edb'
+);
+```
+
+Note the following in the `CREATE FOREIGN TABLE` command:
+
+-   The name specified in the `SERVER` clause at the end of the `CREATE FOREIGN TABLE` command is the name of the foreign server, which is `oralink` in this example as displayed in the `srvname` column from the query on `pg_foreign_server`.
+-   The table name and schema name are specified in the `OPTIONS` clause by the `table` and `schema` options.
+-   The column names specified in the `CREATE FOREIGN TABLE` command must match the column names in the remote table.
+-   Generally, `CONSTRAINT` clauses may not be accepted or enforced on the foreign table as they are assumed to have been defined on the remote table.
+
+For more information about the `CREATE FOREIGN TABLE` command, see the PostgreSQL Core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createforeigntable.html>
+
+The following is a query on the foreign table:
+
+```text
+SELECT * FROM emp_ora;
+
+ empno | ename  |    job    | mgr  |      hiredate      |   sal   |  comm   | deptno
+-------+--------+-----------+------+--------------------+---------+---------+--------
+  7369 | SMITH  | CLERK     | 7902 | 17-DEC-80 00:00:00 |  800.00 |         |     20
+  7499 | ALLEN  | SALESMAN  | 7698 | 20-FEB-81 00:00:00 | 1600.00 |  300.00 |     30
+  7521 | WARD   | SALESMAN  | 7698 | 22-FEB-81 00:00:00 | 1250.00 |  500.00 |     30
+  7566 | JONES  | MANAGER   | 7839 | 02-APR-81 00:00:00 | 2975.00 |         |     20
+  7654 | MARTIN | SALESMAN  | 7698 | 28-SEP-81 00:00:00 | 1250.00 | 1400.00 |     30
+  7698 | BLAKE  | MANAGER   | 7839 | 01-MAY-81 00:00:00 | 2850.00 |         |     30
+  7782 | CLARK  | MANAGER   | 7839 | 09-JUN-81 00:00:00 | 2450.00 |         |     10
+  7788 | SCOTT  | ANALYST   | 7566 | 19-APR-87 00:00:00 | 3000.00 |         |     20
+  7839 | KING   | PRESIDENT |      | 17-NOV-81 00:00:00 | 5000.00 |         |     10
+  7844 | TURNER | SALESMAN  | 7698 | 08-SEP-81 00:00:00 | 1500.00 |    0.00 |     30
+  7876 | ADAMS  | CLERK     | 7788 | 23-MAY-87 00:00:00 | 1100.00 |         |     20
+  7900 | JAMES  | CLERK     | 7698 | 03-DEC-81 00:00:00 |  950.00 |         |     30
+  7902 | FORD   | ANALYST   | 7566 | 03-DEC-81 00:00:00 | 3000.00 |         |     20
+  7934 | MILLER | CLERK     | 7782 | 23-JAN-82 00:00:00 | 1300.00 |         |     10
+(14 rows)
+```
+
+In contrast, the following is a query on the same remote table, but using the database link instead of the foreign table:
+
+```text
+SELECT * FROM emp@oralink;
+
+ empno | ename  |    job    | mgr  |      hiredate      | sal  | comm | deptno
+-------+--------+-----------+------+--------------------+------+------+--------
+  7369 | SMITH  | CLERK     | 7902 | 17-DEC-80 00:00:00 |  800 |      |     20
+  7499 | ALLEN  | SALESMAN  | 7698 | 20-FEB-81 00:00:00 | 1600 |  300 |     30
+  7521 | WARD   | SALESMAN  | 7698 | 22-FEB-81 00:00:00 | 1250 |  500 |     30
+  7566 | JONES  | MANAGER   | 7839 | 02-APR-81 00:00:00 | 2975 |      |     20
+  7654 | MARTIN | SALESMAN  | 7698 | 28-SEP-81 00:00:00 | 1250 | 1400 |     30
+  7698 | BLAKE  | MANAGER   | 7839 | 01-MAY-81 00:00:00 | 2850 |      |     30
+  7782 | CLARK  | MANAGER   | 7839 | 09-JUN-81 00:00:00 | 2450 |      |     10
+  7788 | SCOTT  | ANALYST   | 7566 | 19-APR-87 00:00:00 | 3000 |      |     20
+  7839 | KING   | PRESIDENT |      | 17-NOV-81 00:00:00 | 5000 |      |     10
+  7844 | TURNER | SALESMAN  | 7698 | 08-SEP-81 00:00:00 | 1500 |    0 |     30
+  7876 | ADAMS  | CLERK     | 7788 | 23-MAY-87 00:00:00 | 1100 |      |     20
+  7900 | JAMES  | CLERK     | 7698 | 03-DEC-81 00:00:00 |  950 |      |     30
+  7902 | FORD   | ANALYST   | 7566 | 03-DEC-81 00:00:00 | 3000 |      |     20
+  7934 | MILLER | CLERK     | 7782 | 23-JAN-82 00:00:00 | 1300 |      |     10
+(14 rows)
+```
+
+!!! Note
+    For backward compatibility reasons, it is still possible to write `USING libpq` rather than `USING postgres_fdw`. However, the `libpq` connector is missing many important optimizations which are present in the `postgres_fdw` connector. Therefore, the `postgres_fdw` connector should be used whenever possible. The `libpq` option is deprecated and may be removed entirely in a future Advanced Server release.
+
+**See Also**
+
+[DROP DATABASE LINK](45_drop_public_database_link/#drop_public_database_link)

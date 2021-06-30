@@ -1,0 +1,53 @@
+---
+title: "Example - Deleting a Partition"
+---
+
+<div id="example_deleting_a_partition" class="registered_link"></div>
+
+The example that follows deletes a partition of the `sales` table. Use the following command to create the `sales` table:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA')
+);
+```
+
+Querying the `ALL_TAB_PARTITIONS` view displays the partition names.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |     high_value
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+(3 rows)
+```
+
+To delete the americas partition from the `sales` table, invoke the following command:
+
+```text
+ALTER TABLE sales DROP PARTITION americas;
+```
+
+Querying the `ALL_TAB_PARTITIONS` view demonstrates that the partition has been successfully deleted.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |     high_value
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+(2 rows)
+```

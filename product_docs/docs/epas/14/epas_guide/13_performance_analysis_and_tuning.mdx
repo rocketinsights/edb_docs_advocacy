@@ -1,0 +1,497 @@
+---
+title: "Performance Analysis and Tuning"
+---
+
+<div id="performance_analysis_and_tuning" class="registered_link"></div>
+
+Advanced Server provides various tools for performance analysis and tuning. These features are described in this section.
+
+## Dynatune
+
+Advanced Server supports dynamic tuning of the database server to make the optimal usage of the system resources available on the host machine on which it is installed. The two parameters that control this functionality are located in the `postgresql.conf` file. These parameters are:
+
+-   `edb_dynatune`
+-   `edb_dynatune_profile`
+
+<div id="edb_dynatune-1" class="registered_link"></div>
+
+### edb_dynatune
+
+`edb_dynatune` determines how much of the host system's resources are to be used by the database server based upon the host machine's total available resources and the intended usage of the host machine.
+
+When Advanced Server is initially installed, the `edb_dynatune` parameter is set in accordance with the selected usage of the host machine on which it was installed - i.e., development machine, mixed use machine, or dedicated server. For most purposes, there is no need for the database administrator to adjust the various configuration parameters in the `postgresql.conf` file in order to improve performance.
+
+You can change the value of the `edb_dynatune` parameter after the initial installation of Advanced Server by editing the `postgresql.conf` file. The postmaster must be restarted in order for the new configuration to take effect.
+
+The `edb_dynatune` parameter can be set to any integer value between `0` and `100`, inclusive. A value of `0`, turns off the dynamic tuning feature thereby leaving the database server resource usage totally under the control of the other configuration parameters in the `postgresql.conf` file.
+
+A low non-zero, value (e.g., 1 - 33) dedicates the least amount of the host machine's resources to the database server. This setting would be used for a development machine where many other applications are being used.
+
+A value in the range of 34 - 66 dedicates a moderate amount of resources to the database server. This setting might be used for a dedicated application server that may have a fixed number of other applications running on the same machine as Advanced Server.
+
+The highest values (e.g., 67 - 100) dedicate most of the server's resources to the database server. This setting would be used for a host machine that is totally dedicated to running Advanced Server.
+
+Once a value of `edb_dynatune` is selected, database server performance can be further fine-tuned by adjusting the other configuration parameters in the `postgresql.conf` file. Any adjusted setting overrides the corresponding value chosen by `edb_dynatune`. You can change the value of a parameter by un-commenting the configuration parameter, specifying the desired value, and restarting the database server.
+
+<div id="edb_dynatune_profile-1" class="registered_link"></div>
+
+### edb_dynatune_profile
+
+The `edb_dynatune_profile` parameter is used to control tuning aspects based upon the expected workload profile on the database server. This parameter takes effect upon startup of the database server.
+
+The possible values for `edb_dynatune_profile` are:
+
+| Value       | Usage                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------- |
+| `oltp`      | Recommended when the database server is processing heavy online transaction processing workloads. |
+| `reporting` | Recommended for database servers used for heavy data reporting.                                   |
+| `mixed`     | Recommended for servers that provide a mix of transaction processing and data reporting.          |
+
+## EDB Wait States
+
+The *EDB wait states* contrib module contains two main components.
+
+**EDB Wait States Background Worker (EWSBW)**
+
+When the wait states background worker is registered as one of the shared preload libraries, EWSBW probes each of the running sessions at regular intervals.
+
+For every session it collects information such as the database to which it is connected, the logged in user of the session, the query running in that session, and the wait events on which it is waiting.
+
+This information is saved in a set of files in a user-configurable path and directory folder given by the `edb_wait_states.directory` parameter to be added to the `postgresql.conf` file. The specified path must be a full, absolute path and not a relative path.
+
+**The following describes the installation process on a Linux system.**
+
+**Step 1:** EDB wait states is installed with the `edb-asxx-server-edb-modules` RPM package where `xx` is the Advanced Server version number.
+
+**Step 2:** To launch the worker, it must be registered in the `postgresql.conf` file using the `shared_preload_libraries` parameter, for example:
+
+```text
+shared_preload_libraries = '$libdir/edb_wait_states'
+```
+
+**Step 3:** Restart the database server. After a successful restart, the background worker begins collecting data.
+
+**Step 4:** To review the data, create the following extension:
+
+```text
+CREATE EXTENSION edb_wait_states;
+```
+
+**Step 5:** To terminate the EDB wait states worker, remove `$libdir/edb_wait_states` from the `shared_preload_libraries` parameter and restart the database server.
+
+**The following describes the installation process on a Windows system.**
+
+**Step 1:** EDB wait states module is installed with the `EDB Modules` installer by invoking StackBuilder Plus utility. Follow the onscreen instructions to complete the installation of the `EDB Modules`.
+
+**Step 2:** To register the worker, modify the `postgresql.conf` file to include the wait states library in the `shared_preload_libraries` configuration parameter. The parameter value must include:
+
+```text
+shared_preload_libraries = '$libdir/edb_wait_states.dll'
+```
+
+The EDB wait states installation places the `edb_wait_states.dll` library file in the following path:
+
+```text
+C:\Program Files\edb\as14\lib\
+```
+
+**Step 3:** Restart the database server for the changes to take effect. After a successful restart, the background worker gets started and starts collecting the data.
+
+**Step 4:** To view the data, create the following extension:
+
+```text
+CREATE EXTENSION edb_wait_states;
+```
+
+The installer places the `edb_wait_states.control` file in the following path:
+
+```text
+C:\Program Files\edb\as14\share\extension
+```
+
+**Terminating the Wait States Worker**
+
+To terminate the EDB wait states worker, use the `DROP EXTENSION` command to drop the `edb_wait_states` extension; then modify the `postgresql.conf` file, removing `$libdir/edb_wait_states.dll` from the `shared_preload_libraries` parameter. Restart the database server after modifying the `postgresql.conf` file to apply your changes.
+
+**The Wait States Interface**
+
+The interface includes the functions listed in the following sections. Each of these functions has common input and output parameters. Those parameters are as follows:
+
+-   **start_ts and end_ts (IN).** Together these specify the time interval and the data within which is to be read. If only `start_ts` is specified, the data starting from `start_ts` is output. If only `end_ts` is provided, data up to `end_ts` is output. If none of those are provided, all the data is output. Every function outputs different data. The output of each function will be explained below.
+-   **query_id (OUT).** Identifies a normalized query. It is internal hash code computed from the query.
+-   **session_id (OUT).** Identifies a session.
+-   **ref_start_ts and ref_end_ts (OUT).** Provide the timestamps of a file containing a particular data point. A data point may be a wait event sample record or a query record or a session record.
+
+The syntax of each function is given in the following sections.
+
+!!! Note
+    The examples shown in the following sections are based on the following three queries executed on four different sessions connected to different databases using different users, simultaneously:
+
+```text
+SELECT schemaname FROM pg_tables, pg_sleep(15) WHERE schemaname <>
+'pg_catalog'; /* ran on 2 sessions */
+SELECT tablename FROM pg_tables, pg_sleep(10) WHERE schemaname <>
+'pg_catalog';
+SELECT tablename, schemaname FROM pg_tables, pg_sleep(10) WHERE schemaname
+<> 'pg_catalog';
+```
+
+### edb_wait_states_data
+
+This function is used to read the data collected by EWSBW.
+
+```text
+edb_wait_states_data(
+  IN start_ts timestamptz default '-infinity'::timestamptz,
+  IN end_ts timestamptz default 'infinity'::timestamptz,
+  OUT session_id int4,
+  OUT <dbname> text,
+  OUT <username> text,
+  OUT <query> text,
+  OUT <query_start_time> timestamptz,
+  OUT <sample_time> timestamptz,
+  OUT <wait_event_type> text,
+  OUT <wait_event> text
+)
+```
+
+This function can be used to find out the following:
+
+The queries running in the given duration (defined by `start_ts` and `end_ts`) in all the sessions, and the wait events, if any, they were waiting on. For example:
+
+```text
+SELECT query, session_id, wait_event_type, wait_event
+  FROM edb_wait_states_data(start_ts, end_ts);
+```
+
+The progress of a session within a given duration (that is, the queries run in a session (session_id = 100000) and the wait events the queries waited on). For example:
+
+```text
+SELECT query, wait_event_type, wait_event
+  FROM edb_wait_states_data(start_ts, end_ts)
+  WHERE session_id = 100000;
+```
+
+The duration for which the samples are available. For example:
+
+```text
+SELECT min(sample_time), max(sample_time)
+  FROM edb_wait_states_data();
+```
+
+**Parameters**
+
+In addition to the common parameters described previously, each row of the output gives the following:
+
+`dbname`
+
+The session's database
+
+`username`
+
+The session's logged in user
+
+`query`
+
+The query running in the session
+
+`query_start_time`
+
+The time when .the query started
+
+`sample_time`
+
+The time when wait event data was collected
+
+`wait_event_type`
+
+The type of wait event the session (backend) is waiting on
+
+`wait_event`
+
+The wait event the session (backend) is waiting on
+
+**Example**
+
+The following is a sample output from the `edb_wait_states_data()` function.
+
+```text
+edb=# SELECT * FROM edb_wait_states_data();
+-[ RECORD 1 ]----+-------------------------------------------------------------------------
+session_id       | 4398
+dbname           | edb
+username         | enterprisedb
+query            | SELECT schemaname FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+query_start_time | 17-AUG-18 11:56:05.271962 -04:00
+sample_time      | 17-AUG-18 11:56:19.700236 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+-[ RECORD 2 ]----+-------------------------------------------------------------------------
+session_id       | 4398
+dbname           | edb
+username         | enterprisedb
+query            | SELECT schemaname FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+query_start_time | 17-AUG-18 11:56:05.271962 -04:00
+sample_time      | 17-AUG-18 11:56:18.699938 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+-[ RECORD 3 ]----+-------------------------------------------------------------------------
+session_id       | 4398
+dbname           | edb
+username         | enterprisedb
+query            | SELECT schemaname FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+query_start_time | 17-AUG-18 11:56:05.271962 -04:00
+sample_time      | 17-AUG-18 11:56:17.700253 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+                    .
+                    .
+                    .
+```
+
+### edb_wait_states_queries
+
+This function gives information about the queries sampled by EWSBW.
+
+```text
+edb_wait_states_queries(
+  IN start_ts timestamptz default '-infinity'::timestamptz,
+  IN end_ts timestamptz default 'infinity'::timestamptz,
+  OUT query_id int8,
+  OUT <query> text,
+  OUT ref_start_ts timestamptz
+  OUT ref_end_ts timestamptz
+)
+```
+
+A new queries file is created periodically and thus, there can be multiple query files generated corresponding to specific intervals.
+
+This function returns all the queries in query files that overlap with the given time interval. A query as shown below, gives all the queries in query files that contained queries sampled between `start_ts` and `end_ts`.
+
+In other words, the function may output queries that did not run in the given interval. To exactly know that the user should use `edb_wait_states_data()`.
+
+```text
+SELECT query FROM edb_wait_states_queries(start_ts, end_ts);
+```
+
+**Parameters**
+
+In addition to the common parameters described previously, each row of the output gives the following:
+
+`query`
+
+Normalized query text
+
+**Example**
+
+The following is a sample output from the `edb_wait_states_queries()` function.
+
+```text
+edb=# SELECT * FROM edb_wait_states_queries();
+-[ RECORD 1 ]+-----------------------------------------------------------------------------
+query_id     | 4292540138852956818
+query        | SELECT schemaname FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+-[ RECORD 2 ]+-----------------------------------------------------------------------------
+query_id     | 3754591102365859187
+query        | SELECT tablename FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+-[ RECORD 3 ]+-----------------------------------------------------------------------------
+query_id     | 349089096300352897
+query        | SELECT tablename, schemaname FROM pg_tables, pg_sleep($1) WHERE schemaname <> $2
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+```
+
+### edb_wait_states_sessions
+
+This function gives information about the sessions sampled by EWSBW.
+
+```text
+edb_wait_states_sessions(
+  IN start_ts timestamptz default '-infinity'::timestamptz,
+  IN end_ts timestamptz default 'infinity'::timestamptz,
+  OUT session_id int4,
+  OUT <dbname> text,
+  OUT <username> text,
+  OUT ref_start_ts timestamptz
+  OUT ref_end_ts timestamptz
+)
+```
+
+This function can be used to identify the databases that were connected and/or which users started those sessions. For example:
+
+```text
+SELECT dbname, username, session_id
+  FROM edb_wait_states_sessions();
+```
+
+Similar to `edb_wait_states_queries()`, this function outputs all the sessions logged in session files that contain sessions sampled within the given interval and not necessarily only the sessions sampled within the given interval. To identify that one should use `edb_wait_states_data()`.
+
+**Parameters**
+
+In addition to the common parameters described previously, each row of the output gives the following:
+
+`dbname`
+
+The database to which the session is connected
+
+`username`
+
+Login user of the session
+
+**Example**
+
+The following is a sample output from the `edb_wait_states_sessions()` function.
+
+```text
+edb=# SELECT * FROM edb_wait_states_sessions();
+-[ RECORD 1 ]+---------------------------------
+session_id   | 4340
+dbname       | edb
+username     | enterprisedb
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+-[ RECORD 2 ]+---------------------------------
+session_id   | 4398
+dbname       | edb
+username     | enterprisedb
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+-[ RECORD 3 ]+---------------------------------
+session_id   | 4410
+dbname       | db1
+username     | user1
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+-[ RECORD 4 ]+---------------------------------
+session_id   | 4422
+dbname       | db2
+username     | user2
+ref_start_ts | 17-AUG-18 11:52:38.698793 -04:00
+ref_end_ts   | 18-AUG-18 11:52:38.698793 -04:00
+```
+
+### edb_wait_states_samples
+
+This function gives information about wait events sampled by EWSBW.
+
+```text
+edb_wait_states_samples(
+  IN start_ts timestamptz default '-infinity'::timestamptz,
+  IN end_ts timestamptz default 'infinity'::timestamptz,
+  OUT query_id int8,
+  OUT session_id int4,
+  OUT <query_start_time> timestamptz,
+  OUT <sample_time> timestamptz,
+  OUT <wait_event_type> text,
+  OUT <wait_event> text
+)
+```
+
+Usually, a user would not be required to call this function directly.
+
+**Parameters**
+
+In addition to the common parameters described previously, each row of the output gives the following:
+
+`query_start_time`
+
+The time when the query started in this session
+
+`sample_time`
+
+The time when wait event data was collected
+
+`wait_event_type`
+
+The type of wait event on which the session is waiting
+
+`wait_event`
+
+The wait event on which the session (backend) is waiting
+
+**Example**
+
+The following is a sample output from the `edb_wait_states_samples()` function.
+
+```text
+edb=# SELECT * FROM edb_wait_states_samples();
+-[ RECORD 1 ]----+---------------------------------
+query_id         | 4292540138852956818
+session_id       | 4340
+query_start_time | 17-AUG-18 11:56:00.39421 -04:00
+sample_time      | 17-AUG-18 11:56:00.699934 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+-[ RECORD 2 ]----+---------------------------------
+query_id         | 4292540138852956818
+session_id       | 4340
+query_start_time | 17-AUG-18 11:56:00.39421 -04:00
+sample_time      | 17-AUG-18 11:56:01.699003 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+-[ RECORD 3 ]----+---------------------------------
+query_id         | 4292540138852956818
+session_id       | 4340
+query_start_time | 17-AUG-18 11:56:00.39421 -04:00
+sample_time      | 17-AUG-18 11:56:02.70001 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+-[ RECORD 4 ]----+---------------------------------
+query_id         | 4292540138852956818
+session_id       | 4340
+query_start_time | 17-AUG-18 11:56:00.39421 -04:00
+sample_time      | 17-AUG-18 11:56:03.700081 -04:00
+wait_event_type  | Timeout
+wait_event       | PgSleep
+                    .
+                    .
+                    .
+```
+
+### edb_wait_states_purge
+
+The function deletes all the sampled data files (queries, sessions and wait event samples) that were created after `start_ts` and aged (rotated) before `end_ts`.
+
+```text
+edb_wait_states_purge(
+  IN start_ts timestamptz default '-infinity'::timestamptz,
+  IN end_ts timestamptz default 'infinity'::timestamptz
+)
+```
+
+Usually a user does not need to run this function. The backend should purge those according to the retention age, but in case, that doesn't happen for some reason, this function may be used.
+
+In order to know the duration for which the samples have been retained, use `edb_wait_states_data()` as explained in the previous examples of that function.
+
+**Example**
+
+The `$PGDATA/edb_wait_states` directory before running `edb_wait_states_purge()`:
+
+```text
+[root@localhost data]# pwd
+/var/lib/edb/as14/data
+[root@localhost data]# ls -l edb_wait_states
+total 12
+-rw------- 1 enterprisedb ...  253 Aug 17 11:56 edb_ws_queries_587836358698793_587922758698793
+-rw------- 1 enterprisedb ... 1600 Aug 17 11:56 edb_ws_samples_587836358698793_587839958698793
+-rw------- 1 enterprisedb ...   94 Aug 17 11:56 edb_ws_sessions_587836358698793_587922758698793
+```
+
+The `$PGDATA/edb_wait_states` directory after running `edb_wait_states_purge()`:
+
+```text
+edb=# SELECT * FROM edb_wait_states_purge();
+ edb_wait_states_purge
+-----------------------
+
+(1 row)
+
+[root@localhost data]# pwd
+/var/lib/edb/as14/data
+[root@localhost data]# ls -l edb_wait_states
+total 0
+```

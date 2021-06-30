@@ -1,0 +1,101 @@
+---
+title: "Using the MULTISET UNION Operator"
+---
+
+<div id="using_the_multiset_union_operator" class="registered_link"></div>
+
+The `MULTISET UNION` operator combines two collections to form a third collection. The signature is:
+
+```text
+<coll_1> MULTISET UNION [ ALL | DISTINCT | UNIQUE ] <coll_2>
+```
+
+Where `coll_1` and `coll_2` specify the names of the collections to combine.
+
+Include the `ALL` keyword to specify that duplicate elements (elements that are present in both `coll_1` and `coll_2`) should be represented in the result, once for each time they are present in the original collections. This is the default behavior of `MULTISET UNION`.
+
+Include the `DISTINCT` or `UNIQUE` keyword to specify that duplicate elements should be included in the result only once. The `DISTINCT` and `UNIQUE` keywords are synonymous.
+
+The following example demonstrates using the `MULTISET UNION` operator to combine two collections (`collection_1` and `collection_2`) into a third collection `(collection_3)`:
+
+```text
+DECLARE
+    TYPE int_arr_typ IS TABLE OF NUMBER(2);
+    collection_1    int_arr_typ;
+    collection_2    int_arr_typ;
+    collection_3    int_arr_typ;
+    v_results       VARCHAR2(50);
+BEGIN
+    collection_1 := int_arr_typ(10,20,30);
+    collection_2 := int_arr_typ(30,40);
+    collection_3 := collection_1 MULTISET UNION ALL collection_2;
+    DBMS_OUTPUT.PUT_LINE('COUNT: ' || collection_3.COUNT);
+    FOR i IN collection_3.FIRST .. collection_3.LAST LOOP
+        IF collection_3(i) IS NULL THEN
+            v_results := v_results || 'NULL ';
+        ELSE
+            v_results := v_results || collection_3(i) || ' ';
+        END IF;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('Results: ' || v_results);
+END;
+
+COUNT: 5
+Results: 10 20 30 30 40
+```
+
+The resulting collection includes one entry for each element in `collection_1` and `collection_2`. If the `DISTINCT` keyword is used, the results are as follows:
+
+```text
+DECLARE
+    TYPE int_arr_typ IS TABLE OF NUMBER(2);
+    collection_1    int_arr_typ;
+    collection_2    int_arr_typ;
+    collection_3    int_arr_typ;
+    v_results       VARCHAR2(50);
+BEGIN
+    collection_1 := int_arr_typ(10,20,30);
+    collection_2 := int_arr_typ(30,40);
+    collection_3 := collection_1 MULTISET UNION DISTINCT collection_2;
+    DBMS_OUTPUT.PUT_LINE('COUNT: ' || collection_3.COUNT);
+    FOR i IN collection_3.FIRST .. collection_3.LAST LOOP
+        IF collection_3(i) IS NULL THEN
+            v_results := v_results || 'NULL ';
+        ELSE
+            v_results := v_results || collection_3(i) || ' ';
+        END IF;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('Results: ' || v_results);
+END;
+
+COUNT: 4
+Results: 10 20 30 40
+```
+
+The resulting collection includes only those members with distinct values. Note in the following example that the `MULTISET UNION DISTINCT` operator also removes duplicate entries that are stored within the same collection:
+
+```text
+DECLARE
+    TYPE int_arr_typ IS TABLE OF NUMBER(2);
+    collection_1    int_arr_typ;
+    collection_2    int_arr_typ;
+    collection_3    int_arr_typ;
+    v_results       VARCHAR2(50);
+BEGIN
+    collection_1 := int_arr_typ(10,20,30,30);
+    collection_2 := int_arr_typ(40,50);
+    collection_3 := collection_1 MULTISET UNION DISTINCT collection_2;
+    DBMS_OUTPUT.PUT_LINE('COUNT: ' || collection_3.COUNT);
+    FOR i IN collection_3.FIRST .. collection_3.LAST LOOP
+        IF collection_3(i) IS NULL THEN
+            v_results := v_results || 'NULL ';
+        ELSE
+            v_results := v_results || collection_3(i) || ' ';
+        END IF;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('Results: ' || v_results);
+END;
+
+COUNT: 5
+Results: 10 20 30 40 50
+```

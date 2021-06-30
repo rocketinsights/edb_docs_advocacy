@@ -1,0 +1,117 @@
+---
+title: "CREATE INDEX"
+---
+
+<div id="create_index" class="registered_link"></div>
+
+**Name**
+
+`CREATE INDEX` -- define a new index.
+
+**Synopsis**
+
+```text
+CREATE [ UNIQUE ] INDEX <name> ON <table>
+  ( { <column> | ( <expression> ) | <constant> } )
+  [ TABLESPACE <tablespace> ]
+  ( { NOPARALLEL | PARALLEL [ <integer> ] } )
+```
+
+**Description**
+
+`CREATE INDEX` constructs an index, `name`, on the specified table. Indexes are primarily used to enhance database performance (though inappropriate use will result in slower performance).
+
+The key field(s) for the index are specified as column names, constants, or as expressions written in parentheses. Multiple fields can be specified to create multicolumn indexes.
+
+An index field can be an expression computed from the values of one or more columns of the table row. This feature can be used to obtain fast access to data based on some transformation of the basic data. For example, an index computed on `UPPER(col)` would allow the clause `WHERE UPPER(col) = 'JIM'` to use an index.
+
+Advanced Server provides the B-tree index method. The B-tree index method is an implementation of Lehman-Yao high-concurrency B-trees.
+
+Indexes are not used for `IS NULL` clauses by default.
+
+All functions and operators used in an index definition must be "immutable", that is, their results must depend only on their arguments and never on any outside influence (such as the contents of another table or the current time). This restriction ensures that the behavior of the index is well-defined. To use a user-defined function in an index expression remember to mark the function immutable when you create it.
+
+If you create an index on a partitioned table, the `CREATE INDEX` command does propagate indexes to the table’s subpartitions.
+
+The `PARALLEL` clause specifies the degree of parallelism used during the creation of an index. The `NOPARALLEL` clause resets the parallelism to the default value; `reloptions` will show the `parallel_workers` parameter as `0`.
+
+!!! Note
+    If you use the `CREATE INDEX... PARALLEL` command to create an index on a table whose definition included the `PARALLEL` clause (at creation), the server will use the `PARALLEL` clause provided with the `CREATE INDEX` command when building a parallel index.
+
+**Parameters**
+
+`UNIQUE`
+
+ Causes the system to check for duplicate values in the table when the index is created (if data already exist) and each time data is added. Attempts to insert or update data which would result in duplicate entries will generate an error.
+
+`name`
+
+ The name of the index to be created. No schema name can be included here; the index is always created in the same schema as its parent table.
+
+`table`
+
+ The name (possibly schema-qualified) of the table to be indexed.
+
+`column`
+
+ The name of a column in the table.
+
+`expression`
+
+ An expression based on one or more columns of the table. The expression usually must be written with surrounding parentheses, as shown in the syntax. However, the parentheses may be omitted if the expression has the form of a function call.
+
+`constant`
+
+ A constant value that can be used as an index key.
+
+ Normally, a row where all indexed columns are NULL is not included in an index. That means that the optimizer cannot use that index for certain queries. To overcome this limitation, you can add a constant to the index, thereby forcing the index to never contain a row where all index columns are NULL.
+
+`tablespace`
+
+ The tablespace in which to create the index. If not specified, `default_tablespace` is used, or the database’s default tablespace if `default_tablespace` is an empty string.
+
+`PARALLEL`
+
+ Specify `PARALLEL` to select a degree of parallelism; set `parallel_workers` parameter equal to the degree of parallelism to create a parallelized index. Alternatively, if you specify `PARALLEL` but no degree of parallelism is listed, an index accepts default parallelism.
+
+`NOPARALLEL`
+
+ Specify `NOPARALLEL` for default execution.
+
+`integer`
+
+ The `integer` indicates the degree of parallelism, which is a number of `parallel_workers` used in the parallel operation to perform a parallel scan on an index.
+
+**Notes**
+
+Up to 32 fields may be specified in a multicolumn index.
+
+**Examples**
+
+To create a B-tree index on the column, `ename`, in the table, `emp`:
+
+```text
+CREATE INDEX name_idx ON emp (ename);
+```
+
+To create the same index as above, but have it reside in the `index_tblspc` tablespace:
+
+```text
+CREATE INDEX name_idx ON emp (ename) TABLESPACE index_tblspc;
+```
+
+You can include a constant value in the index definition (`1`) to create an index that never contains a row where all of the indexed columns are `NULL`:
+
+```text
+CREATE INDEX emp_dob_idx on emp (emp_dob, 1);
+```
+
+To create an index on `name_idx` in the table `emp` with degree of parallelism set to 7:
+
+```text
+CREATE UNIQUE INDEX name_idx ON emp (ename) PARALLEL 7;
+```
+
+**See Also**
+
+[ALTER INDEX](03_alter_index/#alter_index), [DROP INDEX](48_drop_index/#drop_index)

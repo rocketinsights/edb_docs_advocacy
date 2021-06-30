@@ -1,0 +1,283 @@
+---
+title: "Handling Stray Values in a LIST or RANGE Partitioned Table"
+---
+
+<div id="handling_stray_values_in_a_list_or_range_partitioned_table" class="registered_link"></div>
+
+A `DEFAULT` or `MAXVALUE` partition or subpartition will capture any rows that do not meet the other partitioning rules defined for a table.
+
+**Defining a DEFAULT Partition**
+
+A `DEFAULT` partition will capture any rows that do not fit into any other partition in a `LIST` partitioned (or subpartitioned) table. If you do not include a `DEFAULT` rule, any row that does not match one of the values in the partitioning constraints will result in an error. Each `LIST` partition or subpartition may have its own `DEFAULT` rule.
+
+The syntax of a `DEFAULT` rule is:
+
+```text
+PARTITION [<partition_name>] VALUES (DEFAULT)
+```
+
+Where `partition_name` specifies the name of the partition or subpartition that will store any rows that do not match the rules specified for other partitions.
+
+The last example created a list partitioned table in which the server decided which partition to store the data based upon the value of the `country` column. If you attempt to add a row in which the value of the `country` column contains a value not listed in the rules, Advanced Server reports an error.
+
+```text
+edb=# INSERT INTO sales VALUES
+edb-#  (40, '3000x', 'IRELAND', '01-Mar-2012', '45000');
+ERROR:  no partition of relation "sales_2012" found for row
+DETAIL:  Partition key of the failing row contains (country) = (IRELAND).
+```
+
+The following example creates the same table, but adds a `DEFAULT` partition. The server will store any rows that do not match a value specified in the partitioning rules for `europe, asia`, or `americas` partitions in the `others` partition.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA'),
+  PARTITION others VALUES (DEFAULT)
+);
+```
+
+To test the `DEFAULT` partition, add row with a value in the `country` column that does not match one of the countries specified in the partitioning constraints.
+
+```text
+INSERT INTO sales VALUES
+  (40, '3000x', 'IRELAND', '01-Mar-2012', '45000');
+```
+
+Querying the contents of the `sales` table confirms that the previously rejected row is now stored in the `sales_others` partition.
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales;
+    tableoid    | dept_no | part_no | country  |        date        | amount
+----------------+---------+---------+----------+--------------------+--------
+ sales_americas |      40 | 9519b   | US       | 12-APR-12 00:00:00 | 145000
+ sales_americas |      40 | 4577b   | US       | 11-NOV-12 00:00:00 |  25000
+ sales_americas |      30 | 7588b   | CANADA   | 14-DEC-12 00:00:00 |  50000
+ sales_americas |      30 | 9519b   | CANADA   | 01-FEB-12 00:00:00 |  75000
+ sales_americas |      30 | 4519b   | CANADA   | 08-APR-12 00:00:00 | 120000
+ sales_americas |      40 | 3788a   | US       | 12-MAY-12 00:00:00 |   4950
+ sales_americas |      40 | 4788a   | US       | 23-SEP-12 00:00:00 |   4950
+ sales_americas |      40 | 4788b   | US       | 09-OCT-12 00:00:00 |  15000
+ sales_europe   |      10 | 4519b   | FRANCE   | 17-JAN-12 00:00:00 |  45000
+ sales_europe   |      10 | 9519b   | ITALY    | 07-JUL-12 00:00:00 |  15000
+ sales_europe   |      10 | 9519a   | FRANCE   | 18-AUG-12 00:00:00 | 650000
+ sales_europe   |      10 | 9519b   | FRANCE   | 18-AUG-12 00:00:00 | 650000
+ sales_asia     |      20 | 3788a   | INDIA    | 01-MAR-12 00:00:00 |  75000
+ sales_asia     |      20 | 3788a   | PAKISTAN | 04-JUN-12 00:00:00 |  37500
+ sales_asia     |      20 | 3788b   | INDIA    | 21-SEP-12 00:00:00 |   5090
+ sales_asia     |      20 | 4519a   | INDIA    | 18-OCT-12 00:00:00 | 650000
+ sales_asia     |      20 | 4519b   | INDIA    | 02-DEC-12 00:00:00 |   5090
+ sales_others   |      40 | 3000x   | IRELAND  | 01-MAR-12 00:00:00 |  45000
+(18 rows)
+```
+
+Advanced Server provides the following methods to re-assign the contents of a `DEFAULT` partition or subpartition:
+
+-   You can use the `ALTER TABLE… ADD PARTITION` command to add a partition to a table with a `DEFAULT` rule as long as there are no conflicting values between existing rows in the table and the values of the partition to be added. You can alternatively use the `ALTER TABLE… SPLIT PARTITION` command to split an existing partition. Examples are shown following this bullet point list.
+-   You can use the `ALTER TABLE… ADD SUBPARTITION` command to add a subpartition to a table with a `DEFAULT` rule as long as there are no conflicting values between existing rows in the table and the values of the subpartition to be added. You can alternatively use the `ALTER TABLE… SPLIT SUBPARTITION` command to split an existing subpartition.
+
+**Adding a Partition to a Table with a DEFAULT Partition**
+
+Using the table that was created with the `CREATE TABLE sales` command shown at the beginning of this section, the following shows use of the `ALTER TABLE... ADD PARTITION` command assuming there is no conflict of values between the existing rows in the table and the values of the partition to be added.
+
+```text
+edb=# ALTER TABLE sales ADD PARTITION africa values ('SOUTH AFRICA', 'KENYA');
+ALTER TABLE
+```
+
+However, the following shows the error when there are conflicting values when the following rows have been inserted into the table.
+
+```text
+edb=# INSERT INTO sales (dept_no, country) VALUES
+(1,'FRANCE'),(2,'INDIA'),(3,'US'),(4,'SOUTH AFRICA'),(5,'NEPAL');
+INSERT 0 5
+```
+
+Row `(4,'SOUTH AFRICA')` conflicts with the `VALUES` list in the `ALTER TABLE... ADD PARTITION` statement, thus resulting in an error.
+
+```text
+edb=# ALTER TABLE sales ADD PARTITION africa values ('SOUTH AFRICA', 'KENYA');
+ERROR:  updated partition constraint for default partition "sales_others"
+would be violated by some row
+```
+
+**Splitting a DEFAULT Partition**
+
+The following example splits a `DEFAULT` partition, redistributing the partition's content between two new partitions. The table was created with the `CREATE TABLE sales` command shown at the beginning of this section.
+
+The following inserts rows into the table including rows into the `DEFAULT` partition.
+
+```text
+INSERT INTO sales VALUES
+  (10, '4519b', 'FRANCE', '17-Jan-2012', '45000'),
+  (10, '9519b', 'ITALY', '07-Jul-2012', '15000'),
+  (20, '3788a', 'INDIA', '01-Mar-2012', '75000'),
+  (20, '3788a', 'PAKISTAN', '04-Jun-2012', '37500'),
+  (30, '9519b', 'US', '12-Apr-2012', '145000'),
+  (30, '7588b', 'CANADA', '14-Dec-2012', '50000'),
+  (40, '4519b', 'SOUTH AFRICA', '08-Apr-2012', '120000'),
+  (40, '4519b', 'KENYA', '08-Apr-2012', '120000'),
+  (50, '3788a', 'CHINA', '12-May-2012', '4950');
+```
+
+The partitions include the `DEFAULT others` partition.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |     high_value
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+ OTHERS         | DEFAULT
+(4 rows)
+```
+
+The following shows the rows distributed amongst the partitions.
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales;
+ tableoid     | dept_no| part_no |   country    |        date        | amount
+--------------+--------+---------+--------------+--------------------+-------
+sales_americas|     30 | 9519b   | US           | 12-APR-12 00:00:00 |145000
+sales_americas|     30 | 7588b   | CANADA       | 14-DEC-12 00:00:00 | 50000
+sales_europe  |     10 | 4519b   | FRANCE       | 17-JAN-12 00:00:00 | 45000
+sales_europe  |     10 | 9519b   | ITALY        | 07-JUL-12 00:00:00 | 15000
+sales_asia    |     20 | 3788a   | INDIA        | 01-MAR-12 00:00:00 | 75000
+sales_asia    |     20 | 3788a   | PAKISTAN     | 04-JUN-12 00:00:00 | 37500
+sales_others  |     40 | 4519b   | SOUTH AFRICA | 08-APR-12 00:00:00 |120000
+sales_others  |     40 | 4519b   | KENYA        | 08-APR-12 00:00:00 |120000
+sales_others  |     50 | 3788a   | CHINA        | 12-MAY-12 00:00:00 |  4950
+(9 rows)
+```
+
+The following command splits the `DEFAULT others` partition into two partitions named `africa` and `others`.
+
+```text
+ALTER TABLE sales SPLIT PARTITION others VALUES
+  ('SOUTH AFRICA', 'KENYA')
+  INTO (PARTITION africa, PARTITION others);
+```
+
+The partitions now include the `africa` partition along with the `DEFAULT others` partition.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |       high_value
+----------------+-------------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+ AFRICA         | 'SOUTH AFRICA', 'KENYA'
+ OTHERS         | DEFAULT
+(5 rows)
+```
+
+The following shows that the rows have been redistributed across the new partitions.
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales;
+ tableoid      |dept_no | part_no |   country   |        date        | amount
+---------------+--------+---------+-------------+--------------------+-------
+sales_americas |     30 | 9519b   | US          | 12-APR-12 00:00:00 |145000
+sales_americas |     30 | 7588b   | CANADA      | 14-DEC-12 00:00:00 | 50000
+sales_europe   |     10 | 4519b   | FRANCE      | 17-JAN-12 00:00:00 | 45000
+sales_europe   |     10 | 9519b   | ITALY       | 07-JUL-12 00:00:00 | 15000
+sales_asia     |     20 | 3788a   | INDIA       | 01-MAR-12 00:00:00 | 75000
+sales_asia     |     20 | 3788a   | PAKISTAN    | 04-JUN-12 00:00:00 | 37500
+sales_africa   |     40 | 4519b   | SOUTH AFRICA| 08-APR-12 00:00:00 |120000
+sales_africa   |     40 | 4519b   | KENYA       | 08-APR-12 00:00:00 |120000
+sales_others_1 |     50 | 3788a   | CHINA       | 12-MAY-12 00:00:00 | 4950
+(9 rows)
+```
+
+**Defining a MAXVALUE Partition**
+
+A `MAXVALUE` partition (or subpartition) will capture any rows that do not fit into any other partition in a range-partitioned (or subpartitioned) table. If you do not include a `MAXVALUE` rule, any row that exceeds the maximum limit specified by the partitioning rules will result in an error. Each partition or subpartition may have its own `MAXVALUE` partition.
+
+The syntax of a `MAXVALUE` rule is:
+
+```text
+PARTITION [<partition_name>] VALUES LESS THAN (MAXVALUE)
+```
+
+Where `partition_name` specifies the name of the partition that will store any rows that do not match the rules specified for other partitions.
+
+The last example created a range-partitioned table in which the data was partitioned based upon the value of the `date` column. If you attempt to add a row with a `date` that exceeds a date listed in the partitioning constraints, Advanced Server reports an error.
+
+```text
+edb=# INSERT INTO sales VALUES
+edb-#   (40, '3000x', 'IRELAND', '01-Mar-2013', '45000');
+ERROR:  no partition of relation "sales" found for row
+DETAIL:  Partition key of the failing row contains (date) = (01-MAR-13 00:00:00).
+```
+
+The following `CREATE TABLE` command creates the same table, but with a `MAXVALUE` partition. Instead of throwing an error, the server will store any rows that do not match the previous partitioning constraints in the `others` partition.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+(
+  PARTITION q1_2012 VALUES LESS THAN('2012-Apr-01'),
+  PARTITION q2_2012 VALUES LESS THAN('2012-Jul-01'),
+  PARTITION q3_2012 VALUES LESS THAN('2012-Oct-01'),
+  PARTITION q4_2012 VALUES LESS THAN('2013-Jan-01'),
+  PARTITION others VALUES LESS THAN (MAXVALUE)
+);
+```
+
+To test the `MAXVALUE` partition, add a row with a value in the `date` column that exceeds the last date value listed in a partitioning rule. The server will store the row in the `others` partition.
+
+```text
+INSERT INTO sales VALUES
+  (40, '3000x', 'IRELAND', '01-Mar-2013', '45000');
+```
+
+Querying the contents of the `sales` table confirms that the previously rejected row is now stored in the `sales_others` partition.
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales;
+   tableoid    | dept_no | part_no | country  |        date        | amount
+---------------+---------+---------+----------+--------------------+--------
+ sales_q1_2012 |      10 | 4519b   | FRANCE   | 17-JAN-12 00:00:00 |  45000
+ sales_q1_2012 |      20 | 3788a   | INDIA    | 01-MAR-12 00:00:00 |  75000
+ sales_q1_2012 |      30 | 9519b   | CANADA   | 01-FEB-12 00:00:00 |  75000
+ sales_q2_2012 |      40 | 9519b   | US       | 12-APR-12 00:00:00 | 145000
+ sales_q2_2012 |      20 | 3788a   | PAKISTAN | 04-JUN-12 00:00:00 |  37500
+ sales_q2_2012 |      30 | 4519b   | CANADA   | 08-APR-12 00:00:00 | 120000
+ sales_q2_2012 |      40 | 3788a   | US       | 12-MAY-12 00:00:00 |   4950
+ sales_q3_2012 |      10 | 9519b   | ITALY    | 07-JUL-12 00:00:00 |  15000
+ sales_q3_2012 |      10 | 9519a   | FRANCE   | 18-AUG-12 00:00:00 | 650000
+ sales_q3_2012 |      10 | 9519b   | FRANCE   | 18-AUG-12 00:00:00 | 650000
+ sales_q3_2012 |      20 | 3788b   | INDIA    | 21-SEP-12 00:00:00 |   5090
+ sales_q3_2012 |      40 | 4788a   | US       | 23-SEP-12 00:00:00 |   4950
+ sales_q4_2012 |      40 | 4577b   | US       | 11-NOV-12 00:00:00 |  25000
+ sales_q4_2012 |      30 | 7588b   | CANADA   | 14-DEC-12 00:00:00 |  50000
+ sales_q4_2012 |      40 | 4788b   | US       | 09-OCT-12 00:00:00 |  15000
+ sales_q4_2012 |      20 | 4519a   | INDIA    | 18-OCT-12 00:00:00 | 650000
+ sales_q4_2012 |      20 | 4519b   | INDIA    | 02-DEC-12 00:00:00 |   5090
+ sales_others  |      40 | 3000x   | IRELAND  | 01-MAR-13 00:00:00 |  45000
+(18 rows)
+```
+
+Please note that Advanced Server does not have a way to re-assign the contents of a `MAXVALUE` partition or subpartition.
+
+-   You cannot use the `ALTER TABLE… ADD PARTITION` statement to add a partition to a table with a `MAXVALUE` rule, but you can use the `ALTER TABLE… SPLIT PARTITION` statement to split an existing partition.
+-   You cannot use the `ALTER TABLE… ADD SUBPARTITION` statement to add a subpartition to a table with a `MAXVALUE` rule , but you can split an existing subpartition with the `ALTER TABLE… SPLIT SUBPARTITION` statement.

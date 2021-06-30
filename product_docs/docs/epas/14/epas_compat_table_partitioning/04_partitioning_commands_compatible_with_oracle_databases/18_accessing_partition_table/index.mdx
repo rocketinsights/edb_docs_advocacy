@@ -1,0 +1,146 @@
+---
+title: "Accessing a PARTITION or SUBPARTITION"
+---
+
+<div id="accessing_partition_table" class="registered_link"></div>
+
+For a partitioned table, you can access the partition or subpartition using `PARTITION part_name` or `SUBPARTITION subpart_name`. The following example creates a partitioned table `sales` that is range-partitioned by `date` and subpartitioned using list partitioning by the `country` column.  
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+  SUBPARTITION BY LIST(country)
+(
+  PARTITION q1_2020 
+    VALUES LESS THAN('2020-Apr-01')
+    (
+      SUBPARTITION q1_europe VALUES ('FRANCE', 'ITALY'),
+      SUBPARTITION q1_asia VALUES ('INDIA', 'PAKISTAN'),
+      SUBPARTITION q1_americas VALUES ('US', 'CANADA')
+    ), 
+  PARTITION q2_2020 
+    VALUES LESS THAN('2020-Jul-01')
+    (
+      SUBPARTITION q2_europe VALUES ('FRANCE', 'ITALY'),
+      SUBPARTITION q2_asia VALUES ('INDIA', 'PAKISTAN'),
+      SUBPARTITION q2_americas VALUES ('US', 'CANADA')
+    )
+);
+``` 
+
+The `SELECT` statement shows two partitions; each partition has three subpartitions.
+
+```text
+edb=# SELECT subpartition_name, high_value, partition_name FROM ALL_TAB_SUBPARTITIONS;
+ subpartition_name |     high_value      | partition_name 
+-------------------+---------------------+----------------
+ Q1_EUROPE         | 'FRANCE', 'ITALY'   | Q1_2020
+ Q1_ASIA           | 'INDIA', 'PAKISTAN' | Q1_2020
+ Q1_AMERICAS       | 'US', 'CANADA'      | Q1_2020
+ Q2_EUROPE         | 'FRANCE', 'ITALY'   | Q2_2020
+ Q2_ASIA           | 'INDIA', 'PAKISTAN' | Q2_2020
+ Q2_AMERICAS       | 'US', 'CANADA'      | Q2_2020
+(6 rows)
+```
+
+The following `INSERT` statement inserts rows into the `sales` table using specific `PARTITION part_name` or `SUBPARTITION subpart_name`.
+
+```text
+INSERT INTO sales PARTITION (q1_2020) VALUES (10, 'q1_2020', 'FRANCE', '2020-Feb-01', '500000');
+INSERT INTO sales PARTITION (q2_2020) VALUES (10, 'q2_2020', 'ITALY', '2020-Apr-01', '550000');
+INSERT INTO sales SUBPARTITION (q1_europe) VALUES (10, 'q1_europe', 'FRANCE', '2020-Feb-01', '600000');
+INSERT INTO sales SUBPARTITION (q2_asia) VALUES (10, 'q2_asia', 'INDIA', '2020-Apr-01', '650000');
+
+edb=# SELECT tableoid::regclass, * FROM sales ORDER BY date;
+    tableoid     | dept_no |  part_no  | country |        date        | amount 
+-----------------+---------+-----------+---------+--------------------+--------
+ sales_q1_europe |      10 | q1_2020   | FRANCE  | 01-FEB-20 00:00:00 | 500000
+ sales_q1_europe |      10 | q1_europe | FRANCE  | 01-FEB-20 00:00:00 | 600000
+ sales_q2_europe |      10 | q2_2020   | ITALY   | 01-APR-20 00:00:00 | 550000
+ sales_q2_asia   |      10 | q2_asia   | INDIA   | 01-APR-20 00:00:00 | 650000
+(4 rows)
+```
+
+Use the following query to fetch the values from a specific partition `q1_2020` or subpartition `q1_europe`.
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales PARTITION (q1_2020) ORDER BY date;
+    tableoid     | dept_no |  part_no  | country |        date        | amount 
+-----------------+---------+-----------+---------+--------------------+--------
+ sales_q1_europe |      10 | q1_2020   | FRANCE  | 01-FEB-20 00:00:00 | 500000
+ sales_q1_europe |      10 | q1_europe | FRANCE  | 01-FEB-20 00:00:00 | 600000
+(2 rows)
+
+edb=# SELECT tableoid::regclass, country FROM sales SUBPARTITION (q1_europe) ORDER BY date;
+    tableoid     | country 
+-----------------+---------
+ sales_q1_europe | FRANCE
+ sales_q1_europe | FRANCE
+(2 rows)
+```
+
+The following `SELECT` statement selects rows from a specific partition or subpartition of a partitioned table by specifying the keyword `PARTITION` or `SUBPARTITION`.  
+
+```text
+edb=# SELECT tableoid::regclass, * FROM sales PARTITION (q2_2020) ORDER BY country;
+    tableoid     | dept_no | part_no | country |        date        | amount 
+-----------------+---------+---------+---------+--------------------+--------
+ sales_q2_asia   |      10 | q2_asia | INDIA   | 01-APR-20 00:00:00 | 650000
+ sales_q2_europe |      10 | q2_2020 | ITALY   | 01-APR-20 00:00:00 | 550000
+(2 rows)
+
+edb=# SELECT tableoid::regclass, date FROM sales SUBPARTITION (q2_asia) ORDER BY country;
+   tableoid    |        date        
+---------------+--------------------
+ sales_q2_asia | 01-APR-20 00:00:00
+(1 row)
+```
+
+The following `UPDATE` statement updates values in a partition or subpartition of the `sales` table.
+
+```text
+edb=# UPDATE sales PARTITION (q1_2020) SET amount = 10000 WHERE amount = 500000 RETURNING tableoid::regclass, *;
+    tableoid     | dept_no | part_no | country |        date        | amount 
+-----------------+---------+---------+---------+--------------------+--------
+ sales_q1_europe |      10 | q1_2020 | FRANCE  | 01-FEB-20 00:00:00 |  10000
+(1 row)
+
+UPDATE 1
+
+edb=# UPDATE sales SUBPARTITION (q1_europe) SET amount = 5000 WHERE amount = 600000 RETURNING tableoid::regclass, *;
+    tableoid     | dept_no |  part_no  | country |        date        | amount 
+-----------------+---------+-----------+---------+--------------------+--------
+ sales_q1_europe |      10 | q1_europe | FRANCE  | 01-FEB-20 00:00:00 |   5000
+(1 row)
+
+UPDATE 1
+```
+
+The following `DELETE` statement removes rows from the partition `q2_2020` or subpartition `q2_asia` of the `sales` table.
+
+```text
+edb=# DELETE FROM sales PARTITION (q2_2020) WHERE amount = 550000 RETURNING tableoid::regclass, *;
+    tableoid     | dept_no | part_no | country |        date        | amount 
+-----------------+---------+---------+---------+--------------------+--------
+ sales_q2_europe |      10 | q2_2020 | ITALY   | 01-APR-20 00:00:00 | 550000
+(1 row)
+
+DELETE 1
+
+edb=# DELETE FROM sales SUBPARTITION (q2_asia) RETURNING tableoid::regclass, *;
+   tableoid    | dept_no | part_no | country |        date        | amount 
+---------------+---------+---------+---------+--------------------+--------
+ sales_q2_asia |      10 | q2_asia | INDIA   | 01-APR-20 00:00:00 | 650000
+(1 row)
+
+DELETE 1
+```
+
+

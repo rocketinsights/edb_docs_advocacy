@@ -1,0 +1,113 @@
+---
+title: "CREATE_QUEUE_TABLE"
+---
+
+Use the `CREATE_QUEUE_TABLE` procedure to create a queue table. The signature is:
+
+```text
+CREATE_QUEUE_TABLE (
+  <queue_table> IN VARCHAR2,
+  <queue_payload_type> IN VARCHAR2,
+  <storage_clause> IN VARCHAR2 DEFAULT NULL,
+  <sort_list> IN VARCHAR2 DEFAULT NULL,
+  <multiple_consumers> IN BOOLEAN DEFAULT FALSE,
+  <message_grouping> IN BINARY_INTEGER DEFAULT NONE,
+  <comment> IN VARCHAR2 DEFAULT NULL,
+  <auto_commit> IN BOOLEAN DEFAULT TRUE,
+  <primary_instance> IN BINARY_INTEGER DEFAULT 0,
+  <secondary_instance> IN BINARY_INTEGER DEFAULT 0,
+  <compatible> IN VARCHAR2 DEFAULT NULL,
+  <secure> IN BOOLEAN DEFAULT FALSE)
+```
+
+**Parameters**
+
+`queue_table`
+
+ The (optionally schema-qualified) name of the queue table.
+
+`queue_payload_type`
+
+ The user-defined type of the data that will be stored in the queue table. Please note that to specify a `RAW` data type, you must create a user-defined type that identifies a `RAW` type.
+
+`storage_clause`
+
+Use the `storage_clause` parameter to specify attributes for the queue table. Please note that only the `TABLESPACE` option is enforced; all others are accepted for compatibility and ignored. Use the `TABLESPACE` clause to specify the name of a tablespace in which the table will be created.
+
+ `storage_clause` may be one or more of the following:
+
+```text
+TABLESPACE tablespace_name, PCTFREE integer, PCTUSED integer,
+INITRANS integer, MAXTRANS integer or STORAGE storage_option.
+```
+
+`storage_option` may be one or more of the following:
+
+```text
+MINEXTENTS integer, MAXEXTENTS integer, PCTINCREASE integer, INITIAL
+size_clause, NEXT, FREELISTS integer, OPTIMAL size_clause, BUFFER_
+POOL {KEEP|RECYCLE|DEFAULT}.
+```
+
+`sort_list`
+
+ `sort_list` controls the dequeueing order of the queue; specify the names of the column(s) that will be used to sort the queue (in ascending order). The currently accepted values are the following combinations of `enq_time` and `priority`:
+
+-   `enq_time, priority`
+
+-   `priority, enq_time`
+
+-   `priority`
+
+-   `enq_time`
+
+`multiple_consumers`
+
+ `multiple_consumers` queue tables is not supported.
+
+`message_grouping`
+
+ If specified, `message_grouping` must be `NONE`.
+
+`comment`
+
+ Use the `comment` parameter to provide a comment about the queue table.
+
+`auto_commit`
+
+ `auto_commit` is accepted for compatibility, but is ignored.
+
+`primary_instance`
+
+ `primary_instance` is accepted for compatibility and stored, but is ignored.
+
+`secondary_instance`
+
+ `secondary_instance` is accepted for compatibility, but is ignored.
+
+`compatible`
+
+ `compatible` is accepted for compatibility, but is ignored.
+
+`secure`
+
+ `secure` is accepted for compatibility, but is ignored.
+
+**Example**
+
+The following anonymous block first creates a type (`work_order`) with attributes that hold a name (a `VARCHAR2`), and a project description (a `TEXT`). The block then uses that type to create a queue table:
+
+```text
+BEGIN
+
+CREATE TYPE work_order AS (name VARCHAR2, project TEXT, completed BOOLEAN);
+
+EXEC DBMS_AQADM.CREATE_QUEUE_TABLE
+      (queue_table => 'work_order_table',
+       queue_payload_type => 'work_order',
+       comment => 'Work order message queue table');
+
+END;
+```
+
+The queue table is named `work_order_table`, and contains a payload of a type `work_order`. A comment notes that this is the `Work order message queue table`.

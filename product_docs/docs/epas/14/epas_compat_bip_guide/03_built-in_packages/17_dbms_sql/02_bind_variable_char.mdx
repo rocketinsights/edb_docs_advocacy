@@ -1,0 +1,28 @@
+---
+title: "BIND_VARIABLE_CHAR"
+---
+
+The `BIND_VARIABLE_CHAR` procedure provides the capability to associate a `CHAR` value with an `IN` or `IN OUT` bind variable in a SQL command.
+
+```text
+BIND_VARIABLE_CHAR(<c> NUMBER, <name> VARCHAR2, <value> CHAR
+  [, <out_value_size> NUMBER ])
+```
+
+**Parameters**
+
+`c`
+
+ Cursor ID of the cursor for the SQL command with bind variables.
+
+`name`
+
+ Name of the bind variable in the SQL command.
+
+`value`
+
+ Value of type `CHAR` to be assigned.
+
+`out_value_size`
+
+ If `name` is an `IN OUT` variable, defines the maximum length of the output value. If not specified, the length of `value` is assumed.

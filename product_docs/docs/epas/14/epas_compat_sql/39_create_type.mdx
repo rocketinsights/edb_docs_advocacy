@@ -1,0 +1,348 @@
+---
+title: "CREATE TYPE"
+---
+
+<div id="create_type" class="registered_link"></div>
+
+**Name**
+
+`CREATE TYPE` -- define a new user-defined type, which can be an object type, a collection type (a nested table type or a varray type), or a composite type.
+
+**Synopsis**
+
+**Object Type**
+
+```text
+CREATE [ OR REPLACE ] TYPE <name>
+  [ AUTHID { DEFINER | CURRENT_USER } ]
+  { IS | AS } OBJECT
+( { <attribute> { <datatype> | <objtype> | <collecttype> } }
+    [, ...]
+  [ <method_spec> ] [, ...]
+) [ [ NOT ] { FINAL | INSTANTIABLE } ] ...
+```
+
+where `method_spec` is:
+
+```text
+[ [ NOT ] { FINAL | INSTANTIABLE } ] ...
+[ OVERRIDING ]
+  <subprogram_spec>
+```
+
+and `subprogram_spec` is:
+
+```text
+{ MEMBER | STATIC }
+{ PROCEDURE <proc_name>
+    [ ( [ SELF [ IN | IN OUT ] <name> ]
+        [, <argname> [ IN | IN OUT | OUT ] <argtype>
+                   [ DEFAULT <value> ]
+        ] ...)
+    ]
+|
+  FUNCTION <func_name>
+    [ ( [ SELF [ IN | IN OUT ] <name> ]
+        [, <argname> [ IN | IN OUT | OUT ] <argtype>
+                   [ DEFAULT <value> ]
+        ] ...)
+    ]
+  RETURN <rettype>
+}
+```
+
+**Nested Table Type**
+
+```text
+CREATE [ OR REPLACE ] TYPE <name> { IS | AS } TABLE OF
+  { <datatype> | <objtype> | <collecttype> }
+```
+
+**Varray Type**
+
+```text
+CREATE [ OR REPLACE ] TYPE <name> { IS | AS }
+  { VARRAY | VARYING ARRAY } (<maxsize>) OF { <datatype> | <objtype> }
+```
+
+**Composite Type**
+
+```text
+CREATE [ OR REPLACE ] TYPE <name> { IS | AS }
+( [ attribute <datatype> ][, ...]
+)
+```
+
+**Description**
+
+`CREATE TYPE` defines a new, user-defined data type. The types that can be created are an object type, a nested table type, a varray type, or a composite type. Nested table and varray types belong to the category of types known as `collections`.
+
+`Composite types` are not compatible with Oracle databases. However, composite types can be accessed by SPL programs as with other types described in this section.
+
+!!! Note
+    -   For packages only, a composite type can be included in a user-defined record type declared with the `TYPE IS RECORD` statement within the package specification or package body. Such nested structure is not permitted in other SPL programs such as functions, procedures, triggers, etc.
+    -   In the `CREATE TYPE` command, if a schema name is included, then the type is created in the specified schema, otherwise it is created in the current schema. The name of the new type must not match any existing type in the same schema unless the intent is to update the definition of an existing type, in which case use `CREATE OR REPLACE TYPE`.
+    -   The `OR REPLACE` option cannot be currently used to add, delete, or modify the attributes of an existing object type. Use the `DROP TYPE` command to first delete the existing object type. The `OR REPLACE` option can be used to add, delete, or modify the methods in an existing object type.
+    -   The PostgreSQL form of the `ALTER TYPE ALTER ATTRIBUTE` command can be used to change the data type of an attribute in an existing object type. However, the `ALTER TYPE` command cannot add or delete attributes in the object type.
+
+The user that creates the type becomes the owner of the type.
+
+**Parameters**
+
+`name`
+
+ The name (optionally schema-qualified) of the type to create.
+
+`DEFINER | CURRENT_USER`
+
+ Specifies whether the privileges of the object type owner (`DEFINER`) or the privileges of the current user executing a method in the object type (`CURRENT_USER`) are to be used to determine whether or not access is allowed to database objects referenced in the object type. `DEFINER` is the default.
+
+`attribute`
+
+ The name of an attribute in the object type or composite type.
+
+`datatype`
+
+ The data type that defines an attribute of the object type or composite type, or the elements of the collection type that is being created.
+
+`objtype`
+
+ The name of an object type that defines an attribute of the object type or the elements of the collection type that is being created.
+
+`collecttype`
+
+ The name of a collection type that defines an attribute of the object type or the elements of the collection type that is being created.
+
+`FINAL`
+
+`NOT FINAL`
+
+ For an object type, specifies whether or not a subtype can be derived from the object type. `FINAL` (subtype cannot be derived from the object type) is the default.
+
+ For `method_spec`, specifies whether or not the method may be overridden in a subtype. `NOT FINAL` (method may be overridden in a subtype) is the default.
+
+`INSTANTIABLE`
+
+`NOT INSTANTIABLE`
+
+ For an object type, specifies whether or not an object instance can be created of this object type. `INSTANTIABLE` (an instance of this object type can be created) is the default. If `NOT INSTANTIABLE` is specified, then `NOT FINAL` must be specified as well. If `method_spec` for any method in the object type contains the `NOT INSTANTIABLE` qualifier, then the object type, itself, must be defined with `NOT INSTANTIABLE` and `NOT FINAL` following the closing parenthesis of the object type specification.
+
+ For `method_spec`, specifies whether or not the object type definition provides an implementation for the method. `INSTANTIABLE` (the `CREATE TYPE BODY` command for the object type provides the implementation of the method) is the default. If `NOT INSTANTIABLE` is specified, then the `CREATE TYPE BODY` command for the object type must not contain the implementation of the method.
+
+`OVERRIDING`
+
+ If `OVERRIDING` is specified, `method_spec` overrides an identically named method with the same number of identically named method arguments with the same data types, in the same order, and the same return type (if the method is a function) as defined in a supertype.
+
+`MEMBER`
+
+`STATIC`
+
+ Specify `MEMBER` if the subprogram operates on an object instance. Specify `STATIC` if the subprogram operates independently of any particular object instance.
+
+`proc_name`
+
+ The name of the procedure to create.
+
+`SELF [ IN | IN OUT ] name`
+
+ For a member method there is an implicit, built-in parameter named `SELF` whose data type is that of the object type being defined. `SELF` refers to the object instance that is currently invoking the method. `SELF` can be explicitly declared as an `IN` or `IN OUT` parameter in the parameter list. If explicitly declared, `SELF` must be the first parameter in the parameter list. If `SELF` is not explicitly declared, its parameter mode defaults to `IN OUT` for member procedures and `IN` for member functions.
+
+`argname`
+
+ The name of an argument. The argument is referenced by this name within the method body.
+
+`argtype`
+
+ The data type(s) of the method’s arguments. The argument types may be a base data type or a user-defined type such as a nested table or an object type. A length must not be specified for any base type - for example, specify `VARCHAR2`, not `VARCHAR2(10)`.
+
+`DEFAULT value`
+
+ Supplies a default value for an input argument if one is not supplied in the method call. `DEFAULT` may not be specified for arguments with modes `IN OUT` or `OUT`.
+
+`func_name`
+
+ The name of the function to create.
+
+`rettype`
+
+ The return data type, which may be any of the types listed for `argtype`. As for `argtype`, a length must not be specified for `rettype`.
+
+`maxsize`
+
+ The maximum number of elements permitted in the varray.
+
+**Examples**
+
+**Creating an Object Type**
+
+Create object type `addr_obj_typ`.
+
+```text
+CREATE OR REPLACE TYPE addr_obj_typ AS OBJECT (
+    street          VARCHAR2(30),
+    city            VARCHAR2(20),
+    state           CHAR(2),
+    zip             NUMBER(5)
+);
+```
+
+Create object type `emp_obj_typ` that includes a member method `display_emp`.
+
+```text
+CREATE OR REPLACE TYPE emp_obj_typ AS OBJECT (
+    empno           NUMBER(4),
+    ename           VARCHAR2(20),
+    addr            ADDR_OBJ_TYP,
+    MEMBER PROCEDURE display_emp (SELF IN OUT emp_obj_typ)
+);
+```
+
+Create object type `dept_obj_typ` that includes a static method `get_dname`.
+
+```text
+CREATE OR REPLACE TYPE dept_obj_typ AS OBJECT (
+    deptno          NUMBER(2),
+    STATIC FUNCTION get_dname (p_deptno IN NUMBER) RETURN VARCHAR2,
+    MEMBER PROCEDURE display_dept
+);
+```
+
+**Creating a Collection Type**
+
+Create a nested table type, `budget_tbl_typ`, of data type, `NUMBER(8,2)`.
+
+```text
+CREATE OR REPLACE TYPE budget_tbl_typ IS TABLE OF NUMBER(8,2);
+```
+
+**Creating and Using a Composite Type**
+
+The following example shows the usage of a composite type accessed from an anonymous block.
+
+The composite type is created by the following:
+
+```text
+CREATE OR REPLACE TYPE emphist_typ AS (
+    empno           NUMBER(4),
+    ename           VARCHAR2(10),
+    hiredate        DATE,
+    job             VARCHAR2(9),
+    sal             NUMBER(7,2)
+);
+```
+
+The following is the anonymous block that accesses the composite type:
+
+```text
+DECLARE
+    v_emphist       EMPHIST_TYP;
+BEGIN
+    v_emphist.empno    := 9001;
+    v_emphist.ename    := 'SMITH';
+    v_emphist.hiredate := '01-AUG-17';
+    v_emphist.job      := 'SALESMAN';
+    v_emphist.sal      := 8000.00;
+    DBMS_OUTPUT.PUT_LINE('   EMPNO: ' || v_emphist.empno);
+    DBMS_OUTPUT.PUT_LINE('   ENAME: ' || v_emphist.ename);
+    DBMS_OUTPUT.PUT_LINE('HIREDATE: ' || v_emphist.hiredate);
+    DBMS_OUTPUT.PUT_LINE('     JOB: ' || v_emphist.job);
+    DBMS_OUTPUT.PUT_LINE('     SAL: ' || v_emphist.sal);
+END;
+
+   EMPNO: 9001
+   ENAME: SMITH
+HIREDATE: 01-AUG-17 00:00:00
+     JOB: SALESMAN
+     SAL: 8000.00
+```
+
+The following example shows the usage of a composite type accessed from a user-defined record type, declared within a package body.
+
+The composite type is created by the following:
+
+```text
+CREATE OR REPLACE TYPE salhist_typ AS (
+    startdate       DATE,
+    job             VARCHAR2(9),
+    sal             NUMBER(7,2)
+);
+```
+
+The package specification is defined by the following:
+
+```text
+CREATE OR REPLACE PACKAGE emp_salhist
+IS
+    PROCEDURE fetch_emp (
+        p_empno     IN NUMBER
+    );
+END;
+```
+
+The package body is defined by the following:
+
+```text
+CREATE OR REPLACE PACKAGE BODY emp_salhist
+IS
+    TYPE emprec_typ IS RECORD (
+        empno       NUMBER(4),
+        ename       VARCHAR(10),
+        salhist     SALHIST_TYP
+    );
+    TYPE emp_arr_typ IS TABLE OF emprec_typ INDEX BY BINARY_INTEGER;
+    emp_arr         emp_arr_typ;
+
+    PROCEDURE fetch_emp (
+        p_empno     IN NUMBER
+    )
+    IS
+        CURSOR emp_cur IS SELECT e.empno, e.ename, h.startdate, h.job, h.sal
+            FROM emp e, jobhist h
+            WHERE e.empno = p_empno
+              AND e.empno = h.empno;
+
+        i           INTEGER := 0;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('EMPNO  ENAME    STARTDATE  JOB         ' ||
+        'SAL        ');
+        DBMS_OUTPUT.PUT_LINE('-----  -------  ---------  ---------   ' ||
+        '---------');
+
+        FOR r_emp IN emp_cur LOOP
+            i := i + 1;
+            emp_arr(i) := (r_emp.empno, r_emp.ename,
+                (r_emp.startdate, r_emp.job, r_emp.sal));
+        END LOOP;
+
+        FOR i IN 1 .. emp_arr.COUNT LOOP
+            DBMS_OUTPUT.PUT_LINE(emp_arr(i).empno || '   ' ||
+                RPAD(emp_arr(i).ename,8) || ' ' ||
+                TO_CHAR(emp_arr(i).salhist.startdate,'DD-MON-YY') || '  ' ||
+                RPAD(emp_arr(i).salhist.job,10) || ' ' ||
+                TO_CHAR(emp_arr(i).salhist.sal,'99,999.99'));
+        END LOOP;
+    END;
+END;
+```
+
+Note that in the declaration of the `TYPE emprec_typ IS RECORD` data structure in the package body, the `salhist` field is defined with the `SALHIST_TYP` composite type as created by the `CREATE TYPE salhist_typ` statement.
+
+The associative array definition `TYPE emp_arr_typ IS TABLE OF emprec_typ` references the record type data structure `emprec_typ` that includes the field `salhist` that is defined with the `SALHIST_TYP` composite type.
+
+Invocation of the package procedure that loads the array from a join of the `emp` and `jobhist` tables, then displays the array content is shown by the following:
+
+```text
+EXEC emp_salhist.fetch_emp(7788);
+
+EMPNO  ENAME    STARTDATE  JOB         SAL
+-----  -------  ---------  ---------   ---------
+7788   SCOTT    19-APR-87  CLERK        1,000.00
+7788   SCOTT    13-APR-88  CLERK        1,040.00
+7788   SCOTT    05-MAY-90  ANALYST      3,000.00
+
+EDB-SPL Procedure successfully completed
+```
+
+**See Also**
+
+[CREATE TYPE BODY](40_create_type_body/#create_type_body), [DROP TYPE](60_drop_type/#drop_type)

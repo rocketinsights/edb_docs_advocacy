@@ -1,0 +1,46 @@
+---
+title: "Using %ROWTYPE in Record Declarations"
+---
+
+<div id="[using]()%_row_type_in_record_declarations" class="registered_link"></div>
+
+The `%TYPE` attribute provides an easy way to create a variable dependent upon a column’s data type. Using the `%ROWTYPE` attribute, you can define a record that contains fields that correspond to all columns of a given table. Each field takes on the data type of its corresponding column. The fields in the record do not inherit any of the columns’ other attributes such as might be specified with the `NOT NULL` clause or the `DEFAULT` clause.
+
+A *record* is a named, ordered collection of fields. A *field* is similar to a variable; it has an identifier and data type, but has the additional property of belonging to a record, and must be referenced using dot notation with the record name as its qualifier.
+
+You can use the `%ROWTYPE` attribute to declare a record. The `%ROWTYPE` attribute is prefixed by a table name. Each column in the named table defines an identically named field in the record with the same data type as the column.
+
+```text
+<record table>%ROWTYPE;
+```
+
+`record` is an identifier assigned to the record. `table` is the name of a table (or view) whose columns are to define the fields in the record. The following example shows how the `emp_sal_query` procedure from the prior section can be modified to use `emp%ROWTYPE` to create a record named `r_emp` instead of declaring individual variables for the columns in `emp`.
+
+```text
+CREATE OR REPLACE PROCEDURE emp_sal_query (
+    p_empno         IN emp.empno%TYPE
+)
+IS
+    r_emp           emp%ROWTYPE;
+    v_avgsal        emp.sal%TYPE;
+BEGIN
+    SELECT ename, job, hiredate, sal, deptno
+        INTO r_emp.ename, r_emp.job, r_emp.hiredate, r_emp.sal, r_emp.deptno
+        FROM emp WHERE empno = p_empno;
+    DBMS_OUTPUT.PUT_LINE('Employee # : ' || p_empno);
+    DBMS_OUTPUT.PUT_LINE('Name       : ' || r_emp.ename);
+    DBMS_OUTPUT.PUT_LINE('Job        : ' || r_emp.job);
+    DBMS_OUTPUT.PUT_LINE('Hire Date  : ' || r_emp.hiredate);
+    DBMS_OUTPUT.PUT_LINE('Salary     : ' || r_emp.sal);
+    DBMS_OUTPUT.PUT_LINE('Dept #     : ' || r_emp.deptno);
+    SELECT AVG(sal) INTO v_avgsal
+        FROM emp WHERE deptno = r_emp.deptno;
+    IF r_emp.sal > v_avgsal THEN
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary is more than the '
+            || 'department average of ' || v_avgsal);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary does not exceed the '
+            || 'department average of ' || v_avgsal);
+    END IF;
+END;
+```

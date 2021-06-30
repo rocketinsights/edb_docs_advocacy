@@ -1,0 +1,118 @@
+---
+title: "ALTER PROFILE"
+---
+
+<div id="alter_profile" class="registered_link"></div>
+
+**Name**
+
+`ALTER PROFILE` -- alter an existing profile.
+
+**Synopsis**
+
+```text
+ALTER PROFILE <profile_name> RENAME TO <new_name>;
+
+ALTER PROFILE <profile_name>
+      LIMIT {<parameter value>}[...];
+```
+
+**Description**
+
+Use the `ALTER PROFILE` command to modify a user-defined profile; Advanced Server supports two forms of the command:
+
+-   Use `ALTER PROFILE…RENAME TO` to change the name of a profile.
+-   Use `ALTER PROFILE…LIMIT` to modify the limits associated with a profile.
+
+Include the `LIMIT` clause and one or more space-delimited `parameter/value` pairs to specify the rules enforced by Advanced Server, or use `ALTER PROFILE…RENAME` TO to change the name of a profile.
+
+**Parameters**
+
+`profile_name`
+
+ The name of the profile.
+
+`new_name`
+
+ `new_name` specifies the new name of the profile.
+
+`parameter`
+
+ `parameter` specifies the attribute limited by the profile.
+
+`value`
+
+ `value` specifies the parameter limit.
+
+Advanced Server supports the `value` shown below for each `parameter`:
+
+`FAILED_LOGIN_ATTEMPTS` specifies the number of failed login attempts that a user may make before the server locks the user out of their account for the length of time specified by `PASSWORD_LOCK_TIME`. Supported values are:
+
+-   An `INTEGER` value greater than `0`.
+-   `DEFAULT`- the value of `FAILED_LOGIN_ATTEMPTS` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – the connecting user may make an unlimited number of failed login attempts.
+
+`PASSWORD_LOCK_TIME` specifies the length of time that must pass before the server unlocks an account that has been locked because of `FAILED_LOGIN_ATTEMPTS`. Supported values are:
+
+-   A `NUMERIC` value greater than or equal to `0`. To specify a fractional portion of a day, specify a decimal value. For example, use the value `4.5` to specify `4` days, `12` hours.
+-   `DEFAULT` - the value of `PASSWORD_LOCK_TIME` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – the account is locked until it is manually unlocked by a database superuser.
+
+`PASSWORD_LIFE_TIME` specifies the number of days that the current password may be used before the user is prompted to provide a new password. Include the `PASSWORD_GRACE_TIME` clause when using the `PASSWORD_LIFE_TIME` clause to specify the number of days that will pass after the password expires before connections by the role are rejected. If `PASSWORD_GRACE_TIME` is not specified, the password will expire on the day specified by the default value of `PASSWORD_GRACE_TIME`, and the user will not be allowed to execute any command until a new password is provided. Supported values are:
+
+-   A `NUMERIC` value greater than or equal to `0`. To specify a fractional portion of a day, specify a decimal value. For example, use the value `4.5` to specify `4` days, `12` hours.
+-   `DEFAULT` - the value of `PASSWORD_LIFE_TIME` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – The password does not have an expiration date.
+
+`PASSWORD_GRACE_TIME` specifies the length of the grace period after a password expires until the user is forced to change their password. When the grace period expires, a user will be allowed to connect, but will not be allowed to execute any command until they update their expired password. Supported values are:
+
+-   A `NUMERIC` value greater than or equal to `0`. To specify a fractional portion of a day, specify a decimal value. For example, use the value `4.5` to specify `4` days, `12` hours.
+-   `DEFAULT` - the value of `PASSWORD_GRACE_TIME` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – The grace period is infinite.
+
+`PASSWORD_REUSE_TIME` specifies the number of days a user must wait before re-using a password. The `PASSWORD_REUSE_TIME` and `PASSWORD_REUSE_MAX` parameters are intended to be used together. If you specify a finite value for one of these parameters while the other is `UNLIMITED`, old passwords can never be reused. If both parameters are set to `UNLIMITED` there are no restrictions on password reuse. Supported values are:
+
+-   A `NUMERIC` value greater than or equal to `0`. To specify a fractional portion of a day, specify a decimal value. For example, use the value `4.5` to specify `4` days, `12` hours.
+-   `DEFAULT` - the value of `PASSWORD_REUSE_TIME` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – The password can be re-used without restrictions.
+
+`PASSWORD_REUSE_MAX` specifies the number of password changes that must occur before a password can be reused. The `PASSWORD_REUSE_TIME` and `PASSWORD_REUSE_MAX` parameters are intended to be used together. If you specify a finite value for one of these parameters while the other is `UNLIMITED`, old passwords can never be reused. If both parameters are set to `UNLIMITED` there are no restrictions on password reuse. Supported values are:
+
+-   An `INTEGER` value greater than or equal to `0`.
+-   `DEFAULT` - the value of `PASSWORD_REUSE_MAX` specified in the `DEFAULT` profile.
+-   `UNLIMITED` – The password can be re-used without restrictions.
+
+`PASSWORD_VERIFY_FUNCTION` specifies password complexity. Supported values are:
+
+-   The name of a PL/SQL function.
+-   `DEFAULT` - the value of `PASSWORD_VERIFY_FUNCTION` specified in the `DEFAULT` profile.
+-   `NULL`
+
+`PASSWORD_ALLOW_HASHED` specifies whether an encrypted password to be allowed for use or not. If you specify the value as `TRUE`, the system allows a user to change the password by specifying a hash computed encrypted password on the client side. However, if you specify the value as `FALSE`, then a password must be specified in a plain-text form in order to be validated effectively, else an error will be thrown if a server receives an encrypted password. Supported values are:
+
+-   A `BOOLEAN` value `TRUE/ON/YES/1` or `FALSE/OFF/NO/0`.
+-   `DEFAULT` – the value of `PASSWORD_ALLOW_HASHED` specified in the `DEFAULT` profile.
+
+!!! Note
+    The `PASSWORD_ALLOW_HASHED` is not an Oracle-compatible parameter.
+
+**Examples**
+
+The following example modifies a profile named `acctg_profile`:
+
+```text
+ALTER PROFILE acctg_profile
+       LIMIT FAILED_LOGIN_ATTEMPTS 3 PASSWORD_LOCK_TIME 1;
+```
+
+`acctg_profile` will count failed connection attempts when a login role attempts to connect to the server. The profile specifies that if a user has not authenticated with the correct password in three attempts, the account will be locked for one day.
+
+The following example changes the name of `acctg_profile` to `payables_profile`:
+
+```text
+ALTER PROFILE acctg_profile RENAME TO payables_profile;
+```
+
+**See Also**
+
+[CREATE PROFILE](29_create_profile/#create_profile), [DROP PROFILE](51_drop_profile/#drop_profile)

@@ -1,0 +1,239 @@
+---
+title: "Compound Triggers"
+---
+
+<div id="compound_trigger" class="registered_link"></div>
+
+The following example of a compound trigger records a change to the employee salary by defining a compound trigger (named `hr_trigger`) on the `emp` table.
+
+First, create a table named `emp`.
+
+```text
+CREATE TABLE emp(EMPNO INT, ENAME TEXT, SAL INT, DEPTNO INT);
+CREATE TABLE
+```
+
+Then, create a compound trigger named `hr_trigger`. The trigger utilizes each of the four timing-points to modify the salary with an `INSERT`, `UPDATE`, or `DELETE` statement. In the global declaration section, the initial salary is declared as `10,000`.
+
+```text
+CREATE OR REPLACE TRIGGER hr_trigger
+  FOR INSERT OR UPDATE OR DELETE ON emp
+    COMPOUND TRIGGER
+  -- Global declaration.
+  var_sal NUMBER := 10000;
+
+  BEFORE STATEMENT IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('Before Statement: ' || var_sal);
+  END BEFORE STATEMENT;
+
+  BEFORE EACH ROW IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('Before Each Row: ' || var_sal);
+  END BEFORE EACH ROW;
+
+  AFTER EACH ROW IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('After Each Row: ' || var_sal);
+  END AFTER EACH ROW;
+
+  AFTER STATEMENT IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('After Statement: ' || var_sal);
+  END AFTER STATEMENT;
+
+END hr_trigger;
+
+Output: Trigger created.
+```
+
+`INSERT` the record into table `emp`.
+
+```text
+INSERT INTO emp (EMPNO, ENAME, SAL, DEPTNO) VALUES(1111,'SMITH', 10000, 20);
+```
+
+The `INSERT` statement produces the following output:
+
+```text
+Before Statement: 11000
+Before each row: 12000
+After each row: 13000
+After statement: 14000
+INSERT 0 1
+```
+
+The `UPDATE` statement will update the employee salary record, setting the salary to `15000` for a specific employee number.
+
+```text
+UPDATE emp SET SAL = 15000 where EMPNO = 1111;
+```
+
+The `UPDATE` statement produces the following output:
+
+```text
+Before Statement: 11000
+Before each row: 12000
+After each row: 13000
+After statement: 14000
+UPDATE 1
+
+SELECT * FROM emp;
+ EMPNO | ENAME |  SAL  | DEPTNO
+-------+-------+-------+--------
+  1111 | SMITH | 15000 |     20
+(1 row)
+```
+
+The `DELETE` statement deletes the employee salary record.
+
+```text
+DELETE from emp where EMPNO = 1111;
+```
+
+The `DELETE` statement produces the following output:
+
+```text
+Before Statement: 11000
+Before each row: 12000
+After each row: 13000
+After statement: 14000
+DELETE 1
+
+SELECT * FROM emp;
+ EMPNO | ENAME | SAL | DEPTNO
+-------+-------+-----+--------
+(0 rows)
+```
+
+The `TRUNCATE` statement removes all the records from the `emp` table.
+
+```text
+CREATE OR REPLACE TRIGGER hr_trigger
+  FOR TRUNCATE ON emp
+    COMPOUND TRIGGER
+  -- Global declaration.
+  var_sal NUMBER := 10000;
+  BEFORE STATEMENT IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('Before Statement: ' || var_sal);
+  END BEFORE STATEMENT;
+
+  AFTER STATEMENT IS
+  BEGIN
+    var_sal := var_sal + 1000;
+    DBMS_OUTPUT.PUT_LINE('After Statement: ' || var_sal);
+  END AFTER STATEMENT;
+
+END hr_trigger;
+
+Output: Trigger created.
+```
+
+The `TRUNCATE` statement produces the following output:
+
+```text
+TRUNCATE emp;
+Before Statement: 11000
+After statement: 12000
+TRUNCATE TABLE
+```
+
+!!! Note
+    The `TRUNCATE` statement may be used only at a `BEFORE STATEMENT` or `AFTER STATEMENT` timing-point.
+
+The following example creates a compound trigger named `hr_trigger` on the `emp` table with a `WHEN` condition that checks and prints employee salary whenever a `INSERT`, `UPDATE`, or `DELETE` statement affects the `emp` table. The database evaluates the `WHEN` condition for a row-level trigger, and the trigger is executed once per row if the `WHEN` condition evaluates to `TRUE`. The statement-level trigger is executed irrespective of the `WHEN` condition.
+
+```text
+CREATE OR REPLACE TRIGGER hr_trigger
+  FOR INSERT OR UPDATE OR DELETE ON emp
+  REFERENCING NEW AS new OLD AS old
+  WHEN (old.sal > 5000 OR new.sal < 8000)
+    COMPOUND TRIGGER
+
+  BEFORE STATEMENT IS
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('Before Statement');
+  END BEFORE STATEMENT;
+
+  BEFORE EACH ROW IS
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('Before Each Row: ' || :OLD.sal ||' ' || :NEW.sal);
+  END BEFORE EACH ROW;
+
+  AFTER EACH ROW IS
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('After Each Row: ' || :OLD.sal ||' ' || :NEW.sal);
+  END AFTER EACH ROW;
+
+  AFTER STATEMENT IS
+  BEGIN
+    DBMS_OUTPUT.PUT_LINE('After Statement');
+  END AFTER STATEMENT;
+
+END hr_trigger;
+```
+
+Insert the record into table `emp`.
+
+```text
+INSERT INTO emp(EMPNO, ENAME, SAL, DEPTNO) VALUES(1111, 'SMITH', 1600, 20);
+```
+
+The `INSERT` statement produces the following output:
+
+```text
+Before Statement
+Before Each Row: 1600
+After Each Row: 1600
+After Statement
+INSERT 0 1
+```
+
+The `UPDATE` statement will update the employee salary record, setting the salary to `7500`.
+
+```text
+UPDATE emp SET SAL = 7500 where EMPNO = 1111;
+```
+
+The `UPDATE` statement produces the following output:
+
+```text
+Before Statement
+Before Each Row: 1600 7500
+After Each Row: 1600 7500
+After Statement
+UPDATE 1
+
+SELECT * from emp;
+ empno | ename | sal  | deptno
+-------+-------+------+--------
+  1111 | SMITH | 7500 |     20
+(1 row)
+```
+
+The `DELETE` statement deletes the employee salary record.
+
+```text
+DELETE from emp where EMPNO = 1111;
+```
+
+The `DELETE` statement produces the following output:
+
+```text
+Before Statement
+Before Each Row: 7500
+After Each Row: 7500
+After Statement
+DELETE 1
+
+SELECT * from emp;
+ empno | ename | sal | deptno
+-------+-------+-----+--------
+(0 rows)
+```

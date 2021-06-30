@@ -1,0 +1,49 @@
+---
+title: "ALTER PROCEDURE"
+---
+
+<div id="alter_procedure" class="registered_link"></div>
+
+**Name**
+
+`ALTER PROCEDURE`
+
+**Synopsis**
+
+```text
+ALTER PROCEDURE <procedure_name options> [RESTRICT]
+```
+
+**Description**
+
+Use the `ALTER PROCEDURE` statement to specify that a procedure is a `SECURITY INVOKER` or `SECURITY DEFINER`.
+
+**Parameters**
+
+`procedure_name`
+
+ `procedure_name` specifies the (possibly schema-qualified) name of a stored procedure.
+
+`options` may be:
+
+-   `[EXTERNAL] SECURITY DEFINER`
+
+    Specify `SECURITY DEFINER` to instruct the server to execute the procedure with the privileges of the user that created the procedure. The `EXTERNAL` keyword is accepted for compatibility, but ignored.
+
+-   `[EXTERNAL] SECURITY INVOKER`
+
+    Specify `SECURITY INVOKER` to instruct the server to execute the procedure with the privileges of the user that is invoking the procedure. The `EXTERNAL` keyword is accepted for compatibility, but ignored.
+
+The `RESTRICT` keyword is accepted for compatibility, but ignored.
+
+**Examples**
+
+The following command specifies that the `update_balance` procedure should execute with the privileges of the user invoking the procedure:
+
+```text
+ALTER PROCEDURE update_balance SECURITY INVOKER;
+```
+
+**See Also**
+
+[CREATE PROCEDURE](28_create_procedure/#create_procedure), [DROP PROCEDURE](50_drop_procedure/#drop_procedure)

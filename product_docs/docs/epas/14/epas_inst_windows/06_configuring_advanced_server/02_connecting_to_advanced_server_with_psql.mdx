@@ -1,0 +1,29 @@
+---
+title: "Connecting to Advanced Server with edb-psql"
+---
+
+<div id="connecting_to_advanced_server_with_psql" class="registered_link"></div>
+
+`edb-psql` is a command line client application that allows you to execute SQL commands and view the results. To open the `edb-psql` client, the client must be in your search path. The executable resides in the `bin` directory, under your Advanced Server installation.
+
+Use the following command and options to start the `edb-psql` client:
+
+```text
+psql -d edb -U enterprisedb
+```
+
+![Connecting to the server](../images/connecting_to_server.png)
+
+<div style="text-align: center"> Fig. 2: Connecting to the server </div>
+
+Where:
+
+`-d` specifies the database to which `edb-psql` will connect.
+
+`-U` specifies the identity of the database user that will be used for the session.
+
+If you have performed an installation with the interactive installer, you can access the `edb-psql` client by selecting `EDB-PSQL` from the `EDB Postgres` menu. When the client opens, provide connection information for your session.
+
+`edb-psql` is a symbolic link to PostgreSQL community `psql`. For more information about using the command line client, see the PostgreSQL Core Documentation at:
+
+<https://www.postgresql.org/docs/current/static/app-psql.html>

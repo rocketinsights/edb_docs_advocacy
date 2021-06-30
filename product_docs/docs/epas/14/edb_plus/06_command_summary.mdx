@@ -1,0 +1,992 @@
+---
+title: "Command Summary"
+---
+
+<div id="command_summary" class="registered_link"></div>
+
+The following sections contains a summary of EDB\*Plus commands.
+
+## ACCEPT
+
+The `ACCEPT` command displays a prompt and waits for the user’s keyboard input. The value input by the user is placed in the specified variable.
+
+```text
+ACC[EPT ] variable
+```
+
+The following example creates a new variable named `my_name`, accepts a value of John Smith, then displays the value using the `DEFINE` command.
+
+```text
+SQL> ACCEPT my_name
+Enter value for my_name: John Smith
+SQL> DEFINE my_name
+DEFINE MY_NAME = "John Smith"
+```
+
+## APPEND
+
+`APPEND` is a line editor command that appends the given text to the end of the current line in the SQL buffer.
+
+```text
+A[PPEND ] text
+```
+
+In the following example, a `SELECT` command is built-in the SQL buffer using the `APPEND` command. Note that two spaces are placed between the `APPEND` command and the `WHERE` clause in order to separate `dept` and `WHERE` by one space in the SQL buffer.
+
+```text
+SQL> APPEND SELECT * FROM dept
+SQL> LIST
+  1 SELECT * FROM dept
+SQL> APPEND WHERE deptno = 10
+SQL> LIST
+  1 SELECT * FROM dept WHERE deptno = 10
+```
+
+## CHANGE
+
+`CHANGE` is a line editor command performs a search-and-replace on the current line in the SQL buffer.
+
+```text
+C[HANGE ] /from/[to/ ]
+```
+
+If `to/` is specified, the first occurrence of text `from` in the current line is changed to text `to`. If `to/` is omitted, the first occurrence of text `from` in the current line is deleted.
+
+The following sequence of commands makes line 3 the current line, then changes the department number in the `WHERE` clause from 20 to 30.
+
+```text
+SQL> LIST
+  1  SELECT empno, ename, job, sal, comm
+  2  FROM emp
+  3  WHERE deptno = 20
+  4* ORDER BY empno
+SQL> 3
+  3* WHERE deptno = 20
+SQL> CHANGE /20/30/
+  3* WHERE deptno = 30
+SQL> LIST
+  1  SELECT empno, ename, job, sal, comm
+  2  FROM emp
+  3  WHERE deptno = 30
+  4* ORDER BY empno
+```
+
+## CLEAR
+
+The `CLEAR` command removes the contents of the SQL buffer, deletes all column definitions set with the `COLUMN` command, or clears the screen.
+
+```text
+CL[EAR ] [ BUFF[ER ] | SQL | COL[UMNS ] | SCR[EEN ] ]
+```
+
+`BUFFER | SQL`
+
+ Clears the SQL buffer.
+
+`COLUMNS`
+
+ Removes column definitions.
+
+`SCREEN`
+
+ Clears the screen. This is the default if no options are specified.
+
+## COLUMN
+
+The `COLUMN` command controls output formatting. The formatting attributes set by using the `COLUMN` command remain in effect only for the duration of the current session.
+
+```text
+COL[UMN ]
+  [ column
+    { CLE[AR ] |
+      { FOR[MAT ] spec |
+        HEA[DING ] text |
+        { OFF | ON }
+      } [...]
+    }
+  ]
+```
+
+If the `COLUMN` command is specified with no subsequent options, formatting options for current columns in effect for the session are displayed.
+
+If the `COLUMN` command is followed by a column name, then the column name may be followed by one of the following:
+
+1.  No other options
+2.  `CLEAR`
+3.  Any combination of `FORMAT`, `HEADING`, and one of `OFF` or `ON`
+
+`column`
+
+ Name of a column in a table to which subsequent column formatting options are to apply. If no other options follow `column`, then the current column formatting options if any, of `column` are displayed.
+
+`CLEAR`
+
+ The `CLEAR` option reverts all formatting options back to their defaults for `column`. If the `CLEAR` option is specified, it must be the only option specified.
+
+`spec`
+
+ Format specification to be applied to `column`. For character columns, `spec` takes the following format:
+
+`n`
+
+ `n` is a positive integer that specifies the column width in characters within which to display the data. Data in excess of `n` will wrap around with the specified column width.
+
+ For numeric columns, `spec` is comprised of the following elements.
+
+| Element | Description                                |
+| ------- | ------------------------------------------ |
+| `$`     | Display a leading dollar sign.             |
+| `,`     | Display a comma in the indicated position. |
+| `.`     | Marks the location of the decimal point.   |
+| `0`     | Display leading zeros.                     |
+| `9`     | Number of significant digits to display.   |
+
+ If loss of significant digits occurs due to overflow of the format, then all #’s are displayed.
+
+`text`
+
+ Text to be used for the column heading of `column`.
+
+`OFF | ON`
+
+ If `OFF` is specified, formatting options are reverted back to their defaults, but are still available within the session. If `ON` is specified, the formatting options specified by previous `COLUMN` commands for `column` within the session are re-activated.
+
+The following example shows the effect of changing the display width of the `job` column.
+
+```text
+SQL> SET PAGESIZE 9999
+SQL> COLUMN job FORMAT A5
+SQL> COLUMN job
+COLUMN   JOB  ON
+FORMAT   A5
+wrapped
+SQL> SELECT empno, ename, job FROM emp;
+
+EMPNO ENAME      JOB
+----- ---------- -----
+ 7369 SMITH      CLERK
+ 7499 ALLEN      SALES
+                 MAN
+
+ 7521 WARD       SALES
+                 MAN
+
+ 7566 JONES      MANAG
+                 ER
+
+ 7654 MARTIN     SALES
+                 MAN
+
+ 7698 BLAKE      MANAG
+                 ER
+
+ 7782 CLARK      MANAG
+                 ER
+
+ 7788 SCOTT      ANALY
+                 ST
+
+ 7839 KING       PRESI
+                 DENT
+
+ 7844 TURNER     SALES
+                 MAN
+
+ 7876 ADAMS      CLERK
+ 7900 JAMES      CLERK
+ 7902 FORD       ANALY
+                 ST
+
+ 7934 MILLER     CLERK
+
+14 rows retrieved.
+```
+
+The following example applies a format to the `sal` column.
+
+```text
+SQL> COLUMN sal FORMAT $99,999.00
+SQL> COLUMN
+COLUMN   JOB  ON
+FORMAT   A5
+wrapped
+
+COLUMN   SAL  ON
+FORMAT   $99,999.00
+wrapped
+SQL> SELECT empno, ename, job, sal FROM emp;
+
+EMPNO ENAME      JOB           SAL
+----- ---------- ----- -----------
+ 7369 SMITH      CLERK     $800.00
+ 7499 ALLEN      SALES   $1,600.00
+                 MAN
+
+ 7521 WARD       SALES   $1,250.00
+                 MAN
+
+ 7566 JONES      MANAG   $2,975.00
+                 ER
+
+ 7654 MARTIN     SALES   $1,250.00
+                 MAN
+
+ 7698 BLAKE      MANAG   $2,850.00
+                 ER
+
+ 7782 CLARK      MANAG   $2,450.00
+                 ER
+
+ 7788 SCOTT      ANALY   $3,000.00
+                 ST
+
+ 7839 KING       PRESI   $5,000.00
+                 DENT
+
+ 7844 TURNER     SALES   $1,500.00
+                 MAN
+
+ 7876 ADAMS      CLERK   $1,100.00
+ 7900 JAMES      CLERK     $950.00
+ 7902 FORD       ANALY   $3,000.00
+                 ST
+
+ 7934 MILLER     CLERK   $1,300.00
+
+14 rows retrieved.
+```
+
+## CONNECT
+
+Change the database connection to a different user and/or connect to a different database. There must be no white space between any of the parameters following the `CONNECT` command.
+
+```text
+CON[NECT] <username>[/<password>][@{<connectstring> | <variable> } ]
+```
+
+Where:
+
+ `username` is a database username with which to connect to the database.
+
+ `password` is the password associated with the specified `username`. If a `password` is not provided, but a password is required for authentication, a search is made for a password file, first in the home directory of the Linux operating system account invoking EDB\*Plus (or in the `%APPDATA%\postgresql\` directory for Windows) and then at the location specified by the `PGPASSFILE` environment variable. The password file is `.pgpass` on Linux hosts and `pgpass.conf` on Windows hosts. The following is an example on a Windows host:
+
+```text
+C:\Users\Administrator\AppData\Roaming\postgresql\pgpass.conf
+```
+
+ If a password file cannot be located, or it does not have an entry matching the EDB\*Plus connection parameters, then EDB\*Plus will prompt for the password. For more information about password files, see the PostgreSQL core documentation at:
+
+ <https://www.postgresql.org/docs/current/static/libpq-pgpass.html>
+
+ **Note**: When a password is not required, EDB\*Plus does not prompt for a password such as when the `trust` authentication method is specified in the `pg_hba.conf` file. For more information about the `pg_hba.conf` file and authentication methods, see the PostgreSQL core documentation at <https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html>
+
+ `connectstring` is the database connection string. See [Using EDB\*Plus](04_using_edb_plus/#using_edb_plus) for further information on the database connection string.
+
+ `variable` is a variable defined in the `login.sql` file that contains a database connection string. The `login.sql` file can be found in the `edbplus` subdirectory of the Advanced Server home directory.
+
+In the following example, the database connection is changed to database `edb` on the localhost at port `5445` with username `smith`.
+
+```text
+SQL> CONNECT smith/mypassword@localhost:5445/edb
+Disconnected from EnterpriseDB Database.
+Connected to EnterpriseDB 14.0.1 (localhost:5445/edb) AS smith
+```
+
+From within the session shown above, the connection is changed to username `enterprisedb`. Also note that the host defaults to the localhost, the port defaults to `5444` (which is not the same as the port previously used), and the database defaults to `edb`.
+
+```text
+SQL> CONNECT enterprisedb/password
+Disconnected from EnterpriseDB Database.
+Connected to EnterpriseDB 14.0.1 (localhost:5444/edb) AS enterprisedb
+```
+
+## DEFINE
+
+The `DEFINE` command creates or replaces the value of a *user variable* (also called a *substitution variable*).
+
+```text
+DEF[INE ] [ variable [ = text ] ]
+```
+
+If the `DEFINE` command is given without any parameters, all current variables and their values are displayed.
+
+If `DEFINE variable` is given, only `variable` is displayed with its value.
+
+`DEFINE variable = text` assigns `text` to `variable.text` may be optionally enclosed within single or double quotation marks. Quotation marks must be used if `text` contains space characters.
+
+The following example defines two variables, `dept` and `name`.
+
+```text
+SQL> DEFINE dept = 20
+SQL> DEFINE name = 'John Smith'
+SQL> DEFINE
+DEFINE EDB = "localhost:5445/edb"
+DEFINE DEPT = "20"
+DEFINE NAME = "John Smith"
+```
+
+!!! Note
+    The variable `EDB` is read from the `login.sql` file located in the `edbplus` subdirectory of the Advanced Server home directory.
+
+## DEL
+
+`DEL` is a line editor command that deletes one or more lines from the SQL buffer.
+
+```text
+DEL [ n | n m | n * | n L[AST ] | * | * n | * L[AST ] | L[AST ] ]
+```
+
+The parameters specify which lines are to be deleted from the SQL buffer. Two parameters specify the start and end of a range of lines to be deleted. If the `DEL` command is given with no parameters, the current line is deleted.
+
+`n`
+
+ n is an integer representing the `n`th line
+
+`n m`
+
+ `n` and `m` are integers where `m` is greater than `n` representing the `n`th through the `m`th lines
+
+`*`
+
+ Current line
+
+`LAST`
+
+ Last line
+
+In the following example, the fifth and sixth lines containing columns `sal` and `comm`, respectively, are deleted from the `SELECT` command in the SQL buffer.
+
+```text
+SQL> LIST
+  1  SELECT
+  2    empno
+  3   ,ename
+  4   ,job
+  5   ,sal
+  6   ,comm
+  7   ,deptno
+  8* FROM emp
+SQL> DEL 5 6
+SQL> LIST
+  1  SELECT
+  2    empno
+  3   ,ename
+  4   ,job
+  5   ,deptno
+  6* FROM emp
+```
+
+## DESCRIBE
+
+The `DESCRIBE` command displays:
+
+-   A list of columns, column data types, and column lengths for a table or view
+-   A list of parameters for a procedure or function
+-   A list of procedures and functions and their respective parameters for a package
+
+The `DESCRIBE` command will also display the structure of the database object referred to by a synonym. The syntax is:
+
+```text
+DESC[RIBE] [ schema.]object
+```
+
+`schema`
+
+ Name of the schema containing the object to be described.
+
+`object`
+
+ Name of the table, view, procedure, function, or package to be displayed, or the synonym of an object.
+
+## DISCONNECT
+
+The `DISCONNECT` command closes the current database connection, but does not terminate EDB\*Plus.
+
+```text
+DISC[ONNECT ]
+```
+
+## EDIT
+
+The `EDIT` command invokes an external editor to edit the contents of an operating system file or the SQL buffer.
+
+```text
+ED[IT ] [ filename[.ext ] ]
+```
+
+`filename[.ext ]`
+
+ `filename` is the name of the file to open with an external editor. `ext` is the filename extension. If the filename extension is `sql`, then the `.sql` extension may be omitted when specifying `filename`. `EDIT` always assumes a `.sql` extension on filenames that are specified with no extension. If the filename parameter is omitted from the `EDIT` command, the contents of the SQL buffer are brought into the editor.
+
+## EXECUTE
+
+The `EXECUTE` command executes an SPL procedure from EDB\*Plus.
+
+```text
+EXEC[UTE ] spl_procedure [ ([ parameters ]) ]
+```
+
+`spl_procedure`
+
+ The name of the SPL procedure to be executed.
+
+`parameters`
+
+ Comma-delimited list of parameters. If there are no parameters, then a pair of empty parentheses may optionally be specified.
+
+## EXIT
+
+The `EXIT` command terminates the EDB\*Plus session and returns control to the operating system. `QUIT` is a synonym for `EXIT`. Specifying no parameters is equivalent to `EXIT SUCCESS COMMIT`.
+
+```text
+{ EXIT | QUIT }
+[ SUCCESS | FAILURE | WARNING | value | variable ]
+[ COMMIT | ROLLBACK ]SUCCESS | FAILURE |WARNING]
+```
+
+Returns an operating system dependent return code indicating successful operation, failure, or warning for `SUCCESS, FAILURE`, and `WARNING`, respectively. The default is `SUCCESS`.
+
+`value`
+
+ An integer value that is returned as the return code.
+
+`variable`
+
+ A variable created with the `DEFINE` command whose value is returned as the return code.
+
+`COMMIT | ROLLBACK`
+
+ If `COMMIT` is specified, uncommitted updates are committed upon exit. If `ROLLBACK` is specified, uncommitted updates are rolled back upon exit. The default is `COMMIT`.
+
+## GET
+
+The `GET` command loads the contents of the given file to the SQL buffer.
+
+```text
+GET filename[.ext ] [ LIS[T ] | NOL[IST ] ]
+```
+
+`filename[.ext ]`
+
+ `filename` is the name of the file to load into the SQL buffer. `ext` is the filename extension. If the filename extension is `sql`, then the `.sql` extension may be omitted when specifying `filename`. `GET` always assumes a `.sql` extension on filenames that are specified with no extension.
+
+`LIST | NOLIST`
+
+ If `LIST` is specified, the content of the SQL buffer is displayed after the file is loaded. If `NOLIST` is specified, no listing is displayed. The default is `LIST`.
+
+## HELP
+
+The `HELP` command obtains an index of topics or help on a specific topic. The question mark `(?)` is synonymous with specifying `HELP`.
+
+```text
+{ HELP | ? } { INDEX | topic }
+```
+
+`INDEX`
+
+ Displays an index of available topics.
+
+`topic`
+
+ The name of a specific topic – e.g., an EDB\*Plus command, for which help is desired.
+
+## HOST
+
+The `HOST` command executes an operating system command from EDB\*Plus.
+
+```text
+HO[ST ] [os_command]
+```
+
+`os_command`
+
+ The operating system command to be executed. If you do not provide an operating system command, EDB\*Plus pauses execution and opens a new shell prompt. When the shell exits, EDB\*Plus resumes execution.
+
+## INPUT
+
+The `INPUT` line editor command adds a line of text to the SQL buffer after the current line.
+
+```text
+I[NPUT ] text
+```
+
+The following sequence of `INPUT` commands constructs a `SELECT` command.
+
+```text
+SQL> INPUT SELECT empno, ename, job, sal, comm
+SQL> INPUT FROM emp
+SQL> INPUT WHERE deptno = 20
+SQL> INPUT ORDER BY empno
+SQL> LIST
+  1 SELECT empno, ename, job, sal, comm
+  2 FROM emp
+  3 WHERE deptno = 20
+  4* ORDER BY empno
+```
+
+## LIST
+
+`LIST` is a line editor command that displays the contents of the SQL buffer.
+
+```text
+L[IST] [ n | n m | n * | n L[AST] | * | * n | * L[AST] | L[AST] ]
+```
+
+The buffer does not include a history of the EDB\*Plus commands.
+
+`n`
+
+ `n` represents the buffer line number.
+
+`n m`
+
+ `n m` displays a list of lines between `n` and `m`.
+
+`n *`
+
+ `n *` displays a list of lines that range between line `n` and the current line.
+
+`n L[AST]`
+
+ `n L[AST]` displays a list of lines that range from line `n` through the last line in the buffer.
+
+`*`
+
+ `*` displays the current line.
+
+`* n`
+
+ `* n` displays a list of lines that range from the current line through line `n`.
+
+`* L[AST]`
+
+ `* L[AST]` displays a list of lines that range from the current line through the last line.
+
+`L[AST]`
+
+ `L[AST]` displays the last line.
+
+## PASSWORD
+
+Use the `PASSWORD` command to change your database password.
+
+```text
+PASSW[ORD] [user_name]
+```
+
+You must have sufficient privileges to use the `PASSWORD` command to change another user's password. The following example demonstrates using the `PASSWORD` command to change the password for a user named `acctg`:
+
+```text
+SQL> PASSWORD acctg
+Changing password for acctg
+    New password:
+    New password again:
+Password successfully changed.
+```
+
+## PAUSE
+
+The `PAUSE` command displays a message, and waits for the user to press `ENTER`.
+
+```text
+PAU[SE]  [optional_text]
+```
+
+`optional_text` specifies the text that will be displayed to the user. If the `optional_text` is omitted, Advanced Server will display two blank lines. If you double quote the `optional_text` string, the quotes will be included in the output.
+
+## PROMPT
+
+The `PROMPT` command displays a message to the user before continuing.
+
+```text
+PRO[MPT] [message_text]
+```
+
+`message_text` specifies the text displayed to the user. Double quote the string to include quotes in the output.
+
+## QUIT
+
+The `QUIT` command terminates the session and returns control to the operating system. `QUIT` is a synonym for `EXIT`.
+
+```text
+QUIT
+
+[SUCCESS | FAILURE | WARNING | value | sub_variable]
+
+[COMMIT | ROLLBACK]
+```
+
+The default value is `QUIT SUCCESS COMMIT`.
+
+## REMARK
+
+Use `REMARK` to include comments in a script.
+
+```text
+REM[ARK] [optional_text]
+```
+
+You may also use the following convention to include a comment:
+
+```text
+/*
+ *  This is an example of a three line comment.
+ */
+```
+
+## SAVE
+
+Use the `SAVE` command to write the SQL Buffer to an operating system file.
+
+```text
+SAV[E] file_name
+[CRE[ATE] | REP[LACE] | APP[END]]
+```
+
+`file_name`
+
+ `file_name` specifies the name of the file (including the path) where the buffer contents are written. If you do not provide a file extension, `.sql` is appended to the end of the file name.
+
+`CREATE`
+
+ Include the `CREATE` keyword to create a new file. A new file is created *only* if a file with the specified name does not already exist. This is the default.
+
+`REPLACE`
+
+ Include the `REPLACE` keyword to specify that Advanced Server should overwrite an existing file.
+
+`APPEND`
+
+ Include the `APPEND` keyword to specify that Advanced Server should append the contents of the SQL buffer to the end of the specified file.
+
+The following example saves the contents of the SQL buffer to a file named `example.sql`, located in the `temp` directory:
+
+```text
+SQL> SAVE C:\example.sql CREATE
+File "example.sql" written.
+```
+
+## SET
+
+Use the `SET` command to specify a value for a session level variable that controls EDB\*Plus behavior. The following forms of the `SET` command are valid:
+
+**SET AUTOCOMMIT**
+
+Use the `SET AUTOCOMMIT` command to specify commit behavior for Advanced Server transactions.
+
+```text
+SET AUTO[COMMIT]
+
+{ON | OFF | IMMEDIATE | statement_count}
+```
+
+Please note that EDB\*Plus always automatically commits DDL statements.
+
+`ON`
+
+ Specify `ON` to turn `AUTOCOMMIT` behavior on.
+
+`OFF`
+
+ Specify `OFF` to turn `AUTOCOMMIT` behavior off.
+
+`IMMEDIATE`
+
+ `IMMEDIATE` has the same effect as `ON`.
+
+`statement_count`
+
+ Include a value for `statement_count` to instruct EDB\*Plus to issue a commit after the specified count of successful SQL statements.
+
+**SET COLUMN SEPARATOR**
+
+Use the `SET COLUMN SEPARATOR` command to specify the text that Advanced Server displays between columns.
+
+```text
+SET COLSEP column_separator
+```
+
+The default value of `column_separator` is a single space.
+
+**SET ECHO**
+
+Use the `SET ECHO` command to specify if SQL and EDB\*Plus script statements should be displayed onscreen as they are executed.
+
+```text
+SET ECHO {ON | OFF}
+```
+
+The default value is `OFF`.
+
+**SET FEEDBACK**
+
+The `SET FEEDBACK` command controls the display of interactive information after a SQL statement executes.
+
+```text
+SET FEED[BACK] {ON | OFF | row_threshold}
+```
+
+`row_threshold`
+
+ Specify an integer value for `row_threshold`. Setting `row_threshold` to `0` is same as setting `FEEDBACK` to `OFF`. Setting `row_threshold` equal `1` effectively sets `FEEDBACK` to `ON`.
+
+**SET FLUSH**
+
+Use the `SET FLUSH` command to control display buffering.
+
+```text
+SET FLU[SH] {ON | OFF}
+```
+
+Set `FLUSH` to `OFF` to enable display buffering. If you enable buffering, messages bound for the screen may not appear until the script completes. Please note that setting `FLUSH` to `OFF` will offer better performance.
+
+Set `FLUSH` to `ON` to disable display buffering. If you disable buffering, messages bound for the screen appear immediately.
+
+**SET HEADING**
+
+Use the `SET HEADING` variable to specify if Advanced Server should display column headings for `SELECT` statements.
+
+```text
+SET HEA[DING] {ON | OFF}
+```
+
+**SET HEAD SEPARATOR**
+
+The `SET HEADSEP` command sets the new heading separator character used by the `COLUMN HEADING` command. The default is `'|'`.
+
+```text
+SET HEADS[EP]
+```
+
+**SET LINESIZE**
+
+Use the `SET LINESIZE` command to specify the width of a line in characters.
+
+```text
+SET LIN[ESIZE] width_of_line
+```
+
+`width_of_line`
+
+ The default value of `width_of_line` is `132`.
+
+**SET NEWPAGE**
+
+Use the `SET NEWPAGE` command to specify how many blank lines are printed after a page break.
+
+```text
+SET NEWP[AGE] lines_per_page
+```
+
+`lines_per_page`
+
+ The default value of `lines_per_page` is `1`.
+
+**SET NULL**
+
+Use the `SET NULL` command to specify a string that is displayed to the user when a `NULL` column value is displayed in the output buffer.
+
+```text
+SET NULL null_string
+```
+
+**SET PAGESIZE**
+
+Use the `SET PAGESIZE` command to specify the number of printed lines that fit on a page.
+
+```text
+SET PAGES[IZE] line_count
+```
+
+Use the `line_count` parameter to specify the number of lines per page.
+
+**SET SQLCASE**
+
+The `SET SQLCASE` command specifies if SQL statements transmitted to the server should be converted to upper or lower case.
+
+```text
+SET SQLC[ASE] {MIX[ED] | UP[PER] | LO[WER]}
+```
+
+`UPPER`
+
+ Specify `UPPER` to convert the command text to uppercase.
+
+`LOWER`
+
+ Specify `LOWER` to convert the command text to lowercase.
+
+`MIXED`
+
+ Specify `MIXED` to leave the case of SQL commands unchanged. The default is `MIXED`.
+
+**SET PAUSE**
+
+The `SET PAUSE` command is most useful when included in a script; the command displays a prompt and waits for the user to press `Return`.
+
+```text
+SET PAU[SE] {ON | OFF}
+```
+
+If `SET PAUSE` is `ON`, the message `Hit ENTER to continue…` will be displayed before each command is executed.
+
+**SET SPACE**
+
+Use the `SET SPACE` command to specify the number of spaces to display between columns:
+
+```text
+SET SPACE number_of_spaces
+```
+
+**SET SQLPROMPT**
+
+Use `SET SQLPROMPT` to set a value for a user-interactive prompt:
+
+```text
+SET SQLP[ROMPT] "prompt"
+```
+
+By default, `SQLPROMPT` is set to `"SQL> "`
+
+**SET TERMOUT**
+
+Use the `SET TERMOUT` command to specify if command output should be displayed onscreen.
+
+```text
+SET TERM[OUT] {ON | OFF}
+```
+
+**SET TIMING**
+
+The `SET TIMING` command specifies if Advanced Server should display the execution time for each SQL statement after it is executed.
+
+```text
+SET TIMI[NG] {ON | OFF}
+```
+
+**SET TRIMSPOOL**
+
+Use the `SET TRIMSPOOL` command to remove trailing spaces from each line in the output file specified by the `SPOOL` command.
+
+```text
+SET TRIMS[POOL] {ON | OFF}
+```
+
+The default value is `OFF`.
+
+**SET VERIFY**
+
+Specifies if both the old and new values of a SQL statement are displayed when a substitution variable is encountered.
+
+```text
+SET VER[IFY] { ON | OFF }
+```
+
+## SHOW
+
+Use the `SHOW` command to display current parameter values.
+
+```text
+SHO[W] {ALL | parameter_name}
+```
+
+Display the current parameter settings by including the `ALL` keyword:
+
+```Text
+SQL> SHOW ALL
+autocommit      OFF
+colsep          " "
+define          "&"
+echo            OFF
+FEEDBACK ON for 6 row(s).
+flush           ON
+heading         ON
+headsep         "|"
+linesize        78
+newpage         1
+null            " "
+pagesize        14
+pause           OFF
+serveroutput    OFF
+spool           OFF
+sqlcase         MIXED
+sqlprompt       "SQL> "
+sqlterminator   ";"
+suffix          ".sql"
+termout         ON
+timing          OFF
+verify          ON
+USER is         "enterprisedb"
+HOST is         "localhost"
+PORT is         "5444"
+DATABASE is     "edb"
+VERSION is      "14.0.0"
+```
+
+Or display a specific parameter setting by including the `parameter_name` in the `SHOW` command:
+
+```text
+SQL> SHOW VERSION
+VERSION is "14.0.0"
+```
+
+## SPOOL
+
+The `SPOOL` command sends output from the display to a file.
+
+```text
+SP[OOL] output_file | OFF
+```
+
+Use the `output_file` parameter to specify a path name for the output file.
+
+## START
+
+Use the `START` command to run an EDB\*Plus script file; `START` is an alias for `@` command.
+
+```text
+STA[RT] script_file
+```
+
+Specify the name of a script file in the `script_file` parameter.
+
+## UNDEFINE
+
+The `UNDEFINE` command erases a user variable created by the `DEFINE` command.
+
+```text
+UNDEF[INE] variable_name [ variable_name...]
+```
+
+Use the `variable_name` parameter to specify the name of a variable or variables.
+
+## WHENEVER SQLERROR
+
+The `WHENEVER SQLERROR` command provides error handling for SQL errors or PL/SQL block errors. The syntax is:
+
+```text
+WHENEVER SQLERROR
+  {CONTINUE[COMMIT|ROLLBACK|NONE]
+  |EXIT[SUCCESS|FAILURE|WARNING|n|sub_variable]
+  [COMMIT|ROLLBACK]}
+```
+
+If Advanced Server encounters an error during the execution of a SQL command or PL/SQL block, EDB\*Plus performs the action specified in the `WHENEVER SQLERROR` command:
+
+ Include the `CONTINUE` clause to instruct EDB\*Plus to perform the specified action before continuing.
+
+ Include the `COMMIT` clause to instruct EDB\*Plus to `COMMIT` the current transaction before exiting or continuing.
+
+ Include the `ROLLBACK` clause to instruct EDB\*Plus to `ROLLBACK` the current transaction before exiting or continuing.
+
+ Include the `NONE` clause to instruct EDB\*Plus to continue without committing or rolling back the transaction.
+
+ Include the `EXIT` clause to instruct EDB\*Plus to perform the specified action and exit if it encounters an error.
+
+ Use the following options to specify a status code that EDB\*Plus will return before exiting:
+
+```text
+[SUCCESS|FAILURE|WARNING|n|sub_variable]
+```
+
+ Please note that EDB\*Plus supports substitution variables, but does not support bind variables.

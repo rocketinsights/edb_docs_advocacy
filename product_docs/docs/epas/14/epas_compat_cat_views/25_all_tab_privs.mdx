@@ -1,0 +1,24 @@
+---
+title: "ALL_TAB_PRIVS"
+---
+
+<div id="all_tab_privs" class="registered_link"></div>
+
+The `ALL_TAB_PRIVS` view provides the following types of privileges:
+
+-   Object privileges for which a current user is either an object owner, grantor, or grantee.
+-   Object privileges for which the `PUBLIC` is the grantee.
+
+| Name           | Type                     | Description                                                                                                                                                                                                                                                         |
+| -------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grantor`      | `CHARACTER VARYING(128)` | Name of the user who granted the privilege.                                                                                                                                                                                                                         |
+| `grantee`      | `CHARACTER VARYING(128)` | Name of the user with the privilege.                                                                                                                                                                                                                                |
+| `table_schema` | `CHARACTER VARYING(128)` | Name of the user who owns the object.                                                                                                                                                                                                                               |
+| `schema_name`  | `CHARACTER VARYING(128)` | Name of the schema in which the object resides.                                                                                                                                                                                                                     |
+| `table_name`   | `CHARACTER VARYING(128)` | Object name.                                                                                                                                                                                                                                                        |
+| `privilege`    | `CHARACTER VARYING(40)`  | Privilege name.                                                                                                                                                                                                                                                     |
+| `grantable`    | `CHARACTER VARYING(3)`   | Indicates whether the privilege was granted with the grant option `YES` or `NO`. `YES` indicates that the `GRANTEE` (recipient of the privilege) can in turn grant the privilege to others. The value may be `YES` if the grantee has the administrator privileges. |
+| `hierarchy`    | `CHARACTER VARYING(3)`   | The value can be `YES` or `NO`. The value may be `YES` if the privilege is `SELECT` else `NO`.                                                                                                                                                                      |
+| `common`       | `CHARACTER VARYING(3)`   | Included for compatibility only; always `NO`.                                                                                                                                                                                                                       |
+| `type`         | `CHARACTER VARYING(24)`  | Type of object.                                                                                                                                                                                                                                                     |
+| `inherited`    | `CHARACTER VARYING(3)`   | Included for compatibility only; always `NO`.                                                                                                                                                                                                                       |

@@ -1,0 +1,391 @@
+---
+title: "DBMS_ALERT"
+---
+
+The `DBMS_ALERT` package provides the capability to register for, send, and receive alerts. The following table lists the supported procedures:
+
+| Function/Procedure                                    | Return Type | Description                                         |
+| ----------------------------------------------------- | ----------- | --------------------------------------------------- |
+| `REGISTER(name)`                                      | n/a         | Register to be able to receive alerts named, `name` |
+| `REMOVE(name)`                                        | n/a         | Remove registration for the alert named, `name`     |
+| `REMOVEALL`                                           | n/a         | Remove registration for all alerts.                 |
+| `SIGNAL(name, message)`                               | n/a         | Signals the alert named, `name`, with `message`     |
+| `WAITANY(name OUT, message OUT, status OUT, timeout)` | n/a         | Wait for any registered alert to occur.             |
+| `WAITONE(name, message OUT, status OUT, timeout)`     | n/a         | Wait for the specified alert, `name`, to occur.     |
+
+Advanced Server's implementation of `DBMS_ALERT` is a partial implementation when compared to Oracle's version. Only those functions and procedures listed in the table above are supported.
+
+Advanced Server allows a maximum of `500` concurrent alerts. You can use the `dbms_alert.max_alerts` GUC variable (located in the `postgresql.conf` file) to specify the maximum number of concurrent alerts allowed on a system.
+
+To set a value for the `dbms_alert.max_alerts` variable, open the `postgresql.conf` file (located by default in `/opt/PostgresPlus/14AS/data`) with your choice of editor, and edit the `dbms_alert.max_alerts` parameter as shown:
+
+```text
+dbms_alert.max_alerts = alert_count
+```
+
+`alert_count`
+
+`alert_count` specifies the maximum number of concurrent alerts. By default, the value of `dbms_alert.max_alerts` is `100`. To disable this feature, set `dbms_alert.max_alerts` to `0`.
+
+For the `dbms_alert.max_alerts` GUC to function correctly, the `custom_variable_classes` parameter must contain `dbms_alerts`:
+
+```text
+custom_variable_classes = 'dbms_alert, …'
+```
+
+After editing the `postgresql.conf` file parameters, you must restart the server for the changes to take effect.
+
+## REGISTER
+
+The `REGISTER` procedure enables the current session to be notified of the specified alert.
+
+```text
+REGISTER(<name> VARCHAR2)
+```
+
+**Parameters**
+
+`name`
+
+ Name of the alert to be registered.
+
+**Examples**
+
+The following anonymous block registers for an alert named, `alert_test`, then waits for the signal.
+
+```text
+DECLARE
+    v_name           VARCHAR2(30) := 'alert_test';
+    v_msg            VARCHAR2(80);
+    v_status         INTEGER;
+    v_timeout        NUMBER(3) := 120;
+BEGIN
+    DBMS_ALERT.REGISTER(v_name);
+    DBMS_OUTPUT.PUT_LINE('Registered for alert ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Waiting for signal...');
+    DBMS_ALERT.WAITONE(v_name,v_msg,v_status,v_timeout);
+    DBMS_OUTPUT.PUT_LINE('Alert name   : ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Alert msg    : ' || v_msg);
+    DBMS_OUTPUT.PUT_LINE('Alert status : ' || v_status);
+    DBMS_OUTPUT.PUT_LINE('Alert timeout: ' || v_timeout || ' seconds');
+    DBMS_ALERT.REMOVE(v_name);
+END;
+
+Registered for alert alert_test
+Waiting for signal...
+```
+
+## REMOVE
+
+The `REMOVE` procedure unregisters the session for the named alert.
+
+```text
+REMOVE(<name> VARCHAR2)
+```
+
+**Parameters**
+
+`name`
+
+ Name of the alert to be unregistered.
+
+## REMOVEALL
+
+The `REMOVEALL` procedure unregisters the session for all alerts.
+
+```text
+REMOVEALL
+```
+
+## SIGNAL
+
+The `SIGNAL` procedure signals the occurrence of the named alert.
+
+```text
+SIGNAL(<name> VARCHAR2, <message> VARCHAR2)
+```
+
+**Parameters**
+
+`name`
+
+ Name of the alert.
+
+`message`
+
+ Information to pass with this alert.
+
+**Examples**
+
+The following anonymous block signals an alert for `alert_test`.
+
+```text
+DECLARE
+    v_name   VARCHAR2(30) := 'alert_test';
+BEGIN
+    DBMS_ALERT.SIGNAL(v_name,'This is the message from ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Issued alert for ' || v_name);
+END;
+Issued alert for alert_test
+```
+
+## WAITANY
+
+The `WAITANY` procedure waits for any of the registered alerts to occur.
+
+```text
+WAITANY(<name> OUT VARCHAR2, <message> OUT VARCHAR2,
+  <status> OUT INTEGER, <timeout> NUMBER)
+```
+
+**Parameters**
+
+`name`
+
+ Variable receiving the name of the alert.
+
+`message`
+
+ Variable receiving the message sent by the `SIGNAL` procedure.
+
+`status`
+
+ Status code returned by the operation. Possible values are: 0 – alert occurred; 1 – timeout occurred.
+
+`timeout`
+
+ Time to wait for an alert in seconds.
+
+**Examples**
+
+The following anonymous block uses the `WAITANY` procedure to receive an alert named, `alert_test` or `any_alert`:
+
+```text
+DECLARE
+    v_name           VARCHAR2(30);
+    v_msg            VARCHAR2(80);
+    v_status         INTEGER;
+    v_timeout        NUMBER(3) := 120;
+BEGIN
+    DBMS_ALERT.REGISTER('alert_test');
+    DBMS_ALERT.REGISTER('any_alert');
+    DBMS_OUTPUT.PUT_LINE('Registered for alert alert_test and any_alert');
+    DBMS_OUTPUT.PUT_LINE('Waiting for signal...');
+    DBMS_ALERT.WAITANY(v_name,v_msg,v_status,v_timeout);
+    DBMS_OUTPUT.PUT_LINE('Alert name   : ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Alert msg    : ' || v_msg);
+    DBMS_OUTPUT.PUT_LINE('Alert status : ' || v_status);
+    DBMS_OUTPUT.PUT_LINE('Alert timeout: ' || v_timeout || ' seconds');
+    DBMS_ALERT.REMOVEALL;
+END;
+
+Registered for alert alert_test and any_alert
+Waiting for signal...
+```
+
+An anonymous block in a second session issues a signal for `any_alert`:
+
+```text
+DECLARE
+    v_name   VARCHAR2(30) := 'any_alert';
+BEGIN
+    DBMS_ALERT.SIGNAL(v_name,'This is the message from ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Issued alert for ' || v_name);
+END;
+
+Issued alert for any_alert
+```
+
+Control returns to the first anonymous block and the remainder of the code is executed:
+
+```text
+Registered for alert alert_test and any_alert
+Waiting for signal...
+Alert name   : any_alert
+Alert msg    : This is the message from any_alert
+Alert status : 0
+Alert timeout: 120 seconds
+```
+
+## WAITONE
+
+The `WAITONE` procedure waits for the specified registered alert to occur.
+
+```text
+WAITONE(<name> VARCHAR2, <message> OUT VARCHAR2,
+  <status> OUT INTEGER, <timeout> NUMBER)
+```
+
+**Parameters**
+
+`name`
+
+ Name of the alert.
+
+`message`
+
+ Variable receiving the message sent by the `SIGNAL` procedure.
+
+`status`
+
+ Status code returned by the operation. Possible values are: 0 – alert occurred; 1 – timeout occurred.
+
+`timeout`
+
+ Time to wait for an alert in seconds.
+
+**Examples**
+
+The following anonymous block is similar to the one used in the `WAITANY` example except the `WAITONE` procedure is used to receive the alert named, `alert_test`.
+
+```text
+DECLARE
+    v_name           VARCHAR2(30) := 'alert_test';
+    v_msg            VARCHAR2(80);
+    v_status         INTEGER;
+    v_timeout        NUMBER(3) := 120;
+BEGIN
+    DBMS_ALERT.REGISTER(v_name);
+    DBMS_OUTPUT.PUT_LINE('Registered for alert ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Waiting for signal...');
+    DBMS_ALERT.WAITONE(v_name,v_msg,v_status,v_timeout);
+    DBMS_OUTPUT.PUT_LINE('Alert name   : ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Alert msg    : ' || v_msg);
+    DBMS_OUTPUT.PUT_LINE('Alert status : ' || v_status);
+    DBMS_OUTPUT.PUT_LINE('Alert timeout: ' || v_timeout || ' seconds');
+    DBMS_ALERT.REMOVE(v_name);
+END; 
+
+Registered for alert alert_test
+Waiting for signal...
+```
+
+Signal sent for `alert_test` sent by an anonymous block in a second session:
+
+```text
+DECLARE
+    v_name   VARCHAR2(30) := 'alert_test';
+BEGIN
+    DBMS_ALERT.SIGNAL(v_name,'This is the message from ' || v_name);
+    DBMS_OUTPUT.PUT_LINE('Issued alert for ' || v_name);
+END;
+
+Issued alert for alert_test
+```
+
+First session is alerted, control returns to the anonymous block, and the remainder of the code is executed:
+
+```text
+Registered for alert alert_test
+Waiting for signal...
+Alert name   : alert_test
+Alert msg    : This is the message from alert_test
+Alert status : 0
+Alert timeout: 120 seconds
+```
+
+## Comprehensive Example
+
+The following example uses two triggers to send alerts when the `dept` table or the `emp` table is changed. An anonymous block listens for these alerts and displays messages when an alert is received.
+
+The following are the triggers on the `dept` and `emp` tables:
+
+```text
+CREATE OR REPLACE TRIGGER dept_alert_trig
+    AFTER INSERT OR UPDATE OR DELETE ON dept
+DECLARE
+    v_action        VARCHAR2(25);
+BEGIN
+    IF INSERTING THEN
+        v_action := ' added department(s) ';
+    ELSIF UPDATING THEN
+        v_action := ' updated department(s) ';
+    ELSIF DELETING THEN
+        v_action := ' deleted department(s) ';
+    END IF;
+    DBMS_ALERT.SIGNAL('dept_alert',USER || v_action || 'on ' ||
+        SYSDATE);
+END;
+
+CREATE OR REPLACE TRIGGER emp_alert_trig
+    AFTER INSERT OR UPDATE OR DELETE ON emp
+DECLARE
+    v_action        VARCHAR2(25);
+BEGIN
+    IF INSERTING THEN
+        v_action := ' added employee(s) ';
+    ELSIF UPDATING THEN
+        v_action := ' updated employee(s) ';
+    ELSIF DELETING THEN
+        v_action := ' deleted employee(s) ';
+    END IF;
+    DBMS_ALERT.SIGNAL('emp_alert',USER || v_action || 'on ' ||
+        SYSDATE);
+END;
+```
+
+The following anonymous block is executed in a session while updates to the `dept` and `emp` tables occur in other sessions:
+
+```text
+DECLARE
+    v_dept_alert     VARCHAR2(30) := 'dept_alert';
+    v_emp_alert      VARCHAR2(30) := 'emp_alert';
+    v_name           VARCHAR2(30);
+    v_msg            VARCHAR2(80);
+    v_status         INTEGER;
+    v_timeout        NUMBER(3) := 60;
+BEGIN
+    DBMS_ALERT.REGISTER(v_dept_alert);
+    DBMS_ALERT.REGISTER(v_emp_alert);
+    DBMS_OUTPUT.PUT_LINE('Registered for alerts dept_alert and emp_alert');
+    DBMS_OUTPUT.PUT_LINE('Waiting for signal...');
+    LOOP
+        DBMS_ALERT.WAITANY(v_name,v_msg,v_status,v_timeout);
+        EXIT WHEN v_status != 0;
+        DBMS_OUTPUT.PUT_LINE('Alert name   : ' || v_name);
+        DBMS_OUTPUT.PUT_LINE('Alert msg    : ' || v_msg);
+        DBMS_OUTPUT.PUT_LINE('Alert status : ' || v_status);
+        DBMS_OUTPUT.PUT_LINE('------------------------------------' ||
+            '-------------------------');
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('Alert status : ' || v_status);
+    DBMS_ALERT.REMOVEALL;
+END;
+
+Registered for alerts dept_alert and emp_alert
+Waiting for signal...
+```
+
+The following changes are made by user, mary:
+
+```text
+INSERT INTO dept VALUES (50,'FINANCE','CHICAGO');
+INSERT INTO emp (empno,ename,deptno) VALUES (9001,'JONES',50);
+INSERT INTO emp (empno,ename,deptno) VALUES (9002,'ALICE',50);
+```
+
+The following change is made by user, john:
+
+```text
+INSERT INTO dept VALUES (60,'HR','LOS ANGELES');
+```
+
+The following is the output displayed by the anonymous block receiving the signals from the triggers:
+
+```text
+Registered for alerts dept_alert and emp_alert
+Waiting for signal...
+Alert name   : dept_alert
+Alert msg    : mary added department(s) on 25-OCT-07 16:41:01
+Alert status : 0
+-------------------------------------------------------------
+Alert name   : emp_alert
+Alert msg    : mary added employee(s) on 25-OCT-07 16:41:02
+Alert status : 0
+-------------------------------------------------------------
+Alert name   : dept_alert
+Alert msg    : john added department(s) on 25-OCT-07 16:41:22
+Alert status : 0
+-------------------------------------------------------------
+Alert status : 1
+```

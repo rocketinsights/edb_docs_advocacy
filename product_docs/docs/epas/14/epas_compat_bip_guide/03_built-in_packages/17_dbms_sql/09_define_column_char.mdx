@@ -1,0 +1,28 @@
+---
+title: "DEFINE_COLUMN_CHAR"
+---
+
+The `DEFINE_COLUMN_CHAR` procedure defines a `CHAR` column or expression in the `SELECT` list that is to be returned and retrieved in a cursor.
+
+```text
+DEFINE_COLUMN_CHAR(<c> NUMBER, <position> NUMBER, <column>
+CHAR, <column_size> NUMBER)
+```
+
+**Parameters**
+
+`c`
+
+ Cursor id of the cursor associated with the `SELECT` command.
+
+`position`
+
+ Position of the column or expression in the `SELECT` list that is being defined.
+
+`column`
+
+ A `CHAR` variable.
+
+`column_size`
+
+ The maximum length of the returned data. Returned data exceeding `column_size` is truncated to `column_size` characters.

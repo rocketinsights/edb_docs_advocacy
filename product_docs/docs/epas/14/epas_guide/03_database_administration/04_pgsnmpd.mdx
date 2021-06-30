@@ -1,0 +1,129 @@
+---
+title: "pgsnmpd"
+---
+
+<div id="pgsnmpd" class="registered_link"></div>
+
+`pgsnmpd` is an SNMP agent that can return hierarchical information about the current state of Advanced Server on a Linux system. `pgsnmpd` is distributed and installed using the `edb-asxx-pgsnmpd` RPM package where `xx` is the Advanced Server version number. The `pgsnmpd` agent can operate as a stand-alone SNMP agent, as a pass-through sub-agent, or as an AgentX sub-agent.
+
+After installing Advanced Server, you will need to update the `LD_LIBRARY_PATH` variable. Use the command:
+
+```text
+$ export LD_LIBRARY_PATH=/usr/edb/as14/lib:$LD_LIBRARY_PATH
+```
+
+This command does not persistently alter the value of `LD_LIBRARY_PATH`. Consult the documentation for your distribution of Linux for information about persistently setting the value of `LD_LIBRARY_PATH`.
+
+The examples that follow demonstrate the simplest usage of `pgsnmpd`, implementing read only access. `pgsnmpd` is based on the net-snmp library; for more information about net-snmp, visit:
+
+<http://net-snmp.sourceforge.net/>
+
+## Configuring pgsnmpd
+
+The `pgsnmpd` configuration file is named `snmpd.conf`. For information about the directives that you can specify in the configuration file, please review the `snmpd.conf` man page (`man snmpd.conf`).
+
+You can create the configuration file by hand, or you can use the `snmpconf` perl script to create the configuration file. The perl script is distributed with net-snmp package.
+
+net-snmp is an open-source package available from:
+
+<http://www.net-snmp.org/>
+
+To use the snmpconf configuration file wizard, download and install net-snmp. When the installation completes, open a command line and enter:
+
+```text
+snmpconf
+```
+
+When the configuration file wizard opens, it may prompt you to read in an existing configuration file. Enter `none` to generate a new configuration file (not based on a previously existing configuration file).
+
+`snmpconf` is a menu-driven wizard. Select menu item `1: snmpd.conf` to start the configuration wizard. As you select each top-level menu option displayed by `snmpconf`, the wizard walks through a series of questions, prompting you for information required to build the configuration file. When you have provided information in each of the category relevant to your system, enter `Finished` to generate a configuration file named `snmpd.conf`. Copy the file to:
+
+```text
+/usr/edb/as14/share/
+```
+
+## Setting the Listener Address
+
+By default, `pgsnmpd` listens on port `161`. If the listener port is already being used by another service, you may receive the following error:
+
+```text
+Error opening specified endpoint "udp:161".
+```
+
+You can specify an alternate listener port by adding the following line to your `snmpd.conf` file:
+
+```text
+agentaddress $host_address:2000
+```
+
+The example instructs `pgsnmpd` to listen on UDP port `2000`, where `$host_address` is the IP address of the server (e.g., `127.0.0.1`).
+
+Before invoking `pgsnmpd`, you must create the `pgsnmpd` schema and set the search path to create tables in the `pgsnmpd` schema using the following commands:
+
+```text
+CREATE SCHEMA pgsnmpd;
+SET search_path = pgsnmpd;
+\i pgsnmpd.sql
+```
+
+## Invoking pgsnmpd
+
+Ensure that an instance of Advanced Server is up and running (`pgsnmpd` will connect to this server). Open a command line and assume superuser privileges, before invoking pgsnmpd with a command that takes the following form:
+
+```text
+POSTGRES_INSTALL_HOME/bin/pgsnmpd -b
+  -c POSTGRES_INSTALL_HOME/share/snmpd.conf
+  -C "user=enterprisedb dbname=edb password=safe_password
+      port=5444"
+```
+
+Where `POSTGRES_INSTALL_HOME` specifies the Advanced Server installation directory.
+
+Include the `-b` option to specify that `pgsnmpd` should run in the background.
+
+Include the `-c` option, specifying the path and name of the `pgsnmpd` configuration file.
+
+Include connection information for your installation of Advanced Server (in the form of a `libpq` connection string) after the `-C` option.
+
+## Viewing pgsnmpd Help
+
+Include the `--help` option when invoking the `pgsnmpd` utility to view other `pgsnmpd` command line options:
+
+```text
+pgsnmpd --help
+  Version PGSQL-SNMP-Ver1.0
+  usage: pgsnmpd [-s] [-b] [-c FILE ] [-x address ] [-g] [-C "Connect String"]
+     -s : run as AgentX sub-agent of an existing snmpd process
+     -b : run in the background
+     -c : configuration file name
+     -g : use syslog
+     -C : libpq connection string
+     -x : address:port of a network interface
+     -V : display version strings
+```
+
+## Requesting Information from pgsnmpd
+
+You can use `net-snmp` commands to query the `pgsnmpd` service. For example:
+
+```text
+snmpgetnext -v 2c -c public localhost .1.3.6.1.4.1.5432.1.4.2.1.1.0
+```
+
+In the above example:
+
+`-v 2c` option instructs the `snmpgetnext` client to send the request in SNMP version 2c format.
+
+`-c public` specifies the community name.
+
+`localhost` indicates the host machine running the `pgsnmpd` server.
+
+`.1.3.6.1.4.1.5432.1.4.2.1.1.0` is the identity of the requested object. To see a list of all databases, increment the last digit by one (e.g. .1.1, .1.2, .1.3 etc.).
+
+The encodings required to query any given object are defined in the MIB (Management Information Base). An SNMP client can monitor a variety of servers; the server type determines the information exposed by a given server. Each SNMP server describes the exposed data in the form of a MIB (Management information base). By default, pgsnmpd searches for MIB's in the following locations:
+
+```text
+/usr/share/snmp/mibs
+
+$HOME/.snmp/mibs
+```

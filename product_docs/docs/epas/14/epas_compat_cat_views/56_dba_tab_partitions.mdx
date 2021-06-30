@@ -1,0 +1,45 @@
+---
+title: "DBA_TAB_PARTITIONS"
+---
+
+<div id="dba_tab_partitions" class="registered_link"></div>
+
+The `DBA_TAB_PARTITIONS` view provides information about all of the partitions that reside in the database.
+
+| Name                 | Type                          | Description                                                                                                                               |
+| -------------------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `table_owner`        | `TEXT`                        | The owner of the table in which the partition resides.                                                                                    |
+| `schema_name`        | `TEXT`                        | The name of the schema in which the table resides.                                                                                        |
+| `table_name`         | `TEXT`                        | The name of the table.                                                                                                                    |
+| `composite`          | `TEXT`                        | `YES` if the table is subpartitioned; NO if the table is not subpartitioned.                                                              |
+| `partition_name`     | `TEXT`                        | The name of the partition.                                                                                                                |
+| `subpartition_count` | `BIGINT`                      | The number of subpartitions in the partition.                                                                                             |
+| `high_value`         | `TEXT`                        | The high partitioning value specified in the `CREATE TABLE` statement.                                                                    |
+| `high_value_length`  | `INTEGER`                     | The length of high partitioning value.                                                                                                    |
+| `partition_position` | `INTEGER`                     | The ordinal position of this partition.                                                                                                   |
+| `tablespace_name`    | `TEXT`                        | The name of the tablespace in which the partition resides. If the tablespace name is not specified, then default tablespace `PG_DEFAULT`. |
+| `pct_free`           | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `pct_used`           | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `ini_trans`          | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `max_trans`          | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `initial_extent`     | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `next_extent`        | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `min_extent`         | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `max_extent`         | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `pct_increase`       | `NUMERIC`                     | Included for compatibility only; always `0`.                                                                                              |
+| `freelists`          | `NUMERIC`                     | Included for compatibility only; always `NULL`                                                                                            |
+| `freelist_groups`    | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `logging`            | `CHARACTER VARYING(7)`        | Included for compatibility only; always `YES`.                                                                                            |
+| `compression`        | `CHARACTER VARYING(8)`        | Included for compatibility only; always `NONE`.                                                                                           |
+| `num_rows`           | `NUMERIC`                     | Same as `pg_class.reltuples`.                                                                                                             |
+| `blocks`             | `INTEGER`                     | Same as `pg_class.relpages`.                                                                                                              |
+| `empty_blocks`       | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `avg_space`          | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `chain_cnt`          | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `avg_row_len`        | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `sample_size`        | `NUMERIC`                     | Included for compatibility only; always `NULL`.                                                                                           |
+| `last_analyzed`      | `TIMESTAMP WITHOUT TIME ZONE` | Included for compatibility only; always `NULL`.                                                                                           |
+| `buffer_pool`        | `CHARACTER VARYING(7)`        | Included for compatibility only; always `NULL`.                                                                                           |
+| `global_stats`       | `CHARACTER VARYING(3)`        | Included for compatibility only; always `YES`.                                                                                            |
+| `user_stats`         | `CHARACTER VARYING(3)`        | Included for compatibility only; always `NO`.                                                                                             |
+| `backing_table`      | `REGCLASS`                    | Name of the partition backing table.                                                                                                      |

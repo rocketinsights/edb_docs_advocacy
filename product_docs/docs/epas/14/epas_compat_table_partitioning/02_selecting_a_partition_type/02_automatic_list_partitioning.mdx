@@ -1,0 +1,19 @@
+---
+title: "Automatic List Partitioning"
+---
+
+<div id="automatic_list_partitioning" class="registered_link"></div>
+
+Automatic list partitioning is an extension to `LIST` partitioning that allows a database to automatically create a partition for any new distinct value of the list partitioning key. A new partition is created when data is inserted into the `LIST` partitioned table and the inserted value does not match any of the existing table partition. Use the `AUTOMATIC` clause to implement automatic list partitioning.
+
+For example, consider a table named `sales` with a `sales_state` column that contains the existing partition values `CALIFORNIA` and `FLORIDA`. Each of the `sales_state` values will increase with a rise in the state-wise sales. A sale in a new state (for example, `INDIANA` and `OHIO`) will require the creation of new partitions. If you have implemented automatic list partitioning, the new partitions `INDIANA` and `OHIO` are automatically created and data is entered into the `sales` table.
+
+For information about automatic list partitioning syntax, see [CREATE TABLE...PARTITION BY](../04_partitioning_commands_compatible_with_oracle_databases/01_create_table_partition_by/#create_table_partition_by).
+
+**Restrictions on Automatic List Partitioning**
+
+The following restrictions apply to the `AUTOMATIC` clause:
+
+-   A table that enables automatic list partitioning cannot have a `DEFAULT` partition.
+-   Automatic list partitioning does not support multi-column list partitioning.
+-   In composite partitioning, the automatic list partitioning can be useful as a primary partitioning mechanism but is not supported at the subpartition level.

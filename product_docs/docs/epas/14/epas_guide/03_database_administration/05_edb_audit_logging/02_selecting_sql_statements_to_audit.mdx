@@ -1,0 +1,697 @@
+---
+title: "Selecting SQL Statements to Audit"
+---
+
+<div id="selecting_sql_statements_to_audit" class="registered_link"></div>
+
+The `edb_audit_statement` permits inclusion of one or more, comma-separated values to control which SQL statements are to be audited. The following is the general format:
+
+```text
+edb_audit_statement = 'value_1[, value_2]...'
+```
+
+The comma-separated values may include or omit space characters following the comma. The values can be specified in any combination of lowercase or uppercase letters.
+
+The basic parameter values are the following:
+
+-   `all` – Results in the auditing and logging of every statement including any error messages on statements.
+-   `none` – Disables all auditing and logging. A value of `none` overrides any other value included in the list.
+-   `ddl` – Results in the auditing of all data definition language (DDL) statements (`CREATE`, `ALTER`, and `DROP`) as well as `GRANT` and `REVOKE` data control language (DCL) statements.
+-   `dml` – Results in the auditing of all data manipulation language (DML) statements (`INSERT`, `UPDATE`, `DELETE`, and `TRUNCATE`).
+-   `select` – Results in the auditing of `SELECT` statements.
+-   `set` – Results in the auditing of `SET` statements.
+-   `rollback` – Results in the auditing of `ROLLBACK` statements.
+-   `error` – Results in the logging of all error messages that occur. Unless the `error` value is included, no error messages are logged regarding any errors that occur on SQL statements related to any of the other preceding parameter values except when `all` is used.
+
+`Data Definition Language and Data Control Language Statements` describes additional parameter values for selecting particular DDL or DCL statements for auditing.
+
+`Data Manipulation Language Statements` describes additional parameter values for selecting particular DML statements for auditing.
+
+If an unsupported value is included in the `edb_audit_statement` parameter, then an error occurs when applying the setting to the database server. See the database server log file for the error such as in the following example where `create materialized vw` results in the error. (The correct value is `create materialized view`.)
+
+```text
+2017-07-16 11:20:39 EDT LOG:  invalid value for parameter
+"edb_audit_statement": "create materialized vw, create sequence, grant"
+2017-07-16 11:20:39 EDT FATAL:  configuration file "/var/lib/edb/as14/data/
+postgresql.conf" contains errors
+```
+
+The following sections describe the values for the SQL language types DDL, DCL, and DML.
+
+## Data Definition Language and Data Control Language Statements
+
+This section describes values that can be included in the `edb_audit_statement` parameter to audit DDL and DCL statements.
+
+The following general rules apply:
+
+-   If the `edb_audit_statement` parameter includes either `ddl` or `all`, then all DDL statements are audited. In addition, the DCL statements `GRANT` and `REVOKE` are audited as well.
+-   If the `edb_audit_statement` is set to `none`, then no DDL nor DCL statements are audited.
+-   Specific types of DDL and DCL statements can be chosen for auditing by including a combination of values within the `edb_audit_statement` parameter.
+
+Use the following syntax to specify an `edb_audit_statement` parameter value for DDL statements:
+
+```text
+{ create | alter | drop } [ <object_type> ]
+```
+
+`object_type` is any of the following:
+
+ -  `ACCESS METHOD`
+
+ -  `AGGREGATE`
+
+ -  `CAST`
+
+ -  `COLLATION`
+
+ -  `CONVERSION`
+
+ -  `DATABASE`
+
+ -  `EVENT TRIGGER`
+
+ -  `EXTENSION`
+
+ -  `FOREIGN TABLE`
+
+ -  `FUNCTION`
+
+ -  `INDEX`
+
+ -  `LANGUAGE`
+
+ -  `LARGE OBJECT`
+
+ -  `MATERIALIZED VIEW`
+
+ -  `OPERATOR`
+
+ -  `OPERATOR CLASS`
+
+ -  `OPERATOR FAMILY`
+
+ -  `POLICY`
+
+ -  `PUBLICATION`
+
+ -  `ROLE`
+
+ -  `RULE`
+
+ -  `SCHEMA`
+
+ -  `SEQUENCE`
+
+ -  `SERVER`
+
+ -  `SUBSCRIPTION`
+
+ -  `TABLE`
+
+ -  `TABLESPACE`
+
+ -  `TEXT SEARCH CONFIGURATION`
+
+ -  `TEXT SEARCH DICTIONARY`
+
+ -  `TEXT SEARCH PARSER`
+
+ -  `TEXT SEARCH TEMPLATE`
+
+ -  `TRANSFORM`
+
+ -  `TRIGGER`
+
+ -  `TYPE`
+
+ -  `USER MAPPING`
+
+ -  `VIEW`
+
+Descriptions of object types as used in SQL commands can be found in the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/sql-commands.html>
+
+If `object_type` is omitted from the parameter value, then all of the specified command statements (either `create`, `alter`, or `drop`) are audited.
+
+Use the following syntax to specify an `edb_audit_statement` parameter value for DCL statements:
+
+```text
+{ grant | revoke }
+```
+
+The following are some DDL and DCL examples.
+
+**Example 1**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit_statement = 'create, alter, error'
+```
+
+Thus, only SQL statements invoked by the `CREATE` and `ALTER` commands are audited. Error messages are also included in the audit log.
+
+The database session that occurs is the following:
+
+```text
+$ psql edb enterprisedb
+Password for user enterprisedb:
+psql.bin (14.0.0)
+Type "help" for help.
+
+edb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+edb=# SHOW edb_audit_statement;
+ edb_audit_statement
+----------------------
+ create, alter, error
+(1 row)
+
+edb=# CREATE ROLE adminuser;
+CREATE ROLE
+edb=# ALTER ROLE adminuser WITH LOGIN, SUPERUSER, PASSWORD 'password';
+ERROR:  syntax error at or near ","
+LINE 1: ALTER ROLE adminuser WITH LOGIN, SUPERUSER, PASSWORD 'passwo...
+                                    ^
+edb=# ALTER ROLE adminuser WITH LOGIN SUPERUSER PASSWORD 'password';
+ALTER ROLE
+edb=# CREATE DATABASE auditdb;
+CREATE DATABASE
+edb=# ALTER DATABASE auditdb OWNER TO adminuser;
+ALTER DATABASE
+edb=# \c auditdb adminuser
+Password for user adminuser:
+You are now connected to database "auditdb" as user "adminuser".
+auditdb=# CREATE SCHEMA edb;
+CREATE SCHEMA
+auditdb=# SET search_path TO edb;
+SET
+auditdb=# CREATE TABLE department (
+auditdb(#  deptno          NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+auditdb(#  dname           VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+auditdb(#  loc             VARCHAR2(13)
+auditdb(# );
+CREATE TABLE
+auditdb=# DROP TABLE department;
+DROP TABLE
+auditdb=# CREATE TABLE dept (
+auditdb(#  deptno          NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+auditdb(#  dname           VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+auditdb(#  loc             VARCHAR2(13)
+auditdb(# );
+CREATE TABLE
+```
+
+The resulting audit log file contains the following.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2020-05-25 12:32:22.799 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,1,"authentication",2020-05-25 12:32:22 IST,4/19,0,AUDIT,00000,
+"connection authorized:user=enterprisedb database=edb",,,,,,,,,"","client
+backend","","connect"
+
+2020-05-25 12:34:05.843 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,2,"idle",2020-05-25 12:32:22 IST,4/23,0,AUDIT,00000,"statement: CREATE
+ROLE adminuser;",,,,,,,,,"psql","client backend","CREATE ROLE","create"
+
+2020-05-25 12:34:16.617 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,3,"idle",2020-05-25 12:32:22 IST,4/24,0,ERROR,42601,"syntax error at or
+near "",""",,,,,,"ALTER ROLE adminuser WITH LOGIN, SUPERUSER, PASSWORD
+'password';",32,,"psql","client backend","","error"
+
+2020-05-25 12:34:29.954 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,4,"idle",2020-05-25 12:32:22 IST,4/25,0,AUDIT,00000,"statement: ALTER
+ROLE adminuser WITH LOGIN SUPERUSER PASSWORD 'password';",,,,,,,,,"psql",
+"client backend","ALTER ROLE","alter"
+
+2020-05-25 12:34:40.114 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,5,"idle",2020-05-25 12:32:22 IST,4/26,0,AUDIT,00000,"statement: CREATE
+DATABASE auditdb;",,,,,,,,,"psql","client backend","CREATE DATABASE","create"
+
+2020-05-25 12:34:50.591 IST,"enterprisedb","edb",72518,"[local]",5ecb6d7e.
+11b46,6,"idle",2020-05-25 12:32:22 IST,4/27,0,AUDIT,00000,"statement: ALTER
+DATABASE auditdb OWNER TO adminuser;",,,,,,,,,"psql","client backend","ALTER
+DATABASE","alter"
+
+2020-05-25 12:35:01.554 IST,"adminuser","auditdb",75531,"[local]",5ecb6e1d.
+1270b,1,"authentication",2020-05-25 12:35:01 IST,5/11,0,AUDIT,00000,
+"connection authorized:user=adminuser database=auditdb",,,,,,,,,"","client
+backend","","connect"
+
+2020-05-25 12:35:12.931 IST,"adminuser","auditdb",75531,"[local]",5ecb6e1d.
+1270b,2,"idle",2020-05-25 12:35:01 IST,5/13,0,AUDIT,00000,"statement: CREATE
+SCHEMA edb;",,,,,,,,,"psql","client backend","CREATE SCHEMA","create"
+
+2020-05-25 12:37:18.547 IST,"adminuser","auditdb",75531,"[local]",5ecb6e1d.
+1270b,3,"idle",2020-05-25 12:35:01 IST,5/15,0,AUDIT,00000,"statement: CREATE
+TABLE department
+(
+     deptno   NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+     dname    VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+     loc      VARCHAR2(13)
+);",,,,,,,,,"psql","client backend","CREATE TABLE","create"
+
+2020-05-25 12:39:09.065 IST,"adminuser","auditdb",75531,"[local]",5ecb6e1d.
+1270b,4,"idle",2020-05-25 12:35:01 IST,5/17,0,AUDIT,00000,"statement: CREATE
+TABLE dept (
+     deptno          NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+     dname           VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+     loc             VARCHAR2(13)
+);",,,,,,,,,"psql","client backend","CREATE TABLE","create"
+```
+
+The `CREATE` and `ALTER` statements for the `adminuser` role and `auditdb` database are audited. The error for the `ALTER ROLE adminuser` statement is also logged since error is included in the `edb_audit_statement` parameter.
+
+Similarly, the `CREATE` statements for schema `edb` and tables `department` and `dept` are audited.
+
+Note that the `DROP TABLE department` statement is not in the audit log since there is no `edb_audit_statement` setting that would result in the auditing of successfully processed `DROP` statements such as `ddl`, `all`, or `drop`.
+
+**Example 2**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit_statement = 'create view,create materialized view,create sequence,grant'
+```
+
+Thus, only SQL statements invoked by the `CREATE VIEW`, `CREATE MATERIALIZED VIEW`, `CREATE SEQUENCE` and `GRANT` commands are audited.
+
+The database session that occurs is the following:
+
+```text
+$ psql auditdb adminuser
+Password for user adminuser:
+psql.bin (14.0.0)
+Type "help" for help.
+
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+                 edb_audit_statement
+------------------------------------------------------------
+ create view,create materialized view,create sequence,grant
+(1 row)
+
+auditdb=# SET search_path TO edb;
+SET
+auditdb=# CREATE TABLE emp (
+auditdb(#   empno           NUMBER(4) NOT NULL CONSTRAINT emp_pk PRIMARY KEY,
+auditdb(#   ename           VARCHAR2(10),
+auditdb(#   job             VARCHAR2(9),
+auditdb(#   mgr             NUMBER(4),
+auditdb(#   hiredate        DATE,
+auditdb(#   sal             NUMBER(7,2) CONSTRAINT emp_sal_ck CHECK (sal > 0),
+auditdb(#   comm            NUMBER(7,2),
+auditdb(#   deptno          NUMBER(2) CONSTRAINT emp_ref_dept_fk
+auditdb(#                       REFERENCES dept(deptno)
+auditdb(# );
+CREATE TABLE
+auditdb=# CREATE VIEW salesemp AS
+auditdb-#     SELECT empno, ename, hiredate, sal, comm FROM emp WHERE job =
+'SALESMAN';
+CREATE VIEW
+auditdb=# CREATE MATERIALIZED VIEW managers AS
+auditdb-#     SELECT empno, ename, hiredate, sal, comm FROM emp WHERE job =
+'MANAGER';
+SELECT 0
+auditdb=# CREATE SEQUENCE next_empno START WITH 8000 INCREMENT BY 1;
+CREATE SEQUENCE
+auditdb=# GRANT ALL ON dept TO PUBLIC;
+GRANT
+auditdb=# GRANT ALL ON emp TO PUBLIC;
+GRANT
+```
+
+The resulting audit log file contains the following.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2020-05-25 14:05:29.163 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,1,"authentication",2020-05-25 14:05:29 IST,4/28,0,AUDIT,00000,
+"connection authorized:user=adminuser database=auditdb",,,,,,,,,"","client
+backend","","connect"
+
+2020-05-25 14:12:06.318 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,2,"idle",2020-05-25 14:05:29 IST,4/34,0,AUDIT,00000,"statement: CREATE
+VIEW salesemp AS SELECT empno, ename, hiredate, sal, comm FROM emp WHERE job
+= 'SALESMAN';",,,,,,,,,"psql","client backend","CREATE VIEW","create"
+
+2020-05-25 14:13:26.657 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,3,"idle",2020-05-25 14:05:29 IST,4/36,0,AUDIT,00000,"statement: CREATE
+MATERIALIZED VIEW managers AS SELECT empno, ename, hiredate, sal, comm FROM
+emp WHERE job = 'MANAGER';",,,,,,,,,"psql","client backend","CREATE
+MATERIALIZED VIEW","create"
+
+2020-05-25 14:13:38.928 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,4,"idle",2020-05-25 14:05:29 IST,4/37,0,AUDIT,00000,"statement: CREATE
+SEQUENCE next_empno START WITH 8000 INCREMENT BY 1;",,,,,,,,,"psql","client
+backend","CREATE SEQUENCE","create"
+
+2020-05-25 14:13:51.434 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,5,"idle",2020-05-25 14:05:29 IST,4/38,0,AUDIT,00000,"statement: GRANT
+ALL ON dept TO PUBLIC;",,,,,,,,,"psql","client backend","GRANT","grant"
+
+2020-05-25 14:14:03.737 IST,"adminuser","auditdb",40810,"[local]",5ecb8351.
+9f6a,6,"idle",2020-05-25 14:05:29 IST,4/39,0,AUDIT,00000,"statement: GRANT
+ALL ON emp TO PUBLIC;",,,,,,,,,"psql","client backend","GRANT","grant"
+```
+
+The `CREATE VIEW` and `CREATE MATERIALIZED VIEW` statements are audited. Note that the prior `CREATE TABLE emp` statement is not audited since none of the values `create`, `create table`, `ddl`, nor `all` are included in the `edb_audit_statement` parameter.
+
+The `CREATE SEQUENCE` and `GRANT` statements are audited since those values are included in the `edb_audit_statement` parameter.
+
+**Example 3**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit_statement = 'none'
+```
+
+The session for users who connect as `ADMIN` or `SYSDBA` can be fully audited. An admin user is connected to a database `auditdb` as `ADMINUSER`, the following `ALTER USER` command specifies that `ADMINUSER` is to be audited.
+
+```text
+ALTER USER adminuser SET edb_audit_statement = "all";
+```
+
+Setting the `edb_audit_statement` parameter to `all` allows auditing all of the SQL statements for an admin user.
+
+The database session that occurs is the following:
+
+```text
+$ psql auditdb adminuser
+Password for user adminuser:
+psql.bin (14.0.0)
+Type "help" for help.
+
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+ edb_audit_statement 
+---------------------
+ all
+(1 row)
+
+auditdb=# SET search_path TO edb;
+SET
+auditdb=> CREATE TABLE dept
+auditdb->        (deptno NUMBER(2),
+auditdb(>         dname VARCHAR2(14),
+auditdb(>         loc VARCHAR2(13) );
+CREATE TABLE
+auditdb=> INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
+INSERT 0 1
+auditdb=> INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
+INSERT 0 1
+auditdb=> INSERT INTO dept VALUES (30, 'SALES', 'CHICAGO');
+INSERT 0 1
+auditdb=>  UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
+UPDATE 1
+auditdb=> SELECT * FROM dept;
+ deptno |   dname    |   loc    
+--------+------------+----------
+     10 | ACCOUNTING | NEW YORK
+     30 | SALES      | CHICAGO
+     20 | RESEARCH   | BEDFORD
+(3 rows)
+
+auditdb=> DELETE FROM emp WHERE deptno = 40;
+ERROR:  relation "emp" does not exist
+LINE 1: DELETE FROM emp WHERE deptno = 40;
+                    ^
+auditdb=> DELETE FROM dept WHERE deptno = 10;
+DELETE 1
+auditdb=> SELECT * FROM dept;
+ deptno |  dname   |   loc   
+--------+----------+---------
+     30 | SALES    | CHICAGO
+     20 | RESEARCH | BEDFORD
+(2 rows)
+```
+
+The resulting audit log file contains the following.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2021-06-23 06:06:59.027 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,1,"authentication",2021-06-23 06:06:59 IST,4/19,0,AUDIT,00000,"connection authorized: 
+user=adminuser database=auditdb",,,,,,,,,"","client backend",,"","","connect"
+
+2021-06-23 06:07:33.192 IST,"adminuser","auditdb",66316,"[local]",60daab0c.
+1030c,2,"idle",2021-06-23 06:07:33 IST,4/16,0,AUDIT,00000,"statement: SHOW edb_audit_connect;
+",,,,,,,,,"psql","client backend",,"SHOW","","sql statement"
+
+2021-06-23 06:08:12.474 IST,"adminuser","auditdb",66316,"[local]",60daab0c.
+1030c,3,"idle",2021-06-23 06:08:12 IST,4/17,0,AUDIT,00000,"statement: SHOW edb_audit_statement;
+",,,,,,,,,"psql","client backend",,"SHOW","","sql statement"
+
+2021-06-23 06:08:20.519 IST,"adminuser","auditdb",66922,"[local]",60dab036.
+1056a,4,"idle",2021-06-23 06:08:20 IST,4/15,0,AUDIT,00000,"statement: SET search_path TO edb;
+",,,,,,,,,"psql","client backend",,"SET","","set"
+
+2021-06-23 06:09:27.613 IST,"adminuser","auditdb",60218,"[local]",60dab117.
+10602,5,"idle",2021-06-23 06:09:59 IST,4/21,0,AUDIT,00000,"statement: CREATE TABLE dept
+       (deptno NUMBER(2),
+        dname VARCHAR2(14),
+        loc VARCHAR2(13) );",,,,,,,,,"psql","client backend",,"CREATE TABLE","","create"
+
+2021-06-23 06:09:39.238 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,6,"idle",2021-06-23 06:09:29 IST,4/22,0,AUDIT,00000,"statement: INSERT INTO 
+dept VALUES (10, 'ACCOUNTING', 'NEW YORK');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-06-23 06:09:39.242 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,7,"idle",2021-06-23 06:09:29 IST,4/23,0,AUDIT,00000,"statement: INSERT INTO 
+dept VALUES (20, 'RESEARCH', 'DALLAS');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-06-23 06:09:39.247 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,8,"idle",2021-06-23 06:08:35 IST,4/24,0,AUDIT,00000,"statement: INSERT INTO 
+dept VALUES (30, 'SALES', 'CHICAGO');",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-06-23 06:10:04.849 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,9,"idle",2021-06-23 06:08:59 IST,4/25,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' 
+WHERE deptno = 20;",,,,,,,,,"psql","client backend",,"UPDATE","","update"
+
+2021-06-23 06:10:16.045 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,10,"idle",2021-06-23 06:08:59 IST,4/26,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+
+2021-06-23 06:10:40.593 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,11,"idle",2021-06-23 06:08:59 IST,4/27,0,AUDIT,00000,"statement: DELETE FROM emp WHERE deptno = 40;
+",,,,,,,,,"psql","client backend",,"DELETE","","delete"
+
+2021-06-23 06:10:40.594 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,12,"DELETE",2021-06-23 06:08:59 IST,4/27,0,ERROR,42P01,"relation ""emp"" does not exist",,,,,,
+"DELETE FROM emp WHERE deptno = 40;",13,,"psql","client backend",,"DELETE","","error"
+
+2021-06-23 06:11:02.563 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,13,"idle",2021-06-23 06:08:59 IST,4/28,0,AUDIT,00000,"statement: DELETE FROM dept WHERE deptno = 10;
+",,,,,,,,,"psql","client backend",,"DELETE","","delete"
+
+2021-06-23 06:11:14.585 IST,"adminuser","auditdb",60218,"[local]",60d3083b.
+eb3a,14,"idle",2021-06-23 06:08:59 IST,4/29,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+```
+
+**Example 4**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit_statement = 'all'
+```
+
+The audit session for a user `carol` can be fully blocked by the database administrators using the `ALTER USER` command:
+
+```text
+ALTER USER carol SET edb_audit_statement = "none";
+```
+
+!!! Note
+    The database administrator can allow a specific user to audit any SQL statements by specifying the `ALTER USER` command and setting the `edb_audit_statement` parameter to any desired value.
+    
+The database session that occurs is the following:
+
+```text
+$ psql auditdb carol
+Password for user carol:
+psql.bin (14.0.0)
+Type "help" for help.
+
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+ edb_audit_statement 
+---------------------
+ none
+(1 row)
+
+auditdb=# SET search_path TO edb;
+SET
+auditdb=> CREATE TABLE salgrade
+auditdb->         (grade NUMBER,
+auditdb(>          losal NUMBER,
+auditdb(>          hisal NUMBER);
+CREATE TABLE
+INSERT INTO salgrade VALUES (1,  700, 1200);
+INSERT INTO salgrade VALUES (2, 1201, 1400);
+INSERT INTO salgrade VALUES (3, 1401, 2000);
+```
+
+The resulting audit log file contains only the connection authentication information. The setting the `edb_audit_statement` parameter to `none` does not allow auditing any of the SQL statements for `carol`, and thereby no audit logs are generated.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2021-06-29 02:27:26.240 IST,"carol","auditdb",68072,"[local]",60dabd4e.
+109e8,1,"authentication",2021-06-29 02:27:26 IST,4/13,0,AUDIT,00000,"connection authorized: user=carol 
+database=auditdb",,,,,,,,,"","client backend",,"","","connect"
+```
+
+## Data Manipulation Language Statements
+
+This section describes the values that can be included in the `edb_audit_statement` parameter to audit DML statements.
+
+The following general rules apply:
+
+-   If the `edb_audit_statement` parameter includes either `dml` or `all`, then all DML statements are audited.
+-   If the `edb_audit_statement` is set to `none`, then no DML statements are audited.
+-   Specific types of DML statements can be chosen for auditing by including a combination of values within the `edb_audit_statement` parameter.
+
+Use the following syntax to specify an `edb_audit_statement` parameter value for `SQL INSERT`, `UPDATE`, `DELETE`, or `TRUNCATE` statements:
+
+```text
+{ insert | update | delete | truncate }
+```
+
+**Example**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit_statement = 'UPDATE, DELETE, error'
+```
+
+Thus, only SQL statements invoked by the `UPDATE` and `DELETE` commands are audited. All errors are also included in the audit log (even errors not related to the `UPDATE` and `DELETE` commands).
+
+The database session that occurs is the following:
+
+```text
+$ psql auditdb adminuser
+Password for user adminuser:
+psql.bin (14.0.0)
+Type "help" for help.
+
+auditdb=# SHOW edb_audit_connect;
+ edb_audit_connect
+-------------------
+ all
+(1 row)
+
+auditdb=# SHOW edb_audit_statement;
+ edb_audit_statement
+-----------------------
+ UPDATE, DELETE, error
+(1 row)
+
+auditdb=# SET search_path TO edb;
+SET
+auditdb=# INSERT INTO dept VALUES (10,'ACCOUNTING','NEW YORK');
+INSERT 0 1
+auditdb=# INSERT INTO dept VALUES (20,'RESEARCH','DALLAS');
+INSERT 0 1
+auditdb=# INSERT INTO dept VALUES (30,'SALES','CHICAGO');
+INSERT 0 1
+auditdb=# INSERT INTO dept VALUES (40,'OPERATIONS','BOSTON');
+INSERT 0 1
+auditdb=# INSERT INTO emp VALUES (7369,'SMITH','CLERK',7902,'17-DEC-80',800,NULL,20);
+INSERT 0 1
+auditdb=# INSERT INTO emp VALUES (7499,'ALLEN','SALESMAN',7698,'20-FEB-81',1600,300,30);
+INSERT 0 1
+auditdb=# INSERT INTO emp VALUES (7521,'WARD','SALESMAN',7698,'22-FEB-81',1250,500,30);
+INSERT 0 1
+                 .
+                 .
+                 .
+auditdb=# INSERT INTO emp VALUES (7934,'MILLER','CLERK',7782,'23-JAN-82',1300,NULL,10);
+INSERT 0 1
+auditdb=# UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 40;
+UPDATE 1
+auditdb=# SELECT * FROM dept;
+ deptno |   dname    |   loc
+--------+------------+----------
+     10 | ACCOUNTING | NEW YORK
+     20 | RESEARCH   | DALLAS
+     30 | SALES      | CHICAGO
+     40 | OPERATIONS | BEDFORD
+(4 rows)
+
+auditdb=# DELETE FROM emp WHERE deptno = 10;
+DELETE 3
+auditdb=# TRUNCATE employee;
+ERROR:  relation "employee" does not exist
+auditdb=# TRUNCATE emp;
+TRUNCATE TABLE
+auditdb=# \q
+```
+
+The resulting audit log file contains the following.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2020-05-25 15:17:16.392 IST,"adminuser","auditdb",123420,"[local]",5ecb9424.
+1e21c,1,"authentication",2020-05-25 15:17:16 IST,5/3,0,AUDIT,00000,
+"connection authorized:user=adminuser database=auditdb",,,,,,,,,"","client
+backend","",connect"
+
+2020-05-25 15:19:18.066 IST,"adminuser","auditdb",123420,"[local]",5ecb9424.
+1e21c,2,"idle",2020-05-25 15:17:16 IST,5/14,0,AUDIT,00000,"statement: UPDATE
+dept SET loc = 'BEDFORD' WHERE deptno = 40;",,,,,,,,,"psql","client backend",
+"UPDATE","update"
+
+2020-05-25 15:19:38.524 IST,"adminuser","auditdb",123420,"[local]",5ecb9424.
+1e21c,3,"idle",2020-05-25 15:17:16 IST,5/16,0,AUDIT,00000,"statement: DELETE
+FROM emp WHERE deptno = 10;",,,,,,,,,"psql","client backend","DELETE","delete"
+
+2020-05-25 15:19:48.149 IST,"adminuser","auditdb",123420,"[local]",5ecb9424.
+1e21c,4,"TRUNCATE TABLE",2020-05-25 15:17:16 IST,5/17,0,ERROR,42P01,"relation
+""employee""does not exist",,,,,,"TRUNCATE employee;",,,"psql","client backend
+","TRUNCATE TABLE","error"
+```
+
+The `UPDATE dept` and `DELETE FROM emp` statements are audited. Note that all of the prior `INSERT` statements are not audited since none of the values `insert`, `dml`, nor `all` are included in the `edb_audit_statement` parameter.
+
+The `SELECT * FROM dept` statement is not audited as well since neither `select` nor `all` is included in the `edb_audit_statement` parameter.
+
+Since `error` is specified in the `edb_audit_statement` parameter, but not the `truncate` value, the error on the `TRUNCATE employee` statement is logged in the audit file, but not the successful `TRUNCATE emp` statement.

@@ -1,0 +1,69 @@
+---
+title: "COLUMN_VALUE_RAW"
+---
+
+The `COLUMN_VALUE_RAW` procedure defines a variable to receive a `RAW` value from a cursor.
+
+```text
+COLUMN_VALUE_RAW(<c> NUMBER, <position> NUMBER, <value> OUT RAW
+  [, <column_error> OUT NUMBER [, <actual_length> OUT INTEGER ]])
+```
+
+**Parameters**
+
+`c`
+
+ Cursor id of the cursor returning data to the variable being defined.
+
+`position`
+
+ Position within the cursor of the returned data. The first value in the cursor is position 1.
+
+`value`
+
+ Variable of data type `RAW` receiving the data returned in the cursor by a prior fetch call.
+
+`column_error`
+
+ Error number associated with the column, if any.
+
+`actual_length`
+
+ Actual length of the data prior to any truncation.
+
+## COLUMN_VALUE_LONG
+
+The `COLUMN_VALUE_LONG` procedure returns a part of the value of a `LONG` column.
+
+```text
+COLUMN_VALUE_LONG(<c> NUMBER, <position> NUMBER, <length> NUMBER,
+<offset> NUMBER, <value> OUT VARCHAR2, <value_length> OUT INTEGER)
+```
+
+**Parameters**
+
+`c`
+
+ Cursor id of the cursor from which to get a value.
+
+`position`
+
+ Position of the column of which to get a value.
+
+`length`
+
+ Number of bytes of the long value to fetch.
+
+`offset`
+
+ Offset into the long field for start of fetch.
+
+`value`
+
+ Value of the column.
+
+`value_length`
+
+ Number of bytes returned in value.
+
+To refer example, see [DEFINE_COLUMN_LONG](10_define_column_raw/#define_column_long).

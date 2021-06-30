@@ -1,0 +1,363 @@
+---
+title: "Compatibility Options"
+---
+
+<div id="compatibility_options" class="registered_link"></div>
+
+The configuration parameters described in this section control various database compatibility features.
+
+## edb_redwood_date
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+When `DATE` appears as the data type of a column in the commands, it is translated to `TIMESTAMP` at the time the table definition is stored in the database if the configuration parameter `edb_redwood_date` is set to `TRUE`. Thus, a time component will also be stored in the column along with the date.
+
+If `edb_redwood_date` is set to `FALSE` the column’s data type in a `CREATE TABLE` or `ALTER TABLE` command remains as a native PostgreSQL `DATE` data type and is stored as such in the database. The PostgreSQL `DATE` data type stores only the date without a time component in the column.
+
+Regardless of the setting of `edb_redwood_date`, when `DATE` appears as a data type in any other context such as the data type of a variable in an SPL declaration section, or the data type of a formal parameter in an SPL procedure or SPL function, or the return type of an SPL function, it is always internally translated to a `TIMESTAMP` and thus, can handle a time component if present.
+
+## edb_redwood_greatest_least
+
+**Parameter Type:** Boolean
+
+**Default Value:** `true`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+The `GREATEST` function returns the parameter with the greatest value from its list of parameters. The `LEAST` function returns the parameter with the least value from its list of parameters.
+
+When `edb_redwood_greatest_least` is set to `TRUE`, the `GREATEST` and `LEAST` functions return null when at least one of the parameters is null.
+
+```text
+SET edb_redwood_greatest_least TO on;
+
+SELECT GREATEST(1, 2, NULL, 3);
+
+greatest
+----------
+
+(1 row)
+```
+
+When `edb_redwood_greatest_least` is set to `FALSE`, null parameters are ignored except when all parameters are null in which case null is returned by the functions.
+
+```text
+SET edb_redwood_greatest_least TO off;
+
+SELECT GREATEST(1, 2, NULL, 3);
+
+greatest
+----------
+
+        3
+(1 row)
+
+SELECT GREATEST(NULL, NULL, NULL);
+
+greatest
+----------
+
+(1 row)
+```
+
+## edb_redwood_raw_names
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+When `edb_redwood_raw_names` is set to its default value of `FALSE`, database object names such as table names, column names, trigger names, program names, user names, etc. appear in uppercase letters when viewed from Redwood catalogs (that is, system catalogs prefixed by `ALL_`, `DBA_`, or `USER_`). In addition, quotation marks enclose names that were created with enclosing quotation marks.
+
+When `edb_redwood_raw_names` is set to `TRUE`, the database object names are displayed exactly as they are stored in the PostgreSQL system catalogs when viewed from the Redwood catalogs. Thus, names created without enclosing quotation marks appear in lowercase as expected in PostgreSQL. Names created with enclosing quotation marks appear exactly as they were created, but without the quotation marks.
+
+For example, the following user name is created, and then a session is started with that user.
+
+```text
+CREATE USER reduser IDENTIFIED BY password;
+edb=# \c - reduser
+Password for user reduser:
+You are now connected to database "edb" as user "reduser".
+```
+
+When connected to the database as reduser, the following tables are created.
+
+```text
+CREATE TABLE all_lower (col INTEGER);
+CREATE TABLE ALL_UPPER (COL INTEGER);
+CREATE TABLE "Mixed_Case" ("Col" INTEGER);
+```
+
+When viewed from the Redwood catalog, `USER_TABLES`, with `edb_redwood_raw_names` set to the default value `FALSE`, the names appear in uppercase except for the `Mixed_Case` name, which appears as created and also with enclosing quotation marks.
+
+```text
+edb=> SELECT * FROM USER_TABLES;
+ schema_name  | table_name   | tablespace_name  | status  | temporary
+--------------+--------------+------------------+---------+-----------
+ REDUSER      | ALL_LOWER    |                  | VALID   | N
+ REDUSER      | ALL_UPPER    |                  | VALID   | N
+ REDUSER      | "Mixed_Case" |                  | VALID   | N
+(3 rows)
+```
+
+When viewed with `edb_redwood_raw_names` set to `TRUE`, the names appear in lowercase except for the `Mixed_Case` name, which appears as created, but now without the enclosing quotation marks.
+
+```text
+edb=> SET edb_redwood_raw_names TO true;
+SET
+edb=> SELECT  * FROM USER_TABLES;
+ schema_name | table_name | tablespace_name  | status | temporary
+-------------+------------+------------------+--------+-----------
+reduser      | all_lower  |                  | VALID  | N
+reduser      | all_upper  |                  | VALID  | N
+reduser      | Mixed_Case |                  | VALID  | N
+(3 rows)
+```
+
+These names now match the case when viewed from the PostgreSQL `pg_tables` catalog.
+
+```text
+edb=> SELECT schemaname, tablename, tableowner FROM pg_tables WHERE
+tableowner = 'reduser';
+ schemaname | tablename  | tableowner
+------------+------------+------------
+reduser     | all_lower  | reduser
+reduser     | all_upper  | reduser
+reduser     | Mixed_Case | reduser
+(3 rows)
+```
+
+## edb_redwood_strings
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+If the `edb_redwood_strings` parameter is set to `TRUE`, when a string is concatenated with a null variable or null column, the result is the original string. If `edb_redwood_strings` is set to `FALSE`, the native PostgreSQL behavior is maintained, which is the concatenation of a string with a null variable or null column gives a null result.
+
+The following example illustrates the difference.
+
+The sample application contains a table of employees. This table has a column named `comm` that is null for most employees. The following query is run with `edb_redwood_string` set to `FALSE`. The concatenation of a null column with non-empty strings produces a final result of null, so only employees that have a commission appear in the query result. The output line for all other employees is null.
+
+```text
+SET edb_redwood_strings TO off;
+
+SELECT RPAD(ename,10) || ' ' || TO_CHAR(sal,'99,999.99') || ' ' ||
+TO_CHAR(comm,'99,999.99') "EMPLOYEE COMPENSATION" FROM emp;
+
+   EMPLOYEE COMPENSATION
+----------------------------------
+
+ ALLEN        1,600.00     300.00
+ WARD         1,250.00     500.00
+
+ MARTIN       1,250.00   1,400.00
+
+
+
+
+ TURNER       1,500.00        .00
+
+
+(14 rows)
+```
+
+The following is the same query executed when `edb_redwood_strings` is set to `TRUE`. Here, the value of a null column is treated as an empty string. The concatenation of an empty string with a non-empty string produces the non-empty string.
+
+```text
+SET edb_redwood_strings TO on;
+
+SELECT RPAD(ename,10) || ' ' || TO_CHAR(sal,'99,999.99') || ' ' ||
+TO_CHAR(comm,'99,999.99') "EMPLOYEE COMPENSATION" FROM emp;
+
+      EMPLOYEE COMPENSATION
+
+----------------------------------
+
+ SMITH 800.00
+ ALLEN 1,600.00 300.00
+ WARD 1,250.00 500.00
+ JONES 2,975.00
+ MARTIN 1,250.00 1,400.00
+ BLAKE 2,850.00
+ CLARK 2,450.00
+ SCOTT 3,000.00
+ KING 5,000.00
+ TURNER 1,500.00 .00
+ ADAMS 1,100.00
+ JAMES 950.00
+ FORD 3,000.00
+ MILLER 1,300.00
+(14 rows)
+```
+
+## edb_stmt_level_tx
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+The term `statement level transaction isolation` describes the behavior whereby when a runtime error occurs in a SQL command, all the updates on the database caused by that single command are rolled back. For example, if a single `UPDATE` command successfully updates five rows, but an attempt to update a sixth row results in an exception, the updates to all six rows made by this `UPDATE` command are rolled back. The effects of prior SQL commands that have not yet been committed or rolled back are pending until a `COMMIT` or `ROLLBACK` command is executed.
+
+In Advanced Server, if an exception occurs while executing a SQL command, all the updates on the database since the start of the transaction are rolled back. In addition, the transaction is left in an aborted state and either a `COMMIT` or `ROLLBACK` command must be issued before another transaction can be started.
+
+If `edb_stmt_level_tx` is set to `TRUE`, then an exception will not automatically roll back prior uncommitted database updates. If `edb_stmt_level_tx` is set to `FALSE`, then an exception will roll back uncommitted database updates.
+
+!!! Note
+    Use `edb_stmt_level_tx` set to `TRUE` only when absolutely necessary, as this may cause a negative performance impact.
+
+The following example run in PSQL shows that when `edb_stmt_level_tx` is `FALSE`, the abort of the second `INSERT` command also rolls back the first `INSERT` command. Note that in PSQL, the command `\set AUTOCOMMIT off` must be issued, otherwise every statement commits automatically defeating the purpose of this demonstration of the effect of `edb_stmt_level_tx`.
+
+```text
+\set AUTOCOMMIT off
+SET edb_stmt_level_tx TO off;
+
+INSERT INTO emp (empno,ename,deptno) VALUES (9001, 'JONES', 40);
+INSERT INTO emp (empno,ename,deptno) VALUES (9002, 'JONES', 00);
+ERROR:  insert or update on table "emp" violates foreign key constraint
+"emp_ref_dept_fk"
+DETAIL:  Key (deptno)=(0) is not present in table "dept".
+
+COMMIT;
+SELECT empno, ename, deptno FROM emp WHERE empno > 9000;
+
+empno  | ename | deptno
+-------+-------+--------
+(0 rows)
+```
+
+In the following example, with `edb_stmt_level_tx` set to `TRUE`, the first `INSERT` command has not been rolled back after the error on the second `INSERT` command. At this point, the first INSERT command can either be committed or rolled back.
+
+```text
+\set AUTOCOMMIT off
+SET edb_stmt_level_tx TO on;
+
+INSERT INTO emp (empno,ename,deptno) VALUES (9001, 'JONES', 40);
+INSERT INTO emp (empno,ename,deptno) VALUES (9002, 'JONES', 00);
+ERROR:  insert or update on table "emp" violates foreign key constraint
+"emp_ref_dept_fk"
+DETAIL:  Key (deptno)=(0) is not present in table "dept"
+
+SELECT empno, ename, deptno FROM emp WHERE empno > 9000;
+
+empno  | ename | deptno
+-------+-------+--------
+  9001 | JONES |     40
+(1 row)
+
+COMMIT;
+```
+
+A `ROLLBACK` command could have been issued instead of the `COMMIT` command in which case the insert of employee number `9001` would have been rolled back as well.
+
+## db_dialect
+
+**Parameter Type:** Enum
+
+**Default Value:** `postgres`
+
+**Range:** `{postgres | redwood}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+In addition to the native PostgreSQL system catalog, `pg_catalog`, Advanced Server contains an extended catalog view. This is the `sys` catalog for the expanded catalog view. The `db_dialect` parameter controls the order in which these catalogs are searched for name resolution.
+
+When set to `postgres`, the namespace precedence is `pg_catalog` then `sys`, giving the PostgreSQL catalog the highest precedence. When set to `redwood`, the namespace precedence is `sys` then `pg_catalog`, giving the expanded catalog views the highest precedence.
+
+## default_with_rowids
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+When set to `on`, `CREATE TABLE` includes a `ROWID` column in newly created tables, which can then be referenced in SQL commands. In earlier versions of Advanced Server `ROWIDs` were mapped to `OIDs`, but from Advanced Server version 12 onwards, the `ROWID` is an auto-incrementing value based on a sequence that starts with 1 and assigned to each row of a table created with `ROWIDs` option. By default, a unique index is created on a `ROWID` column.
+
+The `ALTER` and `DROP` operations are restricted on a `ROWID` column.
+
+To restore a database with `ROWIDs` from Advanced Server 11 or an earlier version, you must perform the following:
+
+-   pg_dump: If a table includes `OIDs` then specify `--convert-oids-to-rowids` to dump a database. Otherwise, ignore the `OIDs` to continue table creation on Advanced Server version 12 onwards.
+-   pg_upgrade: Errors out. But if a table includes `OIDs` or `ROWIDs`, then you must perform the following steps:
+    1.  Take a dump of the tables by specifying `--convert-oids-to-rowids` option.
+    2.  Drop the tables and then perform the upgrade.
+    3.  Restore the dump after the upgrade is successful into a new cluster that contains the dumped tables into a target database.
+
+## optimizer_mode
+
+**Parameter Type:** Enum
+
+**Default Value:** `choose`
+
+**Range:** `{choose | ALL_ROWS | FIRST_ROWS | FIRST_ROWS_10 | FIRST_ROWS_100 | FIRST_ROWS_1000}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+Sets the default optimization mode for analyzing optimizer hints.
+
+The following table shows the possible values:
+
+| Hint              | Description                                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `ALL_ROWS`        | Optimizes for retrieval of all rows of the result set.                                                                 |
+| `CHOOSE`          | Does no default optimization based on assumed number of rows to be retrieved from the result set. This is the default. |
+| `FIRST_ROWS`      | Optimizes for retrieval of only the first row of the result set.                                                       |
+| `FIRST_ROWS_10`   | Optimizes for retrieval of the first 10 rows of the results set.                                                       |
+| `FIRST_ROWS_100`  | Optimizes for retrieval of the first 100 rows of the result set.                                                       |
+| `FIRST_ROWS_1000` | Optimizes for retrieval of the first 1000 rows of the result set.                                                      |
+
+These optimization modes are based upon the assumption that the client submitting the SQL command is interested in viewing only the first `n` rows of the result set and will then abandon the remainder of the result set. Resources allocated to the query are adjusted as such.

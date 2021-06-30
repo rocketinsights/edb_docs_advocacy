@@ -1,0 +1,95 @@
+---
+title: "PRAGMA EXCEPTION_INIT"
+---
+
+<div id="pragma_exception_init" class="registered_link"></div>
+
+`PRAGMA EXCEPTION_INIT` associates a user-defined error code with an exception. A `PRAGMA EXCEPTION_INIT` declaration may be included in any block, sub-block or package. You can only assign an error code to an exception (using `PRAGMA EXCEPTION_INIT`) after declaring the exception. The format of a `PRAGMA EXCEPTION_INIT` declaration is:
+
+```text
+PRAGMA EXCEPTION_INIT(<exception_name>,
+                      {<exception_number> | <exception_code>})
+```
+
+Where:
+
+`exception_name` is the name of the associated exception.
+
+`exception_number` is a user-defined error code associated with the pragma. If you specify an unmapped `exception_number`, the server will return a warning.
+
+`exception_code` is the name of a pre-defined exception. For a complete list of valid exceptions, see the Postgres core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/errcodes-appendix.html>
+
+The previous section (*User-defined Exceptions*) included an example that demonstrates declaring a user-defined exception in a package. The following example uses the same basic structure, but adds a `PRAGMA EXCEPTION_INIT` declaration:
+
+```text
+CREATE OR REPLACE PACKAGE ar AS
+  overdrawn EXCEPTION;
+  PRAGMA EXCEPTION_INIT (overdrawn, -20100);
+  PROCEDURE check_balance(p_balance NUMBER, p_amount NUMBER);
+END;
+
+CREATE OR REPLACE PACKAGE BODY ar AS
+  PROCEDURE check_balance(p_balance NUMBER, p_amount  NUMBER)
+  IS
+  BEGIN
+      IF (p_amount > p_balance) THEN
+        RAISE overdrawn;
+      END IF;
+  END;
+```
+
+The following procedure `(purchase)` calls the `check_balance` procedure. If `p_amount` is greater than `p_balance, check_balance` raises an exception; `purchase` catches the `ar.overdrawn` exception.
+
+```text
+CREATE PROCEDURE purchase(customerID int, amount NUMERIC)
+AS
+  BEGIN
+     ar.check_ balance(getcustomerbalance(customerid), amount);
+       record_purchase(customerid, amount);
+  EXCEPTION
+     WHEN ar.overdrawn THEN
+      DBMS_OUTPUT.PUT_LINE ('This account is overdrawn.');
+      DBMS_OUTPUT.PUT_LINE ('SQLCode :'||SQLCODE||' '||SQLERRM );
+END;
+```
+
+When `ar.check_balance` raises an exception, execution jumps to the exception handler defined in `purchase`.
+
+```text
+EXCEPTION
+     WHEN ar.overdrawn THEN
+      DBMS_OUTPUT.PUT_LINE ('This account is overdrawn.');
+      DBMS_OUTPUT.PUT_LINE ('SQLCode :'||SQLCODE||' '||SQLERRM );
+```
+
+The exception handler returns an error message, followed by `SQLCODE` information:
+
+```text
+This account is overdrawn.
+SQLCODE: -20100 User-Defined Exception
+```
+
+The following example demonstrates using a pre-defined exception. The code creates a more meaningful name for the `no_data_found exception`; if the given customer does not exist, the code catches the exception, calls `DBMS_OUTPUT.PUT_LINE` to report the error, and then re-raises the original exception:
+
+```text
+CREATE OR REPLACE PACKAGE ar AS
+  overdrawn EXCEPTION;
+  PRAGMA EXCEPTION_INIT (unknown_customer, no_data_found);
+  PROCEDURE check_balance(p_customer_id NUMBER);
+END;
+
+CREATE OR REPLACE PACKAGE BODY ar AS
+   PROCEDURE check_balance(p_customer_id NUMBER)
+   IS
+   DECLARE
+     v_balance NUMBER;
+   BEGIN
+     SELECT balance INTO v_balance FROM customer
+       WHERE cust_id = p_customer_id;
+   EXCEPTION WHEN unknown_customer THEN
+     DBMS_OUTPUT.PUT_LINE('invalid customer id');
+     RAISE;
+   END;
+```

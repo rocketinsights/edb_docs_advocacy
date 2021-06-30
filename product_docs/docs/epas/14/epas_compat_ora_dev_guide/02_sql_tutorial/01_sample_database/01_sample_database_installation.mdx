@@ -1,0 +1,20 @@
+---
+title: "Sample Database Installation"
+---
+
+<div id="sample_database_installation" class="registered_link"></div>
+
+When Advanced Server is installed a sample database named, `edb`, is automatically created. This sample database contains the tables and programs used throughout this document by executing the script, `edb-sample.sql`, located in the `/usr/edb/as14/share` directory.
+
+This script does the following:
+
+-   Creates the sample tables and programs in the currently connected database
+-   Grants all permissions on the tables to the `PUBLIC` group
+
+The tables and programs will be created in the first schema of the search path in which the current user has permission to create tables and procedures. You can display the search path by issuing the command:
+
+```text
+SHOW SEARCH_PATH;
+```
+
+Altering the search path can be done using commands in PSQL.

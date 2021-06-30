@@ -1,0 +1,21 @@
+---
+title: "Built-In Packages"
+---
+
+This chapter describes the built-in packages that are provided with Advanced Server. For certain packages, non-superusers must be explicitly granted the `EXECUTE` privilege on the package before using any of the package’s functions or procedures. For most of the built-in packages, `EXECUTE` privilege has been granted to `PUBLIC` by default.
+
+For information about using the `GRANT` command to provide access to a package, see the *Database Compatibility for Oracle Developers SQL Guide*, available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/epas_compat_sql/)
+
+All built-in packages are owned by the special `sys` user which must be specified when granting or revoking privileges on built-in packages:
+
+```text
+GRANT EXECUTE ON PACKAGE SYS.UTL_FILE TO john;
+```
+
+<div class="toctree" maxdepth="5">
+
+dbms_alert dbms_aq dbms_aqadm dbms_crypto dbms_job dbms_lob dbms_lock dbms_mview dbms_output dbms_pipe dbms_profiler dbms_random dbms_redact dbms_rls dbms_scheduler dbms_session dbms_sql dbms_utility utl_encode utl_file utl_http utl_mail utl_raw utl_smtp utl_url
+
+</div>

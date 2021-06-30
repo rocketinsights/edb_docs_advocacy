@@ -1,0 +1,226 @@
+---
+title: "Enhanced SQL and Other Miscellaneous Features"
+---
+
+<div id="enhanced_sql_and_other_misc_features" class="registered_link"></div>
+
+Advanced Server includes enhanced SQL functionality and various other features that provide additional flexibility and convenience. This chapter discusses some of these additions.
+
+## COMMENT
+
+In addition to commenting on objects supported by the PostgreSQL `COMMENT` command, Advanced Server supports comments on additional object types. The complete supported syntax is:
+
+```text
+COMMENT ON
+{
+  AGGREGATE <aggregate_name> ( <aggregate_signature> ) |
+  CAST (<source_type> AS <target_type>) |
+  COLLATION <object_name> |
+  COLUMN <relation_name>.<column_name> |
+  CONSTRAINT <constraint_name> ON <table_name> |
+  CONSTRAINT <constraint_name> ON DOMAIN <domain_name> |
+  CONVERSION <object_name> |
+  DATABASE <object_name> |
+  DOMAIN <object_name> |
+  EXTENSION <object_name> |
+  EVENT TRIGGER <object_name> |
+  FOREIGN DATA WRAPPER <object_name> |
+  FOREIGN TABLE <object_name> |
+  FUNCTION <func_name> ([[<argmode>] [<argname>] <argtype> [,...]])|
+  INDEX <object_name> |
+  LARGE OBJECT <large_object_oid> |
+  MATERIALIZED VIEW <object_name> |
+  OPERATOR <operator_name> (left_type, right_type) |
+  OPERATOR CLASS <object_name> USING <index_method> |
+  OPERATOR FAMILY <object_name> USING <index_method> |
+  PACKAGE <object_name>
+  POLICY <policy_name> ON <table_name> |
+  [ PROCEDURAL ] LANGUAGE <object_name> |
+  PROCEDURE <proc_name> [([[<argmode>] [<argname>] <argtype> [, ...]])]
+  PUBLIC SYNONYM <object_name>
+  ROLE <object_name> |
+  RULE <rule_name> ON <table_name> |
+  SCHEMA <object_name> |
+  SEQUENCE <object_name> |
+  SERVER <object_name> |
+  TABLE <object_name> |
+  TABLESPACE <object_name> |
+  TEXT SEARCH CONFIGURATION <object_name> |
+  TEXT SEARCH DICTIONARY <object_name> |
+  TEXT SEARCH PARSER <object_name> |
+  TEXT SEARCH TEMPLATE <object_name> |
+  TRANSFORM FOR <type_name> LANGUAGE <lang_name> |
+  TRIGGER <trigger_name> ON <table_name> |
+  TYPE <object_name> |
+  VIEW <object_name>
+} IS <'text'>
+```
+
+where `aggregate_signature` is:
+
+```text
+* |
+[ <argmode> ] [ <argname> ] <argtype> [ , ... ] |
+[ [ <argmode> ] [ <argname> ] <argtype> [ , ... ] ]
+ORDER BY [ <argmode> ] [ <argname> ] <argtype> [ , ... ]
+```
+
+**Parameters**
+
+`object_name`
+
+The name of the object on which you are commenting.
+
+`AGGREGATE aggregate_name (aggregate_signature)`
+
+Include the `AGGREGATE` clause to create a comment about an aggregate. `aggregate_name` specifies the name of an aggregate, and `aggregate_signature` specifies the associated signature in one of the following forms:
+
+```text
+* |
+[ <argmode> ] [ <argname> ] <argtype> [ , ... ] |
+[ [ <argmode> ] [ <argname> ] <argtype> [ , ... ] ]
+ORDER BY [ <argmode> ] [ <argname> ] <argtype> [ , ... ]
+```
+
+Where `argmode` is the mode of a function, procedure, or aggregate argument, argmode may be `IN`, `OUT`, `INOUT`, or `VARIADIC`. If omitted, the default is `IN`.
+
+`argname` is the name of an aggregate argument.
+
+`argtype` is the data type of an aggregate argument.
+
+`CAST (source_type AS target_type)`
+
+Include the `CAST` clause to create a comment about a cast. When creating a comment about a cast, `source_type` specifies the source data type of the cast, and `target_type` specifies the target data type of the cast.
+
+`COLUMN relation_name.column_name`
+
+Include the `COLUMN` clause to create a comment about a column. `column_name` specifies name of the column to which the comment applies. `relation_name` is the table, view, composite type, or foreign table in which a column resides.
+
+`CONSTRAINT constraint_name ON table_name`
+
+`CONSTRAINT constraint_name ON DOMAIN domain_name`
+
+Include the `CONSTRAINT` clause to add a comment about a constraint. When creating a comment about a constraint, `constraint_name` specifies the name of the constraint. `table_name` or `domain_name` specifies the name of the table or domain on which the constraint is defined.
+
+`FUNCTION func_name ([[argmode] [argname] argtype [, ...]])`
+
+Include the `FUNCTION` clause to add a comment about a function. `func_name` specifies the name of the function. `argmode` specifies the mode of the function. `argmode` may be `IN`, `OUT`, `INOUT`, or `VARIADIC`. If omitted, the default is `IN`.
+
+`argname` specifies the name of a function, procedure, or aggregate argument. `argtype` specifies the data type of a function, procedure, or aggregate argument.
+
+`large_object_oid`
+
+`large_object_oid` is the system-assigned OID of the large object about which you are commenting.
+
+`OPERATOR operator_name (left_type, right_type)`
+
+Include the `OPERATOR` clause to add a comment about an operator. `operator_name` specifies the (optionally schema-qualified) name of an operator on which you are commenting. `left_type` and `right_type` are the (optionally schema-qualified) data type(s) of the operator's arguments.
+
+`OPERATOR CLASS object_name USING index_method`
+
+Include the `OPERATOR CLASS` clause to add a comment about an operator class. `object_name` specifies the (optionally schema-qualified) name of an operator on which you are commenting. `index_method` specifies the associated index method of the operator class.
+
+`OPERATOR FAMILY object_name USING index_method`
+
+Include the `OPERATOR FAMILY` clause to add a comment about an operator family. `object_name` specifies the (optionally schema-qualified) name of an operator family on which you are commenting. `index_method` specifies the associated index method of the operator family.
+
+`POLICY policy_name ON table_name`
+
+Include the `POLICY` clause to add a comment about a policy. `policy_name` specifies the name of the policy, and `table_name` specifies the table that the policy is associated with.
+
+`PROCEDURE proc_name [([[argmode] [argname] argtype [, ...]])]`
+
+Include the `PROCEDURE` clause to add a comment about a procedure. `proc_name` specifies the name of the procedure. `argmode` specifies the mode of the procedure. `argmode` may be `IN`, `OUT`, `INOUT`, or `VARIADIC`. If omitted, the default is `IN`.
+
+`argname` specifies the name of a function, procedure, or aggregate argument. `argtype` specifies the data type of a function, procedure, or aggregate argument.
+
+`RULE rule_name ON table_name`
+
+Include the `RULE` clause to specify a `COMMENT` on a rule. `rule_name` specifies the name of the rule, and `table_name` specifies the name of the table on which the rule is defined.
+
+`TRANSFORM FOR type_name LANGUAGE lang_name`
+
+Include the `TRANSFORM FOR` clause to specify a `COMMENT` on a `TRANSFORM`.
+
+`type_name` specifies the name of the data type of the transform and `lang_name` specifies the name of the language of the transform.
+
+`TRIGGER trigger_name ON table_name`
+
+Include the `TRIGGER` clause to specify a `COMMENT` on a trigger. `trigger_name` specifies the name of the trigger, and `table_name` specifies the name of the table on which the trigger is defined.
+
+`text`
+
+The comment, written as a string literal or `NULL` to drop the comment.
+
+**Notes:**
+
+Names of tables, aggregates, collations, conversions, domains, foreign tables, functions, indexes, operators, operator classes, operator families, packages, procedures, sequences, text search objects, types, and views can be schema-qualified.
+
+**Example:**
+
+The following example adds a comment to a table named `new_emp`:
+
+```text
+COMMENT ON TABLE new_emp IS 'This table contains information about new
+employees.';
+```
+
+For more information about using the `COMMENT` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-comment.html>
+
+## Output of Function version()
+
+The text string output of the `version()` function displays the name of the product, its version, and the host system on which it has been installed.
+
+For Advanced Server, the `version()` output is in a format similar to the PostgreSQL community version in that the first text word is *PostgreSQL* instead of *EnterpriseDB* as in Advanced Server version 10 and earlier.
+
+The general format of the version() output is the following:
+
+```text
+PostgreSQL $PG_VERSION_EXT (EnterpriseDB Advanced Server $PG_VERSION) on $host
+```
+
+So for the current Advanced Server the version string appears as follows:
+
+```text
+edb@45032=#select version();
+version
+-----------------------------------------------------------------------------------------------
+------------------------------------------------
+PostgreSQL 14.0 (EnterpriseDB Advanced Server 14.0.0) on x86_64-pc-linux-gnu, compiled by gcc 
+(GCC) 4.8.5 20150623 (Red Hat 4.8.5-11), 64-bit
+(1 row)
+```
+
+In contrast, for Advanced Server 10, the version string was the following:
+
+```text
+edb=# select version();
+                                                version
+------------------------------------------------------------------------------------------
+-------------------
+EnterpriseDB 10.4.9 on x86_64-pc-linux-gnu, compiled by gcc (GCC) 4.4.7 20120313 (Red Hat 
+4.4.7-18), 64-bit
+(1 row)
+```
+
+## Logical Decoding on Standby
+
+Logical decoding on a standby server allows you to create a logical replication slot on a standby server that can respond to API operations such as `get, peek, advance`, etc..
+
+For more information about the `LOGICAL DECODING`, please refer to the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/logicaldecoding-explanation.html>
+
+For a logical slot on a standby server to work, the `hot_standby_feedback` parameter must be set to `ON` on the standby. The `hot_standby_feedback` parameter prevents `VACCUM` from removing recently-dead rows that are required by an existing logical replication slot on the standby server. If a slot conflict occurs on the standby, the slots will be dropped.
+
+For logical decoding on a standby to work, `wal_level` must be set to `logical` on both the primary and standby server. If `wal_level` is set to a value other than `logical`, then slots are not created. If you set `wal_level` to a value other than `logical` on primary and if there are existing logical slots on standby, such slots are dropped and new slots cannot be created.
+
+When transactions are written to the primary server, the activity will trigger the creation of a logical slot on the standby server. If a primary server is idle, creating a logical slot on a standby server may take noticeable time.
+
+For more information about functions that support replication and logical decoding example, see to the PostgreSQL documentation available at:
+
+<https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-REPLICATION>
+
+<https://www.postgresql.org/docs/current/logicaldecoding-example.html>

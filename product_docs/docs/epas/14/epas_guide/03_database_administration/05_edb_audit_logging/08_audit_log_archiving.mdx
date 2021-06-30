@@ -1,0 +1,136 @@
+---
+title: "Audit Log Archiving"
+---
+
+<div id="audit_log_archiving" class="registered_link"></div>
+
+EDB Audit Log Archiving enables database administrators to control the space consumed by the audit log directory and help manage the audit log files. The Audit Archiver is responsible for the compression, execution, and expiration of log files with `edb_audit_archiver_filename_prefix` present in the audit directory. The `edb_audit_archiver_timeout` parameter triggers the compression or expiration of audit log files at an appropriate time. For more information about audit archiving configuration parameters, see [Audit Logging Configuration Parameters](01_audit_logging_configuration_parameters).
+
+The Audit Archiver helps to:
+
+1. Prepare a list of log files from the audit log directory for compression.
+2. Determine the log files for compression based on the parameters `edb_audit_archiver_compress_time_limit` and `edb_audit_archiver_compress_size_limit`. 
+3. Perform compression of the log files by specifying compression command based on the `edb_audit_archiver_compress_command` parameter.
+4. Determine the log files to be removed based on the `edb_audit_archiver_expire_time_limit` and `edb_audit_archiver_expire_size_limit` parameter. 
+5. Execute the expiration command specified in the `edb_audit_archiver_expire_command` parameter to remove the log files.
+
+You can set the log file rotation day when the new file is created by setting the parameter `edb_audit_rotation_day` to the desired value to rotate out the older audit log files. The audit log records are overwritten based on FIFO (First-In-First-Out) basis in the event of unavailability of space for more audit log records.
+
+The following steps describe how to configure Advanced Server to enable compression and expiration of the log files.
+
+-  Enable audit log archiving by setting the `edb_audit_archiver` parameter to `on` in the `postgresql.conf` file.
+-  To enable compression of log files, set the parameter `edb_audit_archiver_compress_size_limit` and `edb_audit_archiver_compress_time_limit` to a desired value.
+-  To enable expiration of log files, set the parameter `edb_audit_archiver_expire_size_limit` and `edb_audit_archiver_expire_time_limit` to a desired value. 
+-  To enable both compression and expiration, set the parameter `edb_audit_archiver_compress_size_limit`, `edb_audit_archiver_compress_time_limit`, `edb_audit_archiver_expire_size_limit`, `edb_audit_archiver_expire_time_limit`, and `edb_audit_archiver_expire_command` to a desired value.
+
+The following is an example of the configuration parameter settings in the `postgresql.conf` file.
+
+The setting of the `edb_audit_archiver` parameter in the configuration file affects the entire database cluster. The database cluster is established with `edb_audit_archiver` set to `on` as shown in its `postgresql.conf` file. The audit log file is generated in CSV format depending upon the setting of the `edb_audit` configuration parameter.
+
+```text
+logging_collector = 'on'
+edb_audit = 'csv'
+edb_audit_archiver = 'on'  # (Change requires restart)
+```
+
+**Example 1**
+
+The following is an example where `edb_audit_archiver`, `edb_audit_archiver_compress_size_limit`, and `edb_audit_archiver_compress_time_limit` are set to enable compression of the audit log files greater than 10MB.
+
+```text
+edb_audit_archiver = 'on'
+edb_audit_archiver_compress_size_limit = 10
+edb_audit_archiver_compress_time_limit = 0
+```
+
+Before compressing the audit log file appear as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 2097276 Jun 4 11:42 audit-20200811_114237.csv   <== Shows non-compressed audit log files 
+-rw-------. 1 enterprisedb edb 2097278 Jun 4 11:42 audit-20200811_114243.csv
+-rw-------. 1 enterprisedb edb 2097289 Jun 4 11:42 audit-20200811_114245.csv
+-rw-------. 1 enterprisedb edb 2097330 Jun 4 11:42 audit-20200811_114246.csv
+-rw-------. 1 enterprisedb edb 2097343 Jun 4 11:42 audit-20200811_114248.csv
+-rw-------. 1 enterprisedb edb 2097338 Jun 4 11:42 audit-20200811_114249.csv
+```
+
+The `edb_audit_archiver` parameter checks the log files excluding the latest file, retains at least 10MB of log files in the audit log directory, and compresses the remaining log files. The `.gz` specifies the name of an already compressed log file. After compression, the audit log file appears as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 64119 Jun 4 11:42 audit-20200811_114237.csv.gz   <== Shows compressed audit log files 
+-rw-------. 1 enterprisedb edb 64323 Jun 4 11:42 audit-20200811_114243.csv.gz
+-rw-------. 1 enterprisedb edb 64091 Jun 4 11:42 audit-20200811_114245.csv.gz
+-rw-------. 1 enterprisedb edb 64152 Jun 4 11:42 audit-20200811_114246.csv.gz      
+-rw-------. 1 enterprisedb edb 2097343 Jun 4 11:42 audit-20200811_114248.csv    <== Shows non-compressed audit log files 
+-rw-------. 1 enterprisedb edb 2097338 Jun 4 11:42 audit-20200811_114249.csv
+```
+
+**Example 2**
+
+The following is an example where `edb_audit_archiver`, `edb_audit_archiver_expire_size_limit`, and `edb_audit_archiver_expire_time_limit` are set to enable expiration of the audit log files older than one hour.
+
+```text
+edb_audit_archiver = 'on'
+edb_audit_archiver_expire_size_limit = 0
+edb_audit_archiver_expire_time_limit = 3600
+```
+
+Before compressing the audit log file appear as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 2097367 Jun 4 13:23 audit-20200811_132352.csv   <== Shows non-compressed audit log files scheduled for expiration/removal
+-rw-------. 1 enterprisedb edb 2097395 Jun 4 13:24 audit-20200811_132353.csv
+-rw-------. 1 enterprisedb edb 2097328 Jun 4 14:35 audit-20200811_143438.csv
+-rw-------. 1 enterprisedb edb 2097276 Jun 4 14:35 audit-20200811_143502.csv
+-rw-------. 1 enterprisedb edb 2097211 Jun 4 14:35 audit-20200811_143503.csv
+-rw-------. 1 enterprisedb edb 2097152 Jun 4 14:35 audit-20200811_143504.csv
+```
+
+The `edb_audit_archiver` parameter checks the log files excluding the latest file and removes the log files older than one hour. After expiration, the audit log file appears as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 2097328 Jun 4 14:35 audit-20200811_143438.csv
+-rw-------. 1 enterprisedb edb 2097276 Jun 4 14:35 audit-20200811_143502.csv
+-rw-------. 1 enterprisedb edb 2097211 Jun 4 14:35 audit-20200811_143503.csv
+-rw-------. 1 enterprisedb edb 2097152 Jun 4 14:35 audit-20200811_143504.csv
+```
+
+**Example 3**
+
+The following is an example where `edb_audit_archiver`, `edb_audit_archiver_compress_size_limit`, `edb_audit_archiver_compress_time_limit`, `edb_audit_archiver_expire_size_limit`, `edb_audit_archiver_expire_time_limit`, and `edb_audit_archiver_expire_command` are set to enable both compression and expiration of the audit log files.
+
+```text
+edb_audit_archiver = 'on'
+edb_audit_archiver_compress_size_limit = 4
+edb_audit_archiver_compress_time_limit = 0
+edb_audit_archiver_expire_size_limit = 5
+edb_audit_archiver_expire_time_limit = 0
+edb_audit_archiver_expire_command = 'cp %p /home/edb_audit/backup-log/'
+```
+
+Before compressing the audit log file appear as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 2097522 Jun 4 13:02 audit-20200811_125816.csv   <== Shows non-compressed audit log files ready to be removed/expired
+-rw-------. 1 enterprisedb edb 2097510 Jun 4 13:02 audit-20200811_130215.csv
+-rw-------. 1 enterprisedb edb 2097336 Jun 4 13:10 audit-20200811_130947.csv
+-rw-------. 1 enterprisedb edb 2097271 Jun 4 13:10 audit-20200811_131034.csv
+-rw-------. 1 enterprisedb edb 2097246 Jun 4 13:10 audit-20200811_131035.csv
+-rw-------. 1 enterprisedb edb 2097289 Jun 4 13:10 audit-20200811_131036.csv
+```
+
+The `edb_audit_archiver` parameter checks the log files excluding the latest file, retains at least 4MB of log files in the audit log directory, and compresses the remaining log files. During checking the log files for expiration, `edb_audit_archiver` retains at least 5MB of log files in the audit log directory and removes the remaining log files. After compression and expiration, the audit log file appears as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 63854 Jun 4 13:10 audit-20200811_131034.csv.gz
+-rw-------. 1 enterprisedb edb 63513 Jun 4 13:10 audit-20200811_131035.csv.gz
+-rw-------. 1 enterprisedb edb 63738 Jun 4 13:10 audit-20200811_131036.csv.gz
+```
+
+The expiration command is specified as `edb_audit_archiver_expire_command = 'cp %p /home/edb_audit/backup-log/'` in the `postgresql.conf` file, the `edb_audit_archiver` executes this command and copies the log files to a backup log directory before deleting them from the audit log directory. After compression and expiration, the backup log directory appears as follows:
+
+```text
+-rw-------. 1 enterprisedb edb 2097522 Jun 4 13:02 audit-20200811_125816.csv.gz
+-rw-------. 1 enterprisedb edb 2097510 Jun 4 13:02 audit-20200811_130215.csv.gz
+-rw-------. 1 enterprisedb edb 2097336 Jun 4 13:10 audit-20200811_130947.csv.gz
+```

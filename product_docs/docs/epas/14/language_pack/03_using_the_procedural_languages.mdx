@@ -1,0 +1,126 @@
+---
+title: "Using the Procedural Languages"
+---
+
+<div id="using_the_procedural_langauges" class="registered_link"></div>
+
+The Postgres procedural languages (PL/Perl, PL/Python, and PL/Java) are installed by the Language Pack installer. You can also use an RPM package to add procedural language functionality to your EDB Postgres Advanced Server installation. For more information about using an RPM package, please see the EDB Postgres Advanced Server Installation Guide, available at the [EDB website](/epas/latest/).
+
+## PL/Perl
+
+The PL/Perl procedural language allows you to use Perl functions in Postgres applications.
+
+You must install PL/Perl in each database (or in a template database) before creating a PL/Perl function. Use the `CREATE LANGUAGE` command at the EDB-PSQL command line to install PL/Perl. Open the EDB-PSQL client, establish a connection to the database in which you wish to install PL/Perl, and enter the command:
+
+`CREATE EXTENSION plperl;`
+
+You can now use a Postgres client application to access the features of the PL/Perl language. The following PL/Perl example creates a function named `perl_max` that returns the larger of two integer values:
+
+```text
+CREATE OR REPLACE FUNCTION perl_max (integer, integer) RETURNS integer
+AS
+$$
+if ($_[0] > $_[1])
+{ return $_[0]; }
+return $_[1];
+$$ LANGUAGE plperl;
+```
+
+Pass two values when calling the function:
+
+`SELECT perl_max(1, 2);`
+
+The server returns:
+
+```SQL
+perl_max
+---------
+       2
+(1 row)
+```
+
+For more information about using the Perl procedural language, consult the official [PostgreSQL documentation](https://www.postgresql.org/docs/12/static/plperl.html).
+
+## PL/Python
+
+The PL/Python procedural language allows you to create and execute functions written in Python within Postgres applications. The version of PL/Python used by EDB Postgres Advanced Server and PostgreSQL is untrusted (`plpython3u`); it offers no restrictions on users to prevent potential security risks.
+
+Install PL/Python in each database (or in a template database) before creating a PL/Python function. You can use the `CREATE LANGUAGE` command at the EDB-PSQL command line to install PL/Python. Use EDB-PSQL to connect to the database in which you wish to install PL/Python, and enter the command:
+
+`CREATE EXTENSION plpython3u;`
+
+After installing PL/Python in your database, you can use the features of the PL/Python language.
+
+!!! Note
+    The indentation shown in the following example must be included as you enter the sample function in EDB-PSQL.
+
+The following PL/Python example creates a function named `pymax` that returns the larger of two integer values:
+
+```text
+CREATE OR REPLACE FUNCTION pymax (a integer, b integer) RETURNS
+integer AS
+$$
+if a > b:
+return a
+return b
+$$ LANGUAGE plpython3u;
+```
+
+When calling the `pymax` function, pass two values as shown below:
+
+```SQL
+SELECT pymax(12, 3);
+```
+
+The server returns:
+
+```SQL
+pymax
+-------
+    12
+(1 row)
+```
+
+For more information about using the Python procedural language, consult the official [PostgreSQL documentation](https://www.postgresql.org/docs/12/static/plpython.html).
+
+## PL/Tcl
+
+The PL/Tcl procedural language allows you to use Tcl/Tk functions in applications.
+
+You must install PL/Tcl in each database (or in a template database) before creating a PL/Tcl function. Use the `CREATE LANGUAGE` command at the EDB-PSQL command line to install PL/Tcl. Use the psql client to connect to the database in which you wish to install PL/Tcl, and enter the command:
+
+`CREATE EXTENSION pltcl;`
+
+After creating the `pltcl` language, you can use the features of the PL/Tcl language from within your Postgres server.
+
+The following PL/Tcl example creates a function named `tcl_max` that returns the larger of two integer values:
+
+```text
+CREATE OR REPLACE FUNCTION tcl_max(integer, integer) RETURNS integer
+AS $$
+if {[argisnull 1]} {
+if {[argisnull 2]} { return_null }
+return $2
+}
+if {[argisnull 2]} { return $1 }
+if {$1 > $2} {return $1}
+return $2
+$$ LANGUAGE pltcl;
+```
+
+Pass two values when calling the function:
+
+```SQL
+SELECT tcl_max(1, 2);
+```
+
+The server returns:
+
+```SQL
+tcl_max
+--------
+      2
+(1 row)
+```
+
+For more information about using the Tcl procedural language, consult the official [PostgreSQL documentation](https://www.postgresql.org/docs/12/static/pltcl.html).

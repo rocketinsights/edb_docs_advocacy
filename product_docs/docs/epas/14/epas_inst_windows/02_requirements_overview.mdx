@@ -1,0 +1,29 @@
+---
+title: "Requirements Overview"
+---
+
+<div id="requirements_overview" class="registered_link"></div>
+
+For information about the platforms and versions supported by Advanced Server, visit the EDB website at:
+
+<https://www.enterprisedb.com/services-support/edb-supported-products-and-platforms#epas>
+
+**Limitation**
+
+-   The `data` directory of a production database should not be stored on an NFS file system.
+
+## Windows Installation Prerequisites
+
+**User Privileges**
+
+To perform an Advanced Server installation on a Windows system, you must have administrator privileges. If you are installing Advanced Server on a Windows system that is configured with `User Account Control` enabled, you can assume sufficient privileges to invoke the graphical installer by right clicking on the name of the installer and selecting `Run as administrator` from the context menu.
+
+**Windows-specific Software Requirements**
+
+You should apply Windows operating system updates before invoking the Advanced Server installer. If (during the installation process) the installer encounters errors, exit the installation, and ensure that your version of Windows is up-to-date before restarting the installer.
+
+**Migration Toolkit or EDB\*Plus Installation Pre-requisites**
+
+Before using StackBuilder Plus to install Migration Toolkit or EDB\*Plus, you must first install Java (version 1.8 or later). If you are using Windows, Java installers and instructions are available online at:
+
+<http://www.java.com/en/download/manual.jsp>

@@ -1,0 +1,93 @@
+---
+title: "Setting Configuration Parameters"
+---
+
+<div id="setting_new_parameters" class="registered_link"></div>
+
+<div id="setting_configuration_parameters" class="registered_link"></div>
+
+This section provides an overview of how configuration parameters are specified and set.
+
+Each configuration parameter is set using a `name/value` pair. Parameter names are case-insensitive. The parameter name is typically separated from its value by an optional equals sign `(=)`.
+
+The following is an example of some configuration parameter settings in the `postgresql.conf` file:
+
+```text
+# This is a comment
+log_connections = yes
+log_destination = 'syslog'
+search_path = '"$user", public'
+shared_buffers = 128MB
+```
+
+Parameter values are specified as one of five types:
+
+-   **Boolean.** Acceptable values can be written as `on, off, true, false, yes, no, 1, 0`, or any unambiguous prefix of these.
+-   **Integer.** Number without a fractional part.
+-   **Floating Point.** Number with an optional fractional part separated by a decimal point.
+-   **String.** Text value. Enclose in single quotes if the value is not a simple identifier or number (that is, the value contains special characters such as spaces or other punctuation marks).
+-   **Enum.** Specific set of string values. The allowed values can be found in the system view `pg_settings.enumvals`. Enum values are case-insensitive.
+
+Some settings specify a memory or time value. Each of these has an implicit unit, which is kilobytes, blocks (typically 8 kilobytes), milliseconds, seconds, or minutes. Default units can be found by referencing the system view `pg_settings.unit`. A different unit can be specified explicitly.
+
+Valid memory units are `kB` (kilobytes), `MB` (megabytes), and `GB` (gigabytes). Valid time units are `ms` (milliseconds), `s` (seconds), `min` (minutes), `h` (hours), and `d` (days). The multiplier for memory units is 1024.
+
+The configuration parameter settings can be established in a number of different ways:
+
+-   There is a number of parameter settings that are established when the Advanced Server database product is built. These are read-only parameters, and their values cannot be changed. There are also a couple of parameters that are permanently set for each database when the database is created. These parameters are read-only as well and cannot be subsequently changed for the database.
+
+-   The initial settings for almost all configurable parameters across the entire database cluster are listed in the configuration file, `postgresql.conf`. These settings are put into effect upon database server start or restart. Some of these initial parameter settings can be overridden as discussed in the following bullet points. All configuration parameters have built-in default settings that are in effect if not explicitly overridden.
+
+-   Configuration parameters in the `postgresql.conf` file are overridden when the same parameters are included in the `postgresql.auto.conf` file. The `ALTER SYSTEM` command is used to manage the configuration parameters in the `postgresql.auto.conf` file.
+
+-   Parameter settings can be modified in the configuration file while the database server is running. If the configuration file is then reloaded (meaning a SIGHUP signal is issued), for certain parameter types, the changed parameters settings immediately take effect. For some of these parameter types, the new settings are available in a currently running session immediately after the reload. For other of these parameter types, a new session must be started to use the new settings. And yet for other parameter types, modified settings do not take effect until the database server is stopped and restarted. See the following section of the PostgreSQL Core Documentation for information on how to reload the configuration file:
+
+    <https://www.postgresql.org/docs/current/config-setting.html>
+
+-   The SQL commands `ALTER DATABASE`, `ALTER ROLE`, or `ALTER ROLE IN DATABASE` can be used to modify certain parameter settings. The modified parameter settings take effect for new sessions after the command is executed. `ALTER DATABASE` affects new sessions connecting to the specified database. `ALTER ROLE` affects new sessions started by the specified role. `ALTER ROLE IN DATABASE` affects new sessions started by the specified role connecting to the specified database. Parameter settings established by these SQL commands remain in effect indefinitely, across database server restarts, overriding settings established by the methods discussed in the second and third bullet points. Parameter settings established using the `ALTER DATABASE`, `ALTER ROLE`, or `ALTER ROLE IN DATABASE` commands can only be changed by: 
+
+    a) re-issuing these commands with a different parameter value, or
+
+    b) issuing these commands using either of the `SET parameter TO DEFAULT` clause or the `RESET parameter` clause. These clauses change the parameter back to using the setting established by the methods set forth in the prior bullet points. See the “SQL Commands” section of Chapter VI “Reference” in the *PostgreSQL Core Documentation* for the exact syntax of these SQL commands:
+
+    <https://www.postgresql.org/docs/current/sql-commands.html>
+
+-   Changes can be made for certain parameter settings for the duration of individual sessions using the `PGOPTIONS` environment variable or by using the `SET` command within the `EDB-PSQL` or `PSQL` command line terminal programs. Parameter settings made in this manner override settings established using any of the methods described by the second, third, and fourth bullet points, but only for the duration of the session.
+
+## Modifying the postgresql.conf File
+
+The configuration parameters in the `postgresql.conf` file specify server behavior with regards to auditing, authentication, encryption, and other behaviors. On Linux and Windows host, the `postgresql.conf` file resides in the `data` directory under your Advanced Server installation.
+
+Parameters that are preceded by a pound sign (#) are set to their default value. To change a parameter value, remove the pound sign and enter a new value. After setting or changing a parameter, you must either `reload` or `restart` the server for the new parameter value to take effect.
+
+Within the `postgresql.conf` file, some parameters contain comments that indicate `change requires restart`. To view a list of the parameters that require a server restart, execute the following query at the psql command line:
+
+```text
+SELECT name FROM pg_settings WHERE context = 'postmaster';
+```
+
+<div id="modifying_the_pg_hba_conf_file" class="registered_link"></div>
+
+## Modifying the pg_hba.conf File
+
+Appropriate authentication methods provide protection and security. Entries in the `pg_hba.conf` file specify the authentication method or methods that the server will use when authenticating connecting clients. Before connecting to the server, you may be required to modify the authentication properties specified in the `pg_hba.conf` file.
+
+When you invoke the `initdb` utility to create a cluster, `initdb` creates a `pg_hba.conf` file for that cluster that specifies the type of authentication required from connecting clients. To modify the `pg_hba.conf` file, open the file with your choice of editor. After modifying the authentication settings in the `pg_hba.conf` file, restart the server and apply the changes.
+
+For more information about authentication and modifying the `pg_hba.conf` file, see the PostgreSQL Core Documentation at:
+
+<https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html>
+
+When a connection request is received, the server will verify the credentials provided against the authentication settings in the `pg_hba.conf` file before allowing a connection to a database. To log the `pg_hba.conf` file entry to authenticate a connection to the server, set the `log_connections` parameter to `ON` in the `postgresql.conf` file.
+
+A record specifies a connection type, database name, user name, a client IP address, and the authentication method to authorize a connection upon matching these parameters in the `pg_hba.conf` file. Once the connection to a server is authorized, you can see the matched line number and the authentication record from the `pg_hba.conf` file.
+
+The following example shows a log detail for a valid `pg_hba.conf` entry upon successful authentication.
+
+```text
+2020-05-08 10:42:17 IST LOG:  connection received: host=[local]
+2020-05-08 10:42:17 IST LOG:  connection authorized: user=u1 database=edb
+application_name=psql
+2020-05-08 10:42:17 IST DETAIL:  Connection matched pg_hba.conf line 84:
+"local   all             all               md5"
+```

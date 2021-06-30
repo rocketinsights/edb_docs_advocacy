@@ -1,0 +1,272 @@
+---
+title: "Audit Log File"
+---
+
+<div id="audit_log_file" class="registered_link"></div>
+
+The audit log file can be generated in either CSV or XML format depending upon the setting of the `edb_audit` configuration parameter.
+
+The information in the audit log is based on the logging performed by PostgreSQL as described in the section “Using CSV-Format Log Output” within Section “Error Reporting and Logging” in the PostgreSQL core documentation, available at:
+
+<https://www.postgresql.org/docs/current/static/runtime-config-logging.html>
+
+The following table lists the fields in the order they appear in the XML audit log format. The table contains the following information:
+
+-   **Field.** Name of the field as shown in the sample table definition in the PostgreSQL documentation as previously referenced.
+-   **XML Element/Attribute.** For the XML format, name of the XML element and its attribute (if used), referencing the value. **Note:** `n/a` indicates that there is no XML representation for this field.
+-   **Data Type.** Data type of the field as given by the PostgreSQL sample table definition.
+-   **Description.** Description of the field. For certain fields, no output is generated in the audit log as those fields are not supported by auditing. Those fields are indicated by “Not supported”.
+
+The fields that do not have any values for logging appear as consecutive commas (,,) in the CSV format.
+
+| Field                    | XML Element/Attribute          | Data Type                  | Description                                                                                                                |
+| ------------------------ | ------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `user_name`              | `event/user`                   | `text`                     | Database user who executed the statement.                                                                                  |
+| `database_name`          | `event/database`               | `text`                     | Database in which the statement was executed.                                                                              |
+| `process_id`             | `event/process_id`             | `integer`                  | Operating system process ID in which the statement was executed.                                                           |
+| `connection_from`        | `event/remote_host`            | `text`                     | Host and port location from where the statement was executed.                                                              |
+| `session_id`             | `event/session_id`             | `text`                     | Session ID in which the statement was executed.                                                                            |
+| `session_line_num`       | `event/session_line_num`       | `bigint`                   | Order of the statement within the session.                                                                                 |
+| `process_status`         | `event/process_status`         | `text`                     | Processing status.                                                                                                         |
+| `session_start_time`     | `event/session_start_time`     | `timestamp with time zone` | Date/time when the session was started.                                                                                    |
+| `log_time`               | `event/log_time`               | `timestamp with time zone` | Log date/time of the statement.                                                                                            |
+| `virtual_transaction_id` | `event/virtual_transaction_id` | `text`                     | Virtual transaction ID of the statement.                                                                                   |
+| `transaction_id`         | `event/transaction_id`         | `bigint`                   | Regular transaction ID of the statement.                                                                                   |
+| `type`                   | `event/type`                   | `text`                     | Determines the audit `event_type` to identify messages in the log.                                                         |
+| `sql_state_code`         | `event/sql_state_code`         | `text`                     | SQL state code returned for the statement. The `sql_state_code` is not logged when its value is 00000 for XML log format.  |
+| `command_tag`            | `event/command_tag`            | `text`                     | SQL command of the statement.                                                                                              |
+| `audit_tag`              | `event/audit_tag`              | `text`                     | Value specified by the `audit_tag` parameter in the configuration file.                                                    |
+| `application_name`       | `event/application_name`       | `text`                     | Name of the application from which the statement was executed. (for example, `psql.bin`).                                  |
+| `backend_type`           | `event/backend_type`           | `text`                     | The backend_type corresponds to what `pg_stat_activity.backend_type` shows and is added as a column to the csv log.        |
+| `error_severity`         | `error_severity`               | `text`                     | Statement severity. Values are `AUDIT` for audited statements and `ERROR` for any resulting error messages.                |
+| `message`                | `message`                      | `text`                     | The SQL statement that was attempted for execution.                                                                        |
+| `detail`                 | `detail`                       | `text`                     | Error message detail.                                                                                                      |
+| `hint`                   | `hint`                         | `text`                     | Hint for error.                                                                                                            |
+| `internal_query`         | `internal_query`               | `text`                     | Internal query that led to the error, if any.                                                                              |
+| `internal_query_pos`     | `internal_query_pos`           | `integer`                  | Character count of the error position therein.                                                                             |
+| `context`                | `context`                      | `text`                     | Error context.                                                                                                             |
+| `query`                  | `query`                        | `text`                     | User query that led to the error. For (For errors only)                                                                    |
+| `query_pos`              | `query_pos`                    | `integer`                  | Character count of the error position therein. (For errors only)                                                           |
+| `location`               | `location`                     | `text`                     | Location of the error in the source code. The location field will be populated if `log_error_verbosity` is set to verbose. |
+
+The following examples are generated in the CSV and XML formats.
+
+The non-default audit settings in the `postgresql.conf` file are as follows:
+
+```text
+logging_collector = 'on'
+edb_audit = 'csv'
+edb_audit_connect = 'all'
+edb_audit_disconnect = 'all'
+edb_audit_statement = 'ddl, dml, select, error'
+edb_audit_tag = 'edbaudit'
+```
+
+The `edb_audit parameter` is changed to `xml` when generating the XML format.
+
+The audited session is the following:
+
+```Text
+$ psql edb enterprisedb
+Password for user enterprisedb:
+psql.bin (14.0.0)
+Type "help" for help.
+
+edb=# CREATE SCHEMA edb;
+CREATE SCHEMA
+edb=# SET search_path TO edb;
+SET
+edb=# CREATE TABLE dept (
+edb(#     deptno          NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+edb(#     dname           VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+edb(#     loc             VARCHAR2(13)
+edb(# );
+CREATE TABLE
+edb=# INSERT INTO dept VALUES (10,'ACCOUNTING','NEW YORK');
+INSERT 0 1
+edb=# UPDATE department SET loc = 'BOSTON' WHERE deptno = 10;
+ERROR:  relation "department" does not exist
+LINE 1: UPDATE department SET loc = 'BOSTON' WHERE deptno = 10;
+            ^
+edb=# UPDATE dept SET loc = 'BOSTON' WHERE deptno = 10;
+UPDATE 1
+edb=# SELECT * FROM dept;
+ deptno |   dname    |  loc
+--------+------------+--------
+     10 | ACCOUNTING | BOSTON
+(1 row)
+
+edb=# \q
+```
+
+**CSV Audit Log File**
+
+The following is the CSV format of the audit log file.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2020-05-22 16:53:37.817 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,1,"authentication",2020-05-22 16:53:37 IST,4/21,0,AUDIT,00000,
+"connection authorized:user=enterprisedb database=edb",,,,,,,,,"","client
+backend","","edbaudit","connect"
+
+2020-05-22 16:53:42.279 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,2,"idle",2020-05-22 16:53:37 IST,4/23,0,AUDIT,00000,"statement: CREATE
+SCHEMA edb;",,,,,,,,,"psql","client backend","CREATE SCHEMA","edbaudit",
+"create"
+
+2020-05-22 16:54:07.896 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,3,"idle",2020-05-22 16:53:37 IST,4/25,0,AUDIT,00000,"statement: CREATE
+TABLE dept (
+        deptno          NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+        dname           VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+        loc             VARCHAR2(13)
+);",,,,,,,,,"psql","client backend","CREATE TABLE","edbaudit","create"
+
+2020-05-22 16:54:20.500 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,4,"idle",2020-05-22 16:53:37 IST,4/26,0,AUDIT,00000,"statement: INSERT
+INTO dept VALUES(10,'ACCOUNTING','NEW YORK');",,,,,,,,,"psql","client backend
+","INSERT","edbaudit","insert"
+
+2020-05-22 16:54:34.821 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,5,"idle",2020-05-22 16:53:37 IST,4/27,0,AUDIT,00000,"statement: UPDATE
+department SET loc = 'BOSTON' WHERE deptno = 10;",,,,,,,,,"psql","client
+backend","UPDATE","edbaudit","update"
+
+2020-05-22 16:54:34.821 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,6,"UPDATE",2020-05-22 16:53:37 IST,4/27,0,ERROR,42P01,"relation "
+"department"" does not exist",,,,,,"UPDATE department SET loc = 'BOSTON'
+WHERE deptno = 10;",8,,"psql","client backend","UPDATE","edbaudit","error"
+
+2020-05-22 16:54:51.308 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,7,"idle",2020-05-22 16:53:37 IST,4/28,0,AUDIT,00000,"statement: UPDATE
+dept SET loc = 'BOSTON' WHERE deptno = 10;",,,,,,,,,"psql","client backend",
+"UPDATE","edbaudit","update"
+
+2020-05-22 16:55:00.774 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,8,"idle",2020-05-22 16:53:37 IST,4/29,0,AUDIT,00000,"statement: SELECT *
+FROM dept;",,,,,,,,,"psql","client backend","SELECT","edbaudit","select"
+
+2020-05-22 16:55:06.548 IST,"enterprisedb","edb",55279,"[local]",5ec7b639.
+d7ef,9,"idle",2020-05-22 16:53:37 IST,,0,AUDIT,00000,"disconnection: session
+time: 0:01:28.732 user=enterprisedb database=edb host=[local]",,,,,,,,,"psql",
+"client backend","","edbaudit","disconnect"
+```
+
+**XML Audit Log File**
+
+The following is the XML format of the audit log file. The output has been formatted for more clarity in the appearance in the example.
+
+```text
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="1" process_status=
+       "authentication"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:11:17.806 IST"
+       virtual_transaction_id="4/19" type="connect" audit_tag="edbaudit"
+       backend_type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>connection authorized: user=enterprisedb database=edb</
+          message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="2" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:11:32.558 IST"
+       virtual_transaction_id="4/21" type="create" command_tag="CREATE SCHEMA
+       " audit_tag="edbaudit" application_name="psql" backend_type="client
+       backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: CREATE SCHEMA edb;</message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="3" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:00.199 IST"
+       virtual_transaction_id="4/23" type="create" command_tag="CREATE TABLE"
+       audit_tag="edbaudit" application_name="psql" backend_type="client
+       backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: CREATE TABLE dept (
+              deptno     NUMBER(2) NOT NULL CONSTRAINT dept_pk PRIMARY KEY,
+              dname      VARCHAR2(14) CONSTRAINT dept_dname_uq UNIQUE,
+              loc        VARCHAR2(13));
+          </message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="4" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:10.992 IST"
+       virtual_transaction_id="4/24" type="insert" command_tag="INSERT" audit_
+       tag="edbaudit" application_name="psql" backend_type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: INSERT INTO dept VALUES
+                              (10,&apos;ACCOUNTING&apos;,&apos;NEW YORK&apos;
+                              );
+          </message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="5" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:21.764 IST"
+       virtual_transaction_id="4/25" type="update" command_tag="UPDATE" audit_
+       tag="edbaudit" application_name="psql" backend_type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: UPDATE department SET loc = &apos;BOSTON&apos;
+                              WHERE deptno = 10;
+          </message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="6" process_status="UPDATE"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:21.765 IST"
+       virtual_transaction_id="4/25" type="error" sql_state_code="42P01"
+       command_tag="UPDATE" audit_tag="edbaudit" application_name="psql"
+       backend_type="client backend">
+          <error_severity>ERROR</error_severity>
+          <message>relation &quot;department&quot; does not exist</message>
+          <query>UPDATE department SET loc = &apos;BOSTON&apos; WHERE deptno =
+          10;</query>
+          <query_pos>8</query_pos>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="7" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:34.878 IST"
+       virtual_transaction_id="4/26" type="update" command_tag="UPDATE" audit_
+       tag="edbaudit" application_name="psql" backend_type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: UPDATE dept SET loc = &apos;BOSTON&apos; WHERE
+                              deptno = 10;
+          </message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="8" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:45.471 IST"
+       virtual_transaction_id="4/27" type="select" command_tag="SELECT" audit_
+       tag="edbaudit" application_name="psql" backend_type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>statement: SELECT * FROM dept;</message>
+</event>
+<event user="enterprisedb" database="edb" process_id="5941" remote_host=
+"[local]"
+       session_id="5ec7ac4d.1735" session_line_num="9" process_status="idle"
+       session_start_time="2020-05-22 16:11:17 IST" log_time="2020-05-22
+       16:12:53.048 IST"
+       type="disconnect" audit_tag="edbaudit" application_name="psql" backend_
+       type="client backend">
+          <error_severity>AUDIT</error_severity>
+          <message>disconnection: session time: 0:01:35.243 user=enterprisedb
+          database=edb host=[local]</message>
+</event>
+```

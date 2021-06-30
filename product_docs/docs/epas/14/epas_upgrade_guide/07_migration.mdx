@@ -1,0 +1,63 @@
+---
+title: "Migration to Version 14"
+---
+
+A dump/restore using `pg_dumpall` or `pg_upgrade` or logical replication is required for migrating data from any previous release. See [Upgrading an Installation With pg_upgrade](04_upgrading_an_installation_with_pg_upgrade/#upgrading_an_installation_with_pg_upgrade) for information on migrating to new major releases.
+
+Version 14 contains a number of changes that may affect compatibility with previous releases. Listed is the following incompatibilities:
+
+-   Change `SIMILAR TO ... ESCAPE NULL` to return `NULL`.
+
+    This new behavior matches the SQL specification. Previously a null `ESCAPE` value was taken to mean using the default escape string (a backslash character). This also applies to `substring` `(text FROM pattern ESCAPE text)`. The previous behavior has been retained in old views by keeping the original function unchanged.
+
+-   Make `json[b]_to_tsvector()` fully check the spelling of its `string` option.
+
+-   Change the way non-default `effective_io_concurrency` values affect concurrency.
+
+    Previously, this value was adjusted before setting the number of concurrent requests. The value is now used directly. Conversion of old values to new ones can be done using:
+
+    ```text
+    SELECT round(sum(OLDVALUE / n::float)) AS newvalue FROM generate_series(1, OLDVALUE) s(n);
+    ```
+
+-   Prevent display of auxiliary processes in `pg_stat_ssl` and `pg_stat_gssapi` system views. Queries that join these views to `pg_stat_activity` and wish to see auxiliary processes will need to use left joins.
+
+-   Rename various `wait events` to improve consistency.
+
+-   Fix `ALTER FOREIGN TABLE ... RENAME COLUMN` to return a more appropriate command tag. Previously it returned `ALTER TABLE`; now it returns `ALTER FOREIGN TABLE`.
+
+-   Fix `ALTER MATERIALIZED VIEW ... RENAME COLUMN` to return a more appropriate command tag. Previously it returned `ALTER TABLE`; now it returns `ALTER MATERIALIZED VIEW`.
+
+-   Rename configuration parameter `wal_keep_segments` to `wal_keep_size`.
+
+    This determines how much WAL to retain for standby servers. It is specified in megabytes, rather than number of files as with the old parameter. If you previously used `wal_keep_segments`, the following formula will give you an approximately equivalent setting:
+
+    ```text
+    wal_keep_size = wal_keep_segments * wal_segment_size (typically 16MB)
+    ```
+
+-   Remove support for defining operator classes using pre-PostgreSQL 8.0 syntax.
+
+-   Remove support for defining foreign key constraints using pre-PostgreSQL 7.3 syntax.
+
+-   Remove support for "opaque" pseudo-types used by pre-PostgreSQL 7.3 servers.
+
+-   Remove support for upgrading unpackaged (pre-9.1) extensions.
+
+    The `FROM` option of `CREATE EXTENSION` is no longer supported. Any installations still using unpackaged extensions should upgrade them to a packaged version before updating to PostgreSQL 13.
+
+-   Remove support for `posixrules` files in the timezone database.
+
+    IANA's timezone group has deprecated this feature, meaning that it will gradually disappear from systems' timezone databases over the next few years. Rather than have a behavioral change appear unexpectedly with a timezone data update, we have removed PostgreSQL's support for this feature as of version 13. This affects only the behavior of POSIX-style time zone specifications that lack an explicit daylight savings transition rule; formerly the transition rule could be determined by installing a custom `posixrules` file, but now it is hard-wired. The recommended fix for any affected installations is to start using a geographical time zone name.
+
+-   In ltree, when an `lquery` pattern contains adjacent asterisks with braces, e.g., `*{2}.*{3}`, properly interpret that as `*{5}`.
+
+-   Fix pageinspect's `bt_metap()` to return more appropriate data types that are less likely to overflow.
+
+-   The `SELECT DISTINCT...ORDER BY` clause of the `SELECT DISTINCT` query behavior differs after upgrade.
+
+    If `SELECT DISTINCT` is specified or if a `SELECT` statement includes the `SELECT DISTINCT …ORDER BY` clause then all the expressions in `ORDER BY` must be present in the select list of the `SELECT DISTINCT` query (applicable when upgrading from version 9.6 to any higher version of Advanced Server).
+
+-   All objects depending on collation must be rebuilt using `pg_upgrade` to migrate from earlier versions (12, 11, 10, 9.6) using ICU to the latest Advanced Server version.
+
+    A change in collation definitions can lead to corrupt indexes and other problems because the database system relies on stored objects having a certain sort order. Generally, this should be avoided, but it can happen in legitimate circumstances, such as when using `pg_upgrade` to upgrade to server binaries linked with a newer version of ICU. When this happens, all objects depending on the collation should be rebuilt, for example, using `REINDEX`. When that is done, the collation version can be refreshed using the command `ALTER COLLATION ... REFRESH VERSION`. This will update the system catalog to record the current collator version and will make the warning go away. Note that this does not actually check whether all affected objects have been rebuilt correctly.

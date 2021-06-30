@@ -1,0 +1,1506 @@
+---
+title: "Dynamic Runtime Instrumentation Tools Architecture (DRITA)"
+---
+
+<div id="dynamic_runtime_instrumentation_tools_architecture_DRITA" class="registered_link"></div>
+
+The Dynamic Runtime Instrumentation Tools Architecture (DRITA) allows a DBA to query catalog views to determine the *wait events* that affect the performance of individual sessions or the system as a whole. DRITA records the number of times each event occurs as well as the time spent waiting; you can use this information to diagnose performance problems. DRITA offers this functionality, while consuming minimal system resources.
+
+DRITA compares *snapshots* to evaluate the performance of a system. A snapshot is a saved set of system performance data at a given point in time. Each snapshot is identified by a unique ID number; you can use snapshot ID numbers with DRITA reporting functions to return system performance statistics.
+
+<div id="configuring_and_using_DRITA" class="registered_link"></div>
+
+## Configuring and Using DRITA
+
+Advanced Server's `postgresql.conf` file includes a configuration parameter named `timed_statistics` that controls the collection of timing data. The valid parameter values are `TRUE` or `FALSE`; the default value is `FALSE`.
+
+This is a dynamic parameter which can be modified in the `postgresql.conf` file, or while a session is in progress. To enable DRITA, you must either:
+
+ Modify the `postgresql.conf` file, setting the `timed_statistics` parameter to `TRUE`.
+
+ or
+
+ Connect to the server with the EDB-PSQL client, and invoke the command:
+
+```text
+SET timed_statistics = TRUE
+```
+
+After modifying the `timed_statistics` parameter, take a starting snapshot. A snapshot captures the current state of each timer and event counter. The server will compare the starting snapshot to a later snapshot to gauge system performance.
+
+Use the `edbsnap()` function to take the beginning snapshot:
+
+```text
+edb=# SELECT * FROM edbsnap();
+    edbsnap
+----------------------
+ Statement processed.
+(1 row)
+```
+
+Then, run the workload that you would like to evaluate; when the workload has completed (or at a strategic point during the workload), take another snapshot:
+
+```text
+edb=# SELECT * FROM edbsnap();
+    edbsnap
+----------------------
+ Statement processed.
+(1 row)
+```
+
+You can capture multiple snapshots during a session. Then, use the DRITA functions and reports to manage and compare the snapshots to evaluate performance information.
+
+<div id="DRITA_functions" class="registered_link"></div>
+
+## DRITA Functions
+
+You can use DRITA functions to gather wait information and manage snapshots. DRITA functions are fully supported by Advanced Server 14 whether your installation is made compatible with Oracle databases or is made in PostgreSQL-compatible mode.
+
+<div id="get_snaps" class="registered_link"></div>
+
+### get_snaps()
+
+The `get_snaps()` function returns a list of the current snapshots. The signature is:
+
+```text
+get_snaps()
+```
+
+The following example demonstrates using the `get_snaps()` function to display a list of snapshots:
+
+```text
+SELECT * FROM get_snaps();
+       get_snaps
+------------------------------
+ 1 25-JUL-18 09:49:04.224597
+ 2 25-JUL-18 09:49:09.310395
+ 3 25-JUL-18 09:49:14.378728
+ 4 25-JUL-18 09:49:19.448875
+ 5 25-JUL-18 09:49:24.52103
+ 6 25-JUL-18 09:49:29.586889
+ 7 25-JUL-18 09:49:34.65529
+ 8 25-JUL-18 09:49:39.723095
+ 9 25-JUL-18 09:49:44.788392
+ 10 25-JUL-18 09:49:49.855821
+ 11 25-JUL-18 09:49:54.919954
+ 12 25-JUL-18 09:49:59.987707
+(12 rows)
+```
+
+The first column in the result list displays the snapshot identifier; the second column displays the date and time that the snapshot was captured.
+
+<div id="sys_rpt" class="registered_link"></div>
+
+### sys_rpt()
+
+The `sys_rpt()` function returns system wait information. The signature is:
+
+```text
+sys_rpt(<beginning_id>, <ending_id>, <top_n>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+This example demonstrates a call to the `sys_rpt()` function:
+
+```text
+SELECT * FROM sys_rpt(9, 10, 10);
+                                  sys_rpt
+-----------------------------------------------------------------------------
+WAIT NAME                    COUNT     WAIT TIME                     % WAIT
+---------------------------------------------------------------------------
+wal flush                    8359      1.357593                      30.62
+wal write                    8358      1.349153                      30.43
+wal file sync                8358      1.286437                      29.02
+query plan                   33439     0.439324                       9.91
+db file extend               54        0.000585                       0.01
+db file read                 31        0.000307                       0.01
+other lwlock acquire         0         0.000000                       0.00
+ProcArrayLock                0         0.000000                       0.00
+CLogControlLock              0         0.000000                       0.00
+(11 rows)
+```
+
+The information displayed in the result set includes:
+
+| Column Name | Description                                                               |
+| ----------- | ------------------------------------------------------------------------- |
+| `WAIT NAME` | The name of the wait.                                                     |
+| `COUNT`     | The number of times that the wait event occurred.                         |
+| `WAIT TIME` | The time of the wait event in seconds.                                    |
+| `% WAIT`    | The percentage of the total wait time used by this wait for this session. |
+
+<div id="sess_rpt" class="registered_link"></div>
+
+### sess_rpt()
+
+The `sess_rpt()` function returns session wait information. The signature is:
+
+```text
+sess_rpt(<beginning_id>, <ending_id>, <top_n>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+The following example demonstrates a call to the `sess_rpt()` function:
+
+```text
+SELECT * FROM sess_rpt(8, 9, 10);
+
+                                     sess_rpt
+-------------------------------------------------------------------------------------
+ID    USER       WAIT NAME                 COUNT TIME           % WAIT SES % WAIT ALL
+-------------------------------------------------------------------------------------
+3501 enterprise  wal flush                 8354  1.354958      30.61       30.61
+3501 enterprise  wal write                 8354  1.348192      30.46       30.46
+3501 enterprise  wal file sync             8354  1.285607      29.04       29.04
+3501 enterprise  query plan                33413 0.436901      9.87        9.87
+3501 enterprise  db file extend            54    0.000578      0.01        0.01
+3501 enterprise  db file read              56    0.000541      0.01        0.01
+3501 enterprise  ProcArrayLock             0     0.000000      0.00        0.00
+3501 enterprise  CLogControlLock           0     0.000000      0.00        0.00
+(10 rows)
+```
+
+The information displayed in the result set includes:
+
+| Column Name  | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `ID`         | The processID of the session.                                               |
+| `USER`       | The name of the user incurring the wait.                                    |
+| `WAIT NAME`  | The name of the wait event.                                                 |
+| `COUNT`      | The number of times that the wait event occurred.                           |
+| `TIME`       | The length of the wait event in seconds.                                    |
+| `% WAIT SES` | The percentage of the total wait time used by this wait for this session.   |
+| `% WAIT ALL` | The percentage of the total wait time used by this wait (for all sessions). |
+
+<div id="sessid_rpt" class="registered_link"></div>
+
+### sessid_rpt()
+
+The `sessid_rpt()` function returns session ID information for a specified backend. The signature is:
+
+```text
+sessid_rpt(<beginning_id>, <ending_id>, <backend_id>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`backend_id`
+
+ `backend_id` is an integer value that represents the backend identifier.
+
+The following code sample demonstrates a call to `sessid_rpt()`:
+
+```Text
+SELECT * FROM sessid_rpt(8, 9, 3501);
+
+                                     sessid_rpt
+-------------------------------------------------------------------------------------
+ID    USER       WAIT NAME                 COUNT  TIME          % WAIT SES % WAIT ALL
+-------------------------------------------------------------------------------------
+3501 enterprise CLogControlLock           0      0.000000      0.00       0.00
+3501 enterprise ProcArrayLock             0      0.000000      0.00       0.00
+3501 enterprise db file read              56     0.000541      0.01       0.01
+3501 enterprise db file extend            54     0.000578      0.01       0.01
+3501 enterprise query plan                33413  0.436901      9.87       9.87
+3501 enterprise wal file sync             8354   1.285607      29.04      29.04
+3501 enterprise wal write                 8354   1.348192      30.46      30.46
+3501 enterprise wal flush                 8354   1.354958      30.61      30.61
+(10 rows)
+```
+
+The information displayed in the result set includes:
+
+| Column Name  | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `ID`         | The process ID of the wait.                                                 |
+| `USER`       | The name of the user that owns the session.                                 |
+| `WAIT NAME`  | The name of the wait event.                                                 |
+| `COUNT`      | The number of times that the wait event occurred.                           |
+| `TIME`       | The length of the wait in seconds.                                          |
+| `% WAIT SES` | The percentage of the total wait time used by this wait for this session.   |
+| `% WAIT ALL` | The percentage of the total wait time used by this wait (for all sessions). |
+
+<div id="sesshist_rpt" class="registered_link"></div>
+
+### sesshist_rpt()
+
+The `sesshist_rpt()` function returns session wait information for a specified backend. The signature is:
+
+```text
+sesshist_rpt(<snapshot_id>, <session_id>)
+```
+
+**Parameters**
+
+`snapshot_id`
+
+ `snapshot_id` is an integer value that identifies the snapshot.
+
+`session_id`
+
+ `session_id` is an integer value that represents the session.
+
+The following example demonstrates a call to the `sesshist_rpt()` function:
+
+!!! Note
+    The following example has been shortened; over 1300 rows were actually generated.
+
+```text
+SELECT * FROM sesshist_rpt (9, 3501);
+                                    sesshist_rpt
+-----------------------------------------------------------------------------
+----------
+ ID    USER      SEQ   WAIT NAME      ELAPSED   File   Name                 #
+ of Blk   Sum of Blks
+-----------------------------------------------------------------------------
+---------
+ 3501 enterprise 1     query plan     13        0      N/A
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_password_history
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_password_history
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_password_history
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_profile
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_profile_name_ind
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_profile_oid_inde
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_profile_password
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_resource_group
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_resource_group_n
+0          0
+ 3501 enterprise 1     query plan     13        0      edb_resource_group_o
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_attribute
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_auth_members
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_auth_members_memb
+0          0
+ 3501 enterprise 1     query plan     13        0      pg_auth_members_role
+0          0
+                                       .
+                                       .
+                                       .
+ 3501 enterprise 2     wal flush      149       0      N/A
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_password_history
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_password_history
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_password_history
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_profile
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_profile_name_ind
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_profile_oid_inde
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_profile_password
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_resource_group
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_resource_group_n
+0          0
+ 3501 enterprise 2     wal flush      149       0      edb_resource_group_o
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_attribute
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_auth_members
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_auth_members_memb
+0          0
+ 3501 enterprise 2     wal flush      149       0      pg_auth_members_role
+0          0
+                                       .
+                                       .
+                                       .
+ 3501 enterprise 3     wal write      148       0      N/A
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_password_history
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_password_history
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_password_history
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_profile
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_profile_name_ind
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_profile_oid_inde
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_profile_password
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_resource_group
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_resource_group_n
+0          0
+ 3501 enterprise 3     wal write      148       0      edb_resource_group_o
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_attribute
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_attribute_relid_a
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_auth_members
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_auth_members_memb
+0          0
+ 3501 enterprise 3     wal write      148       0      pg_auth_members_role
+0          0
+                                       .
+                                       .
+                                       .
+ 3501 enterprise 24    wal write      130       0      pg_toast_1255
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_1255_index
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_2396
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_2396_index
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_2964
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_2964_index
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_3592
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_toast_3592_index
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_type
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_type_oid_index
+0          0
+ 3501 enterprise 24    wal write      130       0      pg_type_typname_nsp_
+0          0
+(1304 rows)
+```
+
+The information displayed in the result set includes:
+
+| Column Name   | Description                                                             |
+| ------------- | ----------------------------------------------------------------------- |
+| `ID`          | The system-assigned identifier of the wait.                             |
+| `USER`        | The name of the user that incurred the wait.                            |
+| `SEQ`         | The sequence number of the wait event.                                  |
+| `WAIT NAME`   | The name of the wait event.                                             |
+| `ELAPSED`     | The length of the wait event in microseconds.                           |
+| `File`        | The relfilenode number of the file.                                     |
+| `Name`        | If available, the name of the file name related to the wait event.      |
+| `# of Blk`    | The block number read or written for a specific instance of the event . |
+| `Sum of Blks` | The number of blocks read.                                              |
+
+<div id="purgesnap" class="registered_link"></div>
+
+### purgesnap()
+
+The `purgesnap()` function purges a range of snapshots from the snapshot tables. The signature is:
+
+```text
+purgesnap(<beginning_id>, <ending_id>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`purgesnap()` removes all snapshots between `beginning_id` and `ending_id` (inclusive):
+
+```text
+SELECT * FROM purgesnap(6, 9);
+
+            purgesnap
+------------------------------------
+ Snapshots in range 6 to 9 deleted.
+(1 row)
+```
+
+A call to the `get_snaps()` function after executing the example shows that snapshots `6` through `9` have been purged from the snapshot tables:
+
+```text
+SELECT * FROM get_snaps();
+        get_snaps
+------------------------------
+ 1 25-JUL-18 09:49:04.224597
+ 2 25-JUL-18 09:49:09.310395
+ 3 25-JUL-18 09:49:14.378728
+ 4 25-JUL-18 09:49:19.448875
+ 5 25-JUL-18 09:49:24.52103
+ 10 25-JUL-18 09:49:49.855821
+ 11 25-JUL-18 09:49:54.919954
+ 12 25-JUL-18 09:49:59.987707
+(8 rows)
+```
+
+<div id="truncsnap" class="registered_link"></div>
+
+### truncsnap()
+
+Use the truncsnap() function to delete all records from the snapshot table. The signature is:
+
+```text
+truncsnap()
+```
+
+For example:
+
+```text
+SELECT * FROM truncsnap();
+
+     truncsnap
+----------------------
+ Snapshots truncated.
+(1 row)
+```
+
+A call to the `get_snaps()` function after calling the `truncsnap()` function shows that all records have been removed from the snapshot tables:
+
+```Text
+SELECT * FROM get_snaps();
+ get_snaps
+-----------
+(0 rows)
+```
+
+<div id="simulating_statspack_AWR_reports" class="registered_link"></div>
+
+## Simulating Statspack AWR Reports
+
+The functions described in this section return information comparable to the information contained in an Oracle Statspack/AWR (Automatic Workload Repository) report. When taking a snapshot, performance data from system catalog tables is saved into history tables. The reporting functions listed below report on the differences between two given snapshots.
+
+-   `stat_db_rpt()`
+-   `stat_tables_rpt()`
+-   `statio_tables_rpt()`
+-   `stat_indexes_rpt()`
+-   `statio_indexes_rpt()`
+
+The reporting functions can be executed individually or you can execute all five functions by calling the `edbreport()` function.
+
+<div id="edbreport" class="registered_link"></div>
+
+### edbreport()
+
+The `edbreport()` function includes data from the other reporting functions, plus additional system information. The signature is:
+
+```text
+edbreport(<beginning_id>, <ending_id>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+The call to the `edbreport()` function returns a composite report that contains system information and the reports returned by the other statspack functions.
+
+```text
+SELECT * FROM edbreport(9, 10);
+                                   edbreport
+--------------------------------------------------------------------------------------
+    EnterpriseDB Report for database acctg             25-JUL-18
+ Version: PostgreSQL 14.0 (EnterpriseDB Advanced Server 14.0.0)on x86_64-pc-linux-gnu,
+compiled by gcc (GCC) 4.4.7 20120313 (Red Hat 4.4.7-18), 64-bit
+
+    Begin snapshot: 9 at 25-JUL-18 09:49:44.788392
+
+    End snapshot: 10 at 25-JUL-18 09:49:49.855821
+
+Size of database acctg is 173 MB
+     Tablespace: pg_default Size: 231 MB Owner: enterprisedb
+     Tablespace: pg_global Size: 719 kB Owner: enterprisedb
+
+Schema: pg_toast_temp_1       Size: 0 bytes     Owner: enterprisedb
+Schema: public                Size: 158 MB      Owner: enterprisedb
+```
+
+The information displayed in the report introduction includes the database name and version, the current date, the beginning and ending snapshot date and times, database and tablespace details and schema information.
+
+```text
+         Top 10 Relations by pages
+
+TABLE                                        RELPAGES
+-----------------------------------------------------
+pgbench_accounts                             16394
+pgbench_history                              391
+pg_proc                                      145
+pg_attribute                                 92
+pg_depend                                    81
+pg_collation                                 60
+edb$stat_all_indexes                         46
+edb$statio_all_indexes                       46
+pg_description                               44
+edb$stat_all_tables                          29
+```
+
+The information displayed in the `Top 10 Relations by pages` section includes:
+
+| Column Name | Description                       |
+| ----------- | --------------------------------- |
+| `TABLE`     | The name of the table.            |
+| `RELPAGES`  | The number of pages in the table. |
+
+```text
+       Top 10 Indexes by pages
+
+INDEX                                        RELPAGES
+-----------------------------------------------------
+pgbench_accounts_pkey                        2745
+pg_depend_reference_index                    68
+pg_depend_depender_index                     63
+pg_proc_proname_args_nsp_index               53
+pg_attribute_relid_attnam_index              25
+pg_description_o_c_o_index                   24
+pg_attribute_relid_attnum_index              17
+pg_proc_oid_index                            14
+pg_collation_name_enc_nsp_index              12
+edb$stat_idx_pk                              10
+```
+
+The information displayed in the `Top 10 Indexes by pages` section includes:
+
+| Column Name | Description                       |
+| ----------- | --------------------------------- |
+| `INDEX`     | The name of the index.            |
+| `RELPAGES`  | The number of pages in the index. |
+
+```text
+            Top 10 Relations by DML
+
+SCHEMA        RELATION                        UPDATES     DELETES    INSERTS
+----------------------------------------------------------------------------
+public        pgbench_accounts                117209      0          1000000
+public        pgbench_tellers                 117209      0          100
+public        pgbench_branches                117209      0          10
+public        pgbench_history                 0           0          117209
+```
+
+The information displayed in the `Top 10 Relations by DML` section includes:
+
+| Column Name | Description                                        |
+| ----------- | -------------------------------------------------- |
+| `SCHEMA`    | The name of the schema in which the table resides. |
+| `RELATION`  | The name of the table.                             |
+| `UPDATES`   | The number of UPDATES performed on the table.      |
+| `DELETES`   | The number of DELETES performed on the table.      |
+| `INSERTS`   | The number of INSERTS performed on the table.      |
+
+```text
+      DATA from pg_stat_database
+
+DATABASE    NUMBACKENDS  XACT COMMIT   XACT ROLLBACK   BLKS READ  BLKS HIT HIT RATIO
+-------------------------------------------------------------------------------------
+acctg       0            8261          0               117        127985   99.91
+```
+
+The information displayed in the DATA from `pg_stat_database` section of the report includes:
+
+| Column Name     | Description                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE`      | The name of the database.                                                                                                                                                                                          |
+| `NUMBACKENDS`   | Number of backends currently connected to this database. This is the only column in this view that returns a value reflecting current state; all other columns return the accumulated values since the last reset. |
+| `XACT COMMIT`   | Number of transactions in this database that have been committed.                                                                                                                                                  |
+| `XACT ROLLBACK` | Number of transactions in this database that have been rolled back.                                                                                                                                                |
+| `BLKS READ`     | Number of disk blocks read in this database.                                                                                                                                                                       |
+| `BLKS HIT`      | Number of times disk blocks were found already in the buffer cache (when a read was not necessary).                                                                                                                |
+| `HIT RATIO`     | The percentage of times that a block was found in the shared buffer cache.                                                                                                                                         |
+
+```text
+    DATA from pg_buffercache
+
+RELATION                            BUFFERS
+-------------------------------------------
+pgbench_accounts                    16665
+pgbench_accounts_pkey               2745
+pgbench_history                     751
+edb$statio_all_indexes              94
+edb$stat_all_indexes                94
+edb$stat_all_tables                 60
+edb$statio_all_tables               56
+edb$session_wait_history            34
+edb$statio_idx_pk                   17
+pg_depend                           17
+```
+
+The information displayed in the `DATA from pg_buffercache` section of the report includes:
+
+| Column Name | Description                                        |
+| ----------- | -------------------------------------------------- |
+| `RELATION`  | The name of the table.                             |
+| `BUFFERS`   | The number of shared buffers used by the relation. |
+
+!!! Note
+    In order to obtain the report for `DATA from pg_buffercache`, the `pg_buffercache` module must have been installed in the database.Perform the installation with the `CREATE EXTENSION` command.
+
+For more information on the `CREATE EXTENSION` command, see the PostgreSQL Core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createextension.html>
+
+```text
+     DATA from pg_stat_all_tables ordered by seq scan
+
+ SCHEMA                RELATION                     SEQ SCAN    REL TUP READ IDX SCAN
+IDX TUP READ INS   UPD     DEL
+-------------------------------------------------------------------------------------
+----------------------------------
+ public                pgbench_branches              8258        82580       0
+0             0     8258    0
+ public                pgbench_tellers               8258        825800      0
+0             0     8258    0
+ pg_catalog            pg_class                      7           3969        92
+80            0     0       0
+ pg_catalog            pg_index                      5           950         31
+38            0     0       0
+ pg_catalog            pg_namespace                  4           144         5
+4             0     0       0
+ pg_catalog            pg_database                   2           12          7
+7             0     0       0
+ pg_catalog            pg_am                         1           1           0
+0             0     0       0
+ pg_catalog            pg_authid                     1           10          2
+2             0     0       0
+ sys                   callback_queue_table          0           0           0
+0             0     0       0
+ sys                   edb$session_wait_history      0           0           0
+0             125   0       0
+```
+
+The information displayed in the `DATA from pg_stat_all_tables ordered by seq scan` section includes:
+
+| Column Name    | Description                                             |
+| -------------- | ------------------------------------------------------- |
+| `SCHEMA`       | The name of the schema in which the table resides.      |
+| `RELATION`     | The name of the table.                                  |
+| `SEQ SCAN`     | The number of sequential scans initiated on this table. |
+| `REL TUP READ` | The number of tuples read in the table.                 |
+| `IDX SCAN`     | The number of index scans initiated on the table.       |
+| `IDX TUP READ` | The number of index tuples read.                        |
+| `INS`          | The number of rows inserted.                            |
+| `UPD`          | The number of rows updated.                             |
+| `DEL`          | The number of rows deleted.                             |
+
+```text
+    DATA from pg_stat_all_tables ordered by rel tup read
+
+ SCHEMA             RELATION                 SEQ SCAN  REL TUP READ IDX SCAN
+IDX TUP READ INS  UPD    DEL
+---------------------------------------------------------------------------
+--------------------------------------------
+ public             pgbench_tellers          8258      825800       0
+0            0    8258   0
+ public             pgbench_branches         8258      82580        0
+0            0    8258   0
+ pg_catalog         pg_class                 7         3969         92
+80           0    0      0
+ pg_catalog         pg_index                 5         950          31
+38           0    0      0
+ pg_catalog         pg_namespace             4         144          5
+4            0    0      0
+ pg_catalog         pg_database              2         12           7
+7            0    0      0
+ pg_catalog         pg_authid                1         10           2
+2            0    0      0
+ pg_catalog         pg_am                    1         1            0
+0            0    0      0
+ sys                callback_queue_table     0         0            0
+0            0    0      0
+ sys                edb$session_wait_history 0         0            0
+0            125  0      0
+```
+
+The information displayed in the `DATA from pg_stat_all_tables ordered by rel tup read` section includes:
+
+| Column Name    | Description                                            |
+| -------------- | ------------------------------------------------------ |
+| `SCHEMA`       | The name of the schema in which the table resides.     |
+| `RELATION`     | The name of the table.                                 |
+| `SEQ SCAN`     | The number of sequential scans performed on the table. |
+| `REL TUP READ` | The number of tuples read from the table.              |
+| `IDX SCAN`     | The number of index scans performed on the table.      |
+| `IDX TUP READ` | The number of index tuples read.                       |
+| `INS`          | The number of rows inserted.                           |
+| `UPD`          | The number of rows updated.                            |
+| `DEL`          | The number of rows deleted.                            |
+
+```text
+    DATA from pg_statio_all_tables
+
+ SCHEMA               RELATION             HEAP     HEAP     IDX      IDX
+TOAST     TOAST     TIDX    TIDX
+                                           READ     HIT      READ     HIT
+READ      HIT       READ    HIT
+-----------------------------------------------------------------------------------
+------------------------------
+ public               pgbench_accounts     32       25016     0       49913
+0         0         0       0
+ public               pgbench_tellers      0        24774     0       0
+0         0         0       0
+ public               pgbench_branches     0        16516     0       0
+0         0         0       0
+ public               pgbench_history      53       8364      0       0
+0         0         0       0
+ pg_catalog           pg_class             0        199       0       187
+0         0         0       0
+ pg_catalog           pg_attribute         0        198       0       395
+0         0         0       0
+ pg_catalog           pg_proc              0        75        0       153
+0         0         0       0
+ pg_catalog           pg_index             0        56        0       33
+0         0         0       0
+ pg_catalog           pg_amop              0        48        0       56
+0         0         0       0
+ pg_catalog           pg_namespace         0        28        0       7
+0         0         0       0
+```
+
+The information displayed in the `DATA from pg_statio_all_tables` section includes:
+
+| Column Name  | Description                                        |
+| ------------ | -------------------------------------------------- |
+| `SCHEMA`     | The name of the schema in which the table resides. |
+| `RELATION`   | The name of the table.                             |
+| `HEAP READ`  | The number of heap blocks read.                    |
+| `HEAP HIT`   | The number of heap blocks hit.                     |
+| `IDX READ`   | The number of index blocks read.                   |
+| `IDX HIT`    | The number of index blocks hit.                    |
+| `TOAST READ` | The number of toast blocks read.                   |
+| `TOAST HIT`  | The number of toast blocks hit.                    |
+| `TIDX READ`  | The number of toast index blocks read.             |
+| `TIDX HIT`   | The number of toast index blocks hit.              |
+
+```Text
+    DATA from pg_stat_all_indexes
+
+ SCHEMA                  RELATION                    INDEX
+IDX SCAN     IDX TUP READ IDX TUP FETCH
+------------------------------------------------------------------------------
+-------------------------------------------
+ public                  pgbench_accounts            pgbench_accounts_pkey
+16516        16679         16516
+ pg_catalog              pg_attribute
+pg_attribute_relid_attnum_index   196               402          402
+ pg_catalog              pg_proc                     pg_proc_oid_index
+70           70            70
+ pg_catalog              pg_class                    pg_class_oid_index
+61           61            61
+ pg_catalog              pg_class                    pg_class_relname_nsp_index
+31           19            19
+ pg_catalog              pg_type                     pg_type_oid_index
+22           22            22
+ pg_catalog             edb_policy                   edb_policy_object_name_index
+21           0             0
+ pg_catalog             pg_amop                      pg_amop_fam_strat_index
+16           16            16
+ pg_catalog             pg_index                     pg_index_indexrelid_index
+16           16            16
+ pg_catalog             pg_index                     pg_index_indrelid_index
+15           22            22
+```
+
+The information displayed in the `DATA from pg_stat_all_indexes` section includes:
+
+| Column Name     | Description                                                               |
+| --------------- | ------------------------------------------------------------------------- |
+| `SCHEMA`        | The name of the schema in which the index resides.                        |
+| `RELATION`      | The name of the table on which the index is defined.                      |
+| `INDEX`         | The name of the index.                                                    |
+| `IDX SCAN`      | The number of indexes scans initiated on this index.                      |
+| `IDX TUP READ`  | Number of index entries returned by scans on this index                   |
+| `IDX TUP FETCH` | Number of live table rows fetched by simple index scans using this index. |
+
+```Text
+   DATA from pg_statio_all_indexes
+
+ SCHEMA            RELATION                  INDEX
+IDX BLKS READ IDX BLKS HIT
+------------------------------------------------------------------------
+------------------------------------------
+ public            pgbench_accounts          pgbench_accounts_pkey
+0             49913
+ pg_catalog        pg_attribute
+pg_attribute_relid_attnum_index    0             395
+ sys               edb$stat_all_indexes      edb$stat_idx_pk
+1            382
+ sys               edb$statio_all_indexes    edb$statio_idx_pk
+1            382
+ sys               edb$statio_all_tables     edb$statio_tab_pk
+2            262
+ sys               edb$stat_all_tables       edb$stat_tab_pk
+0            259
+ sys               edb$session_wait_history  session_waits_hist_pk
+0            251
+ pg_catalog        pg_proc                   pg_proc_oid_index
+0            142
+ pg_catalog        pg_class                  pg_class_oid_index
+0            123
+ pg_catalog        pg_class                  pg_class_relname_nsp_index
+0            63
+```
+
+The information displayed in the `DATA from pg_statio_all_indexes` section includes:
+
+| Column Name     | Description                                          |
+| --------------- | ---------------------------------------------------- |
+| `SCHEMA`        | The name of the schema in which the index resides.   |
+| `RELATION`      | The name of the table on which the index is defined. |
+| `INDEX`         | The name of the index.                               |
+| `IDX BLKS READ` | The number of index blocks read.                     |
+| `IDX BLKS HIT`  | The number of index blocks hit.                      |
+
+```text
+    System Wait Information
+
+WAIT NAME                              COUNT        WAIT TIME        % WAIT
+---------------------------------------------------------------------------
+wal flush                              8359         1.357593          30.62
+wal write                              8358         1.349153          30.43
+wal file sync                          8358         1.286437          29.02
+query plan                             33439        0.439324          9.91
+db file extend                         54           0.000585          0.01
+db file read                           31           0.000307          0.01
+other lwlock acquire                   0            0.000000          0.00
+ProcArrayLock                          0            0.000000          0.00
+CLogControlLock                        0            0.000000          0.00
+```
+
+The information displayed in the `System Wait Information` section includes:
+
+| Column Name | Description                                                               |
+| ----------- | ------------------------------------------------------------------------- |
+| `WAIT NAME` | The name of the wait.                                                     |
+| `COUNT`     | The number of times that the wait event occurred.                         |
+| `WAIT TIME` | The length of the wait time in seconds.                                   |
+| `% WAIT`    | The percentage of the total wait time used by this wait for this session. |
+
+```text
+    Database Parameters from postgresql.conf
+
+ PARAMETER                             SETTING
+CONTEXT       MINVAL         MAXVAL
+----------------------------------------------------------------------
+---------------------------------------------------
+ allow_system_table_mods               off
+postmaster
+ application_name                      psql.bin
+user
+ archive_command                       (disabled)
+sighup
+ archive_mode                          off
+postmaster
+ archive_timeout                       0
+sighup      0               1073741823
+ array_nulls                           on
+user
+ authentication_timeout                60
+sighup       1              600
+ autovacuum                            on
+sighup
+ autovacuum_analyze_scale_factor       0.1
+sighup       0              100
+ autovacuum_analyze_threshold          50
+sighup       0              2147483647
+ autovacuum_freeze_max_age             200000000
+postmaster   100000         2000000000
+ autovacuum_max_workers                3
+postmaster   1              262143
+ autovacuum_multixact_freeze_max_age   400000000
+postmaster   10000          2000000000
+ autovacuum_naptime                    60
+sighup       1            2147483
+ autovacuum_vacuum_cost_delay           20
+sighup      -1              100
+                        .
+                        .
+                        .
+```
+
+The information displayed in the `Database Parameters from postgresql.conf` section includes:
+
+| Column Name | Description                                      |
+| ----------- | ------------------------------------------------ |
+| `PARAMETER` | The name of the parameter.                       |
+| `SETTING`   | The current value assigned to the parameter.     |
+| `CONTEXT`   | The context required to set the parameter value. |
+| `MINVAL`    | The minimum value allowed for the parameter.     |
+| `MAXVAL`    | The maximum value allowed for the parameter.     |
+
+<div id="stat_db_rpt" class="registered_link"></div>
+
+### stat_db_rpt()
+
+The signature is:
+
+```text
+stat_db_rpt(<beginning_id>, <ending_id>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+The following example demonstrates the `stat_db_rpt()` function:
+
+```text
+SELECT * FROM stat_db_rpt(9, 10);
+
+                                    stat_db_rpt
+-------------------------------------------------------------------------------------
+   DATA from pg_stat_database
+
+DATABASE  NUMBACKENDS   XACT COMMIT  XACT ROLLBACK  BLKS READ  BLKS HIT HIT RATIO
+-------------------------------------------------------------------------------------
+acctg     0             8261         0              117        127985   99.91
+(5 rows)
+```
+
+The information displayed in the DATA from `pg_stat_database` section of the report includes:
+
+| Column Name     | Description                                                                                                                                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE`      | The name of the database.                                                                                                                                                                                          |
+| `NUMBACKENDS`   | Number of backends currently connected to this database. This is the only column in this view that returns a value reflecting current state; all other columns return the accumulated values since the last reset. |
+| `XACT COMMIT`   | The number of transactions in this database that have been committed.                                                                                                                                              |
+| `XACT ROLLBACK` | The number of transactions in this database that have been rolled back.                                                                                                                                            |
+| `BLKS READ`     | The number of blocks read.                                                                                                                                                                                         |
+| `BLKS HIT`      | The number of blocks hit.                                                                                                                                                                                          |
+| `HIT RATIO`     | The percentage of times that a block was found in the shared buffer cache.                                                                                                                                         |
+
+<div id="stat_tables_rpt" class="registered_link"></div>
+
+### stat_tables_rpt()
+
+The signature is:
+
+```text
+function_name(<beginning_id>, <ending_id>, <top_n>, <scope>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+`scope`
+
+ `scope` determines which tables the function returns statistics about. Specify `SYS`, `USER` or `ALL`:
+
+-   `SYS` indicates that the function should return information about system defined tables. A table is considered a system table if it is stored in one of the following schemas: `pg_catalog`, `information_schema`, or `sys`.
+-   `USER` indicates that the function should return information about user-defined tables.
+-   `ALL` specifies that the function should return information about all tables.
+
+The `stat_tables_rpt()` function returns a two-part report. The first portion of the report contains:
+
+```text
+SELECT * FROM stat_tables_rpt(8, 9, 10, 'ALL');
+
+                         stat_tables_rpt
+----------------------------------------------------------------------------
+   DATA from pg_stat_all_tables ordered by seq scan
+
+ SCHEMA               RELATION                      SEQ SCAN   REL TUP READ IDX SCAN
+IDX TUP READ INS   UPD    DEL
+-------------------------------------------------------------------------------------
+----------------------------------
+ public               pgbench_branches               8249       82490       0
+0            0    8249    0
+ public               pgbench_tellers                8249       824900      0
+0            0    8249    0
+ pg_catalog           pg_class                       7          3969        92
+80           0    0       0
+ pg_catalog           pg_index                       5          950         31
+38           0    0       0
+ pg_catalog           pg_namespace                   4          144         5
+4            0    0       0
+ pg_catalog           pg_am                          1          1           0
+0            0    0       0
+ pg_catalog           pg_authid                      1          10          2
+2            0    0       0
+ pg_catalog           pg_database                    1          6           3
+3            0    0       0
+ sys                  callback_queue_table           0          0           0
+0            0    0       0
+ sys                 edb$session_wait_history        0          0           0
+0            125 0        0
+```
+
+The information displayed in the `DATA from pg_stat_all_tables ordered by seq scan` section includes:
+
+| Column Name    | Description                                        |
+| -------------- | -------------------------------------------------- |
+| `SCHEMA`       | The name of the schema in which the table resides. |
+| `RELATION`     | The name of the table.                             |
+| `SEQ SCAN`     | The number of sequential scans on the table.       |
+| `REL TUP READ` | The number of tuples read from the table.          |
+| `IDX SCAN`     | The number of index scans performed on the table.  |
+| `IDX TUP READ` | The number of index tuples read from the table.    |
+| `INS`          | The number of rows inserted.                       |
+| `UPD`          | The number of rows updated.                        |
+| `DEL`          | The number of rows deleted.                        |
+
+The second portion of the report contains:
+
+```text
+   DATA from pg_stat_all_tables ordered by rel tup read
+
+ SCHEMA               RELATION                 SEQ SCAN REL   TUP READ   IDX SCAN
+IDX TUP READ INS    UPD     DEL
+-----------------------------------------------------------------------------
+--------------------------------------
+ public               pgbench_tellers          8249          824900      0
+0            0     8249     0
+ public               pgbench_branches         8249          82490       0
+0            0     8249     0
+ pg_catalog           pg_class                 7             3969        92
+80           0     0        0
+ pg_catalog           pg_index                 5             950         31
+38           0     0        0
+ pg_catalog           pg_namespace             4             144         5
+4            0     0        0
+ pg_catalog           pg_authid                1             10          2
+2            0     0        0
+ pg_catalog           pg_database              1             6           3
+3            0     0        0
+ pg_catalog           pg_am                    1             1           0
+0            0     0        0
+ sys                  callback_queue_table     0             0           0
+0            0     0        0
+ sys                  edb$session_wait_history 0             0           0
+0            125   0        0
+(29 rows)
+```
+
+The information displayed in the `DATA from pg_stat_all_tables ordered by rel tup read` section includes:
+
+| Column Name    | Description                                            |
+| -------------- | ------------------------------------------------------ |
+| `SCHEMA`       | The name of the schema in which the table resides.     |
+| `RELATION`     | The name of the table.                                 |
+| `SEQ SCAN`     | The number of sequential scans performed on the table. |
+| `REL TUP READ` | The number of tuples read from the table.              |
+| `IDX SCAN`     | The number of index scans performed on the table.      |
+| `IDX TUP READ` | The number of live rows fetched by index scans.        |
+| `INS`          | The number of rows inserted.                           |
+| `UPD`          | The number of rows updated.                            |
+| `DEL`          | The number of rows deleted.                            |
+
+<div id="statio_tables_rpt" class="registered_link"></div>
+
+### statio_tables_rpt()
+
+The signature is:
+
+```text
+statio_tables_rpt(<beginning_id>, <ending_id>, <top_n>, <scope>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+`scope`
+
+ `scope` determines which tables the function returns statistics about. Specify `SYS`, `USER` or `ALL`:
+
+-   `SYS` indicates that the function should return information about system defined tables. A table is considered a system table if it is stored in one of the following schemas: `pg_catalog`, `information_schema`, or `sys`.
+-   `USER` indicates that the function should return information about user-defined tables.
+-   `ALL` specifies that the function should return information about all tables.
+
+The `statio_tables_rpt()` function returns a report that contains:
+
+```text
+SELECT * FROM statio_tables_rpt(9, 10, 10, 'SYS');
+
+                                               statio_tables_rpt
+------------------------------------------------------------------------------------
+-------------------------------
+    DATA from pg_statio_all_tables
+
+ SCHEMA                  RELATION             HEAP     HEAP    IDX    IDX   TOAST
+TOAST      TIDX      TIDX
+                                              READ     HIT     READ   HIT   READ
+                                                
+HIT        READ      HIT
+-------------------------------------------------------------------------------------
+----------------------------
+ sys                     edb$stat_all_indexes 8        18      1       382   0
+0          0         0
+ sys                     edb$statio_all_index 8        18      1       382   0
+0          0         0
+ sys                     edb$statio_all_table 5        12      2       262   0
+0          0         0
+ sys                     edb$stat_all_tables  4        10      0       259   0
+0          0         0
+ sys                     edb$session_wait_his 2        6       0       251   0
+0          0         0
+ sys                     edb$session_waits    1        4       0       12    0
+0          0         0
+ sys                     callback_queue_table 0        0       0       0     0
+0          0         0
+ sys                     dual                 0        0       0       0     0
+0          0         0
+ sys                    edb$snap              0        1       0       2     0
+0          0         0
+ sys                    edb$stat_database     0        2       0       7     0
+0          0         0
+(15 rows)
+```
+
+The information displayed in the `DATA from pg_statio_all_tables` section includes:
+
+| Column Name  | Description                                           |
+| ------------ | ----------------------------------------------------- |
+| `SCHEMA`     | The name of the schema in which the relation resides. |
+| `RELATION`   | The name of the relation.                             |
+| `HEAP READ`  | The number of heap blocks read.                       |
+| `HEAP HIT`   | The number of heap blocks hit.                        |
+| `IDX READ`   | The number of index blocks read.                      |
+| `IDX HIT`    | The number of index blocks hit.                       |
+| `TOAST READ` | The number of toast blocks read.                      |
+| `TOAST HIT`  | The number of toast blocks hit.                       |
+| `TIDX READ`  | The number of toast index blocks read.                |
+| `TIDX HIT`   | The number of toast index blocks hit.                 |
+
+<div id="stat_indexes_rpt" class="registered_link"></div>
+
+### stat_indexes_rpt()
+
+The signature is:
+
+```text
+stat_indexes_rpt(<beginning_id>, <ending_id>, <top_n>, <scope>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+`scope`
+
+ `scope` determines which tables the function returns statistics about. Specify `SYS`, `USER` or `ALL`:
+
+-   `SYS` indicates that the function should return information about system defined tables. A table is considered a system table if it is stored in one of the following schemas: `pg_catalog, information_schema`, or `sys`.
+-   `USER` indicates that the function should return information about user-defined tables.
+-   `ALL` specifies that the function should return information about all tables.
+
+The `stat_indexes_rpt()` function returns a report that contains:
+
+```text
+edb=# SELECT * FROM stat_indexes_rpt(9, 10, 10, 'ALL');
+
+                               stat_indexes_rpt
+-------------------------------------------------------------------------------
+---------------------------------------------
+     DATA from pg_stat_all_indexes
+
+ SCHEMA                   RELATION                  INDEX
+IDX SCAN       IDX TUP READ IDX TUP FETCH
+-------------------------------------------------------------------------------
+------------------------------------------
+ public                   pgbench_accounts          pgbench_accounts_pkey
+16516          16679        16516
+ pg_catalog               pg_attribute
+pg_attribute_relid_attnum_index      196           402      402
+ pg_catalog               pg_proc                   pg_proc_oid_index
+70             70           70
+ pg_catalog               pg_class                  pg_class_oid_index
+61             61           61
+ pg_catalog               pg_class                  pg_class_relname_nsp_index
+31             19           19
+ pg_catalog               pg_type                   pg_type_oid_index
+22             22           22
+ pg_catalog               edb_policy                edb_policy_object_name_index
+21             0            0
+ pg_catalog               pg_amop                   pg_amop_fam_strat_index
+16             16           16
+ pg_catalog               pg_index                  pg_index_indexrelid_index
+16             16           16
+ pg_catalog               pg_index                  pg_index_indrelid_index
+15             22           22
+(14 rows)
+```
+
+The information displayed in the `DATA from pg_stat_all_indexes` section includes:
+
+| Column Name     | Description                                           |
+| --------------- | ----------------------------------------------------- |
+| `SCHEMA`        | The name of the schema in which the relation resides. |
+| `RELATION`      | The name of the relation.                             |
+| `INDEX`         | The name of the index.                                |
+| `IDX SCAN`      | The number of indexes scanned.                        |
+| `IDX TUP READ`  | The number of index tuples read.                      |
+| `IDX TUP FETCH` | The number of index tuples fetched.                   |
+
+<div id="statio_indexes_rpt" class="registered_link"></div>
+
+### statio_indexes_rpt()
+
+The signature is:
+
+```text
+statio_indexes_rpt(<beginning_id>, <ending_id>, <top_n>, <scope>)
+```
+
+**Parameters**
+
+`beginning_id`
+
+ `beginning_id` is an integer value that represents the beginning session identifier.
+
+`ending_id`
+
+ `ending_id` is an integer value that represents the ending session identifier.
+
+`top_n`
+
+ `top_n` represents the number of rows to return
+
+`scope`
+
+ `scope` determines which tables the function returns statistics about. Specify `SYS`, `USER` or `ALL`:
+
+-   `SYS` indicates that the function should return information about system defined tables. A table is considered a system table if it is stored in one of the following schemas: `pg_catalog`, `information_schema`, or `sys`.
+-   `USER` indicates that the function should return information about user-defined tables.
+-   `ALL` specifies that the function should return information about all tables.
+
+The `statio_indexes_rpt()` function returns a report that contains:
+
+```text
+edb=# SELECT * FROM statio_indexes_rpt(9, 10, 10, 'SYS');
+
+                           statio_indexes_rpt
+----------------------------------------------------------------------------
+------------------------------------
+  DATA from pg_statio_all_indexes
+
+ SCHEMA                      RELATION                       INDEX
+IDX BLKS READ         IDX BLKS HIT
+----------------------------------------------------------------------------
+---------------------------------
+ pg_catalog                 pg_attribute
+pg_attribute_relid_attnum_index          0                      395
+ sys                        edb$stat_all_indexes           edb$stat_idx_pk
+1                    382
+ sys                        edb$statio_all_indexes         edb$statio_idx_pk
+1                    382
+ sys                        edb$statio_all_tables          edb$statio_tab_pk
+2                    262
+ sys                        edb$stat_all_tables            edb$stat_tab_pk
+0                    259
+ sys                        edb$session_wait_history       session_waits_hist_pk
+0                    251
+ pg_catalog                 pg_proc                        pg_proc_oid_index
+0                    142
+ pg_catalog                 pg_class                       pg_class_oid_index
+0                    123
+ pg_catalog                 pg_class                       pg_class_relname_nsp_index
+0                    63
+ pg_catalog                 pg_type                        pg_type_oid_index
+0                    45
+(14 rows)
+```
+
+The information displayed in the `DATA from pg_statio_all_indexes` report includes:
+
+| Column Name     | Description                                           |
+| --------------- | ----------------------------------------------------- |
+| `SCHEMA`        | The name of the schema in which the relation resides. |
+| `RELATION`      | The name of the table on which the index is defined.  |
+| `INDEX`         | The name of the index.                                |
+| `IDX BLKS READ` | The number of index blocks read.                      |
+| `IDX BLKS HIT`  | The number of index blocks hit.                       |
+
+<div id="performance_tuning_recommendations" class="registered_link"></div>
+
+## Performance Tuning Recommendations
+
+To use DRITA reports for performance tuning, review the top five events in a given report, looking for any event that takes a disproportionately large percentage of resources. In a streamlined system, user I/O will probably make up the largest number of waits. Waits should be evaluated in the context of CPU usage and total time; an event may not be significant if it takes 2 minutes out of a total measurement interval of 2 hours, if the rest of the time is consumed by CPU time. The component of response time (CPU "work" time or other "wait" time) that consumes the highest percentage of overall time should be evaluated.
+
+When evaluating events, watch for:
+
+| Event type                 | Description                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Checkpoint waits           | Checkpoint waits may indicate that checkpoint parameters need to be adjusted, (`checkpoint_segments` and `checkpoint_timeout`). |
+| WAL-related waits          | WAL-related waits may indicate `wal_buffers` are under-sized.                                                                   |
+| SQL Parse waits            | If the number of waits is high, try to use prepared statements.                                                                 |
+| db file random reads       | If high, check that appropriate indexes and statistics exist.                                                                   |
+| db file random writes      | If high, may need to decrease `bgwriter_delay`.                                                                                 |
+| btree random lock acquires | May indicate indexes are being rebuilt. Schedule index builds during less active time.                                          |
+
+Performance reviews should also include careful scrutiny of the hardware, the operating system, the network and the application SQL statements.
+
+<div id="event_descriptions" class="registered_link"></div>
+
+## Event Descriptions
+
+The following table lists the basic wait events that are displayed by DRITA.
+
+| Event Name                            | Description                                                                                                                                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `add in shmem lock acquire`           | Obsolete/unused                                                                                                                                                                                                    |
+| `bgwriter communication lock acquire` | The bgwriter (background writer) process has waited for the short-term lock that synchronizes messages between the bgwriter and a backend process.                                                                 |
+| `btree vacuum lock acquire`           | The server has waited for the short-term lock that synchronizes access to the next available vacuum cycle ID.                                                                                                      |
+| `buffer free list lock acquire`       | The server has waited for the short-term lock that synchronizes access to the list of free buffers (in shared memory).                                                                                             |
+| `checkpoint lock acquire`             | A server process has waited for the short-term lock that prevents simultaneous checkpoints.                                                                                                                        |
+| `checkpoint start lock acquire`       | The server has waited for the short-term lock that synchronizes access to the bgwriter checkpoint schedule.                                                                                                        |
+| `clog control lock acquire`           | The server has waited for the short-term lock that synchronizes access to the commit log.                                                                                                                          |
+| `control file lock acquire`           | The server has waited for the short-term lock that synchronizes write access to the control file (this should usually be a low number).                                                                            |
+| `db file extend`                      | A server process has waited for the operating system while adding a new page to the end of a file.                                                                                                                 |
+| `db file read`                        | A server process has waited for the completion of a read (from disk).                                                                                                                                              |
+| `db file write`                       | A server process has waited for the completion of a write (to disk).                                                                                                                                               |
+| `db file sync`                        | A server process has waited for the operating system to flush all changes to disk.                                                                                                                                 |
+| `first buf mapping lock acquire`      | The server has waited for a short-term lock that synchronizes access to the shared-buffer mapping table.                                                                                                           |
+| `freespace lock acquire`              | The server has waited for the short-term lock that synchronizes access to the freespace map.                                                                                                                       |
+| `lwlock acquire`                      | The server has waited for a short-term lock that has not been described elsewhere in this section.                                                                                                                 |
+| `multi xact gen lock acquire`         | The server has waited for the short-term lock that synchronizes access to the next available multi-transaction ID (when a SELECT...FOR SHARE statement executes).                                                  |
+| `multi xact member lock acquire`      | The server has waited for the short-term lock that synchronizes access to the multi-transaction member file (when a SELECT...FOR SHARE statement executes).                                                        |
+| `multi xact offset lock acquire`      | The server has waited for the short-term lock that synchronizes access to the multi-transaction offset file (when a SELECT...FOR SHARE statement executes).                                                        |
+| `oid gen lock acquire`                | The server has waited for the short-term lock that synchronizes access to the next available OID (object ID).                                                                                                      |
+| `query plan`                          | The server has computed the execution plan for a SQL statement.                                                                                                                                                    |
+| `rel cache init lock acquire`         | The server has waited for the short-term lock that prevents simultaneous relation-cache loads/unloads.                                                                                                             |
+| `shmem index lock acquire`            | The server has waited for the short-term lock that synchronizes access to the shared-memory map.                                                                                                                   |
+| `sinval lock acquire`                 | The server has waited for the short-term lock that synchronizes access to the cache invalidation state.                                                                                                            |
+| `sql parse`                           | The server has parsed a SQL statement.                                                                                                                                                                             |
+| `subtrans control lock acquire`       | The server has waited for the short-term lock that synchronizes access to the subtransaction log.                                                                                                                  |
+| `tablespace create lock acquire`      | The server has waited for the short-term lock that prevents simultaneous `CREATE TABLESPACE` or `DROP TABLESPACE` commands.                                                                                        |
+| `two phase state lock acquire`        | The server has waited for the short-term lock that synchronizes access to the list of prepared transactions.                                                                                                       |
+| `wal insert lock acquire`             | The server has waited for the short-term lock that synchronizes write access to the write-ahead log. A high number may indicate that WAL buffers are sized too small.                                              |
+| `wal write lock acquire`              | The server has waited for the short-term lock that synchronizes write-ahead log flushes.                                                                                                                           |
+| `wal file sync`                       | The server has waited for the write-ahead log to sync to disk (related to the wal_sync_method parameter which, by default, is 'fsync' - better performance can be gained by changing this parameter to open_sync). |
+| `wal flush`                           | The server has waited for the write-ahead log to flush to disk.                                                                                                                                                    |
+| `wal write`                           | The server has waited for a write to the write-ahead log buffer (expect this value to be high).                                                                                                                    |
+| `xid gen lock acquire`                | The server has waited for the short-term lock that synchronizes access to the next available transaction ID.                                                                                                       |
+
+When wait events occur for lightweight locks, they are displayed by DRITA as well. A *lightweight lock* is used to protect a particular data structure in shared memory.
+
+Certain wait events can be due to the server process waiting for one of a group of related lightweight locks, which is referred to as a *lightweight lock tranche*. Individual lightweight lock tranches are not displayed by DRITA, but their summation is displayed by a single event named `other lwlock acquire`.
+
+For a list and description of lightweight locks displayed by DRITA, see Section 28.2, `The Statistics Collector` in the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/monitoring-stats.html>
+
+Under Section 28.2.2. `Viewing Statistics`, the lightweight locks are listed in Table 28-4 `wait_event` Description where the `Wait Event Type` column designates `LWLock`.
+
+The following example displays lightweight locks `ProcArrayLock`, `CLogControlLock`, `WALBufMappingLock`, and `XidGenLock`.
+
+```text
+postgres=# select * from sys_rpt(40,70,20);
+                                    sys_rpt
+----------------------------------------------------------------------------
+ WAIT NAME                              COUNT       WAIT TIME        % WAIT
+----------------------------------------------------------------------------
+ wal flush                              56107       44.456494       47.65
+ db file read                           66123       19.543968       20.95
+ wal write                              32886       12.780866       13.70
+ wal file sync                          32933       11.792972       12.64
+ query plan                             223576      4.539186        4.87
+ db file extend                         2339        0.087038        0.09
+ other lwlock acquire                   402         0.066591        0.07
+ ProcArrayLock                          135         0.012942        0.01
+ CLogControlLock                        212         0.010333        0.01
+ WALBufMappingLock                      47          0.006068        0.01
+ XidGenLock                             53          0.005296        0.01
+(13 rows)
+```
+
+DRITA also displays wait events that occur that are related to certain Advanced Server product features.
+
+These Advanced Server feature specific wait events and the `other lwlock acquire` event are listed in the following table.
+
+| Event Name              | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| `BulkLoadLock`          | The server has waited for access related to EDB\*Loader.          |
+| `EDBResoureManagerLock` | The server has waited for access related to EDB Resource Manager. |
+| `other lwlock acquire`  | Summation of waits for lightweight lock tranches.                 |

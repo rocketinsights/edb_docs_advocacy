@@ -1,0 +1,387 @@
+---
+title: "Customized Options"
+---
+
+<div id="customized_options" class="registered_link"></div>
+
+In previous releases of Advanced Server, the `custom_variable_classes` was required by those parameters not normally known to be added by add-on modules (such as procedural languages).
+
+## custom_variable_classes
+
+The `custom_variable_classes` parameter is deprecated in Advanced Server 9.2; parameters that previously depended on this parameter no longer require its support.
+
+## dbms_alert.max_alerts
+
+**Parameter Type:** Integer
+
+**Default Value:** 100
+
+**Range:** 0 to 500
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the maximum number of concurrent alerts allowed on a system using the `DBMS_ALERTS` package.
+
+## dbms_pipe.total_message_buffer
+
+Parameter Type: Integer
+
+**Default Value:** 30 Kb
+
+**Range:** 30 Kb to 256 Kb
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the total size of the buffer used for the `DBMS_PIPE` package.
+
+## index_advisor.enabled
+
+**Parameter Type:** Boolean
+
+**Default Value:** `true`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+Provides the capability to temporarily suspend Index Advisor in an EDB-PSQL or PSQL session. The Index Advisor plugin, `index_advisor`, must be loaded in the EDB-PSQL or PSQL session in order to use the `index_advisor.enabled` configuration parameter.
+
+The Index Advisor plugin can be loaded as shown by the following example:
+
+```text
+$ psql -d edb -U enterprisedb
+Password for user enterprisedb:
+psql (14.0.0)
+Type "help" for help.
+
+edb=# LOAD 'index_advisor';
+LOAD
+```
+
+Use the `SET` command to change the parameter setting to control whether or not Index Advisor generates an alternative query plan as shown by the following example:
+
+```text
+edb=# SET index_advisor.enabled TO off;
+SET
+edb=# EXPLAIN SELECT * FROM t WHERE a < 10000;
+                     QUERY PLAN
+
+-------------------------------------------------------
+ Seq Scan on t (cost=0.00..1693.00 rows=9864 width=8)
+   Filter: (a < 10000)
+(2 rows)
+
+edb=# SET index_advisor.enabled TO on;
+SET
+edb=# EXPLAIN SELECT * FROM t WHERE a < 10000;
+                      QUERY PLAN
+-----------------------------------------------------------------------------
+ Seq Scan on t (cost=0.00..1693.00 rows=9864 width=8)
+   Filter: (a < 10000)
+ Result (cost=0.00..327.88 rows=9864 width=8)
+   One-Time Filter: '===[ HYPOTHETICAL PLAN ]==='::text
+   -> Index Scan using "<hypothetical-index>:1" on t (cost=0.00..327.88
+ rows=9864 width=8)
+          Index Cond: (a < 10000)
+(6 rows)
+```
+
+## edb_sql_protect.enabled
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Controls whether or not SQL/Protect is actively monitoring protected roles by analyzing SQL statements issued by those roles and reacting according to the setting of `edb_sql_protect.level`. When you are ready to begin monitoring with SQL/Protect set this parameter to on.
+
+## edb_sql_protect.level
+
+**Parameter Type:** Enum
+
+**Default Value:** `passive`
+
+**Range:** `{learn | passive | active}`
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the action taken by SQL/Protect when a SQL statement is issued by a protected role.
+
+The `edb_sql_protect.level` configuration parameter can be set to one of the following values to use either learn mode, passive mode, or active mode:
+
+-   **learn.** Tracks the activities of protected roles and records the relations used by the roles. This is used when initially configuring SQL/Protect so the expected behaviors of the protected applications are learned.
+-   **passive.** Issues warnings if protected roles are breaking the defined rules, but does not stop any SQL statements from executing. This is the next step after SQL/Protect has learned the expected behavior of the protected roles. This essentially behaves in intrusion detection mode and can be run in production when properly monitored.
+-   **active.** Stops all invalid statements for a protected role. This behaves as a SQL firewall preventing dangerous queries from running. This is particularly effective against early penetration testing when the attacker is trying to determine the vulnerability point and the type of database behind the application. Not only does SQL/Protect close those vulnerability points, but it tracks the blocked queries allowing administrators to be alerted before the attacker finds an alternate method of penetrating the system.
+
+If you are using SQL/Protect for the first time, set `edb_sql_protect.level` to `learn`.
+
+## edb_sql_protect.max_protected_relations
+
+**Parameter Type:** Integer
+
+**Default Value:** 1024
+
+**Range:** 1 to 2147483647
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the maximum number of relations that can be protected per role. Please note the total number of protected relations for the server will be the number of protected relations times the number of protected roles. Every protected relation consumes space in shared memory. The space for the maximum possible protected relations is reserved during database server startup.
+
+If the server is started when `edb_sql_protect.max_protected_relations` is set to a value outside of the valid range (for example, a value of 2,147,483,648), then a warning message is logged in the database server log file:
+
+```text
+2014-07-18 16:04:12 EDT WARNING: invalid value for parameter
+"edb_sql_protect.max_protected_relations": "2147483648"
+2014-07-18 16:04:12 EDT HINT: Value exceeds integer range.
+```
+
+The database server starts successfully, but with `edb_sql_protect.max_protected_relations` set to the default value of 1024.
+
+Though the upper range for the parameter is listed as the maximum value for an integer data type, the practical setting depends on how much shared memory is available and the parameter value used during database server startup.
+
+As long as the space required can be reserved in shared memory, the value will be acceptable. If the value is such that the space in shared memory cannot be reserved, the database server startup fails with an error message such as the following:
+
+```text
+2014-07-18 15:22:17 EDT FATAL: could not map anonymous shared memory:
+Cannot allocate memory
+2014-07-18 15:22:17 EDT HINT: This error usually means that PostgreSQL's
+request for a shared memory segment exceeded available memory, swap
+space or huge pages. To reduce the request size (currently 2070118400
+bytes), reduce PostgreSQL's shared memory usage, perhaps by reducing
+shared_buffers or max_connections.
+```
+
+In such cases, reduce the parameter value until the database server can be started successfully.
+
+## edb_sql_protect.max_protected_roles
+
+**Parameter Type:** Integer
+
+**Default Value:** 64
+
+**Range:** 1 to 2147483647
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the maximum number of roles that can be protected.
+
+Every protected role consumes space in shared memory. Please note that the server will reserve space for the number of protected roles times the number of protected relations (`edb_sql_protect.max_protected_relations`). The space for the maximum possible protected roles is reserved during database server startup.
+
+If the database server is started when `edb_sql_protect.max_protected_roles` is set to a value outside of the valid range (for example, a value of 2,147,483,648), then a warning message is logged in the database server log file:
+
+```text
+2014-07-18 16:04:12 EDT WARNING: invalid value for parameter
+"edb_sql_protect.max_protected_roles": "2147483648"
+2014-07-18 16:04:12 EDT HINT: Value exceeds integer range.
+```
+
+The database server starts successfully, but with `edb_sql_protect.max_protected_roles` set to the default value of 64.
+
+Though the upper range for the parameter is listed as the maximum value for an integer data type, the practical setting depends on how much shared memory is available and the parameter value used during database server startup.
+
+As long as the space required can be reserved in shared memory, the value will be acceptable. If the value is such that the space in shared memory cannot be reserved, the database server startup fails with an error message such as the following:
+
+```text
+2014-07-18 15:22:17 EDT FATAL: could not map anonymous shared memory:
+Cannot allocate memory
+2014-07-18 15:22:17 EDT HINT: This error usually means that PostgreSQL's
+request for a shared memory segment exceeded available memory, swap
+space or huge pages. To reduce the request size (currently 2070118400
+bytes), reduce PostgreSQL's shared memory usage, perhaps by reducing
+shared_buffers or max_connections.
+```
+
+In such cases, reduce the parameter value until the database server can be started successfully.
+
+## edb_sql_protect.max_queries_to_save
+
+**Parameter Type:** Integer
+
+**Default Value:** 5000
+
+**Range:** 100 to 2147483647
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the maximum number of offending queries to save in view `edb_sql_protect_queries`.
+
+Every query that is saved consumes space in shared memory. The space for the maximum possible queries that can be saved is reserved during database server startup.
+
+If the database server is started when `edb_sql_protect.max_queries_to_save` is set to a value outside of the valid range (for example, a value of 10), then a warning message is logged in the database server log file:
+
+```text
+2014-07-18 13:05:31 EDT WARNING:  10 is outside the valid range for
+parameter "edb_sql_protect.max_queries_to_save" (100 .. 2147483647)
+```
+
+The database server starts successfully, but with `edb_sql_protect.max_queries_to_save` set to the default value of 5000.
+
+Though the upper range for the parameter is listed as the maximum value for an integer data type, the practical setting depends on how much shared memory is available and the parameter value used during database server startup.
+
+As long as the space required can be reserved in shared memory, the value will be acceptable. If the value is such that the space in shared memory cannot be reserved, the database server startup fails with an error message such as the following:
+
+```text
+2014-07-18 15:22:17 EDT FATAL: could not map anonymous shared memory:
+Cannot allocate memory
+2014-07-18 15:22:17 EDT HINT: This error usually means that PostgreSQL's
+request for a shared memory segment exceeded available memory, swap
+space or huge pages. To reduce the request size (currently 2070118400
+bytes), reduce PostgreSQL's shared memory usage, perhaps by reducing
+shared_buffers or max_connections.
+```
+
+In such cases, reduce the parameter value until the database server can be started successfully.
+
+## edb_wait_states.directory
+
+**Parameter Type:** String
+
+**Default Value:** `edb_wait_states`
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the directory path where the EDB wait states log files are stored. The specified path should be a full, absolute path and not a relative path. However, the default setting is `edb_wait_states`, which makes `$PGDATA/edb_wait_states` the default directory location. For information on EDB wait states see `EDB Wait States` under [Performance Analysis and Tuning](../../../13_performance_analysis_and_tuning/#performance_analysis_and_tuning).
+
+## edb_wait_states.retention_period
+
+**Parameter Type:** Integer
+
+**Default Value:** 604800s
+
+**Range:** 86400s to 2147483647s
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the period of time after which the log files for EDB wait states will be deleted. The default is 604800 seconds, which is 7 days. For information on EDB wait states see `EDB Wait States` under [Performance Analysis and Tuning](../../../13_performance_analysis_and_tuning/#performance_analysis_and_tuning).
+
+## edb_wait_states.sampling_interval
+
+**Parameter Type:** Integer
+
+**Default Value:** 1s
+
+**Range:** 1s to 2147483647s
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Sets the timing interval between two sampling cycles for EDB wait states. The default setting is 1 second. For information on EDB wait states see `EDB Wait States` under [Performance Analysis and Tuning](../../../13_performance_analysis_and_tuning/#performance_analysis_and_tuning).
+
+## edbldr.empty_csv_field
+
+**Parameter Type:** Enum
+
+**Default Value:** `NULL`
+
+**Range:** `{NULL | empty_string | pgsql}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+Use the `edbldr.empty_csv_field` parameter to specify how EDB\*Loader will treat an empty string. The valid values for the `edbldr.empty_csv_field` parameter are:
+
+| Parameter Setting   | EDB\*Loader Behavior                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `NULL`              | An empty field is treated as `NULL`.                                                                              |
+| `empty_string`      | An empty field is treated as a string of length zero.                                                             |
+| `pgsql`             | An empty field is treated as a `NULL` if it does not contain quotes and as an empty string if it contains quotes. |
+
+For more information about the `edbldr.empty_csv_field` parameter in EDB\*Loader, see the *Database Compatibility for Oracle Developers Tools and Utilities Guide* at the EDB website:
+
+[https://www.enterprisedb.com/docs](/epas/latest/epas_compat_tools_guide/)
+
+## utl_encode.uudecode_redwood
+
+**Parameter Type:** Boolean
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+When set to `TRUE`, Advanced Server’s `UTL_ENCODE.UUDECODE` function can decode uuencoded data that was created by the Oracle implementation of the `UTL_ENCODE.UUENCODE` function.
+
+When set to the default setting of `FALSE`, Advanced Server’s `UTL_ENCODE.UUDECODE` function can decode uuencoded data created by Advanced Server’s `UTL_ENCODE.UUENCODE` function.
+
+## utl_file.umask
+
+**Parameter Type:** String
+
+**Default Value:** 0077
+
+**Range:** Octal digits for umask settings
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+The `utl_file.umask` parameter sets the *file mode creation mask* or simply, the *mask*, in a manner similar to the Linux `umask` command. This is for usage only within the Advanced Server `UTL_FILE` package.
+
+!!! Note
+    The `utl_file.umask` parameter is not supported on Windows systems.
+
+The value specified for `utl_file.umask` is a 3 or 4-character octal string that would be valid for the Linux `umask` command. The setting determines the permissions on files created by the `UTL_FILE` functions and procedures. (Refer to any information source regarding Linux or Unix systems for information on file permissions and the usage of the `umask` command.)
+
+The following shows the results of the default `utl_file.umask` setting of 0077. Note that all permissions are denied on users belonging to the `enterprisedb` group as well as all other users. Only user `enterprisedb` has read and write permissions on the file.
+
+```text
+-rw------- 1 enterprisedb enterprisedb 21 Jul 24 16:08 utlfile
+```

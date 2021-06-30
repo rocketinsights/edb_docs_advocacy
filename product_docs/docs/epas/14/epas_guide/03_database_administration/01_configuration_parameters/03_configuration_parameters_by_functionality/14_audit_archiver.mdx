@@ -1,0 +1,184 @@
+---
+title: "Audit Archiver"
+---
+
+<div id="audit_archiver" class="registered_link"></div>
+
+This section describes configuration parameters used by the Advanced Server database audit archiving feature.
+
+## edb_audit_archiver
+
+**Parameter Type:** Enum
+
+**Default Value:** `false`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Restart
+
+**Required Authorization to Activate:** EPAS service account
+
+Enables or disables database audit archiving. 
+
+## edb_audit_archiver_timeout
+
+**Parameter Type:** Integer
+
+**Default Value:** 300s
+
+**Range:** 30s to 1d
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Enforces a timeout in seconds when a database attempts to archive a log file. The valid range is between 30 seconds and one day.
+
+## edb_audit_archiver_filename_prefix
+
+**Parameter Type:** String
+
+**Default Value:** `audit-`
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the file name of an audit log file that needs to be archived; the file name must align with the `edb_audit_filename` parameter. The default value for `edb_audit_archiver_filename_prefix` is `audit-`. The audit files with `edb_audit_archiver_filename_prefix` in the `edb_audit_directory` are eligible for compression and/or expiration.
+
+## edb_audit_archiver_compress_time_limit
+
+**Parameter Type:** Integer
+
+**Default Value:** -1
+
+**Allowed Value:** 0, -1, or any positive number value in seconds
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the time in seconds after which audit logs are eligible for compression. The possible values to set this parameter are: `0` = compression starts as soon as the log file is not a current file, `-1` = compression of the log file on a timely basis does not occur.
+
+## edb_audit_archiver_compress_size_limit
+
+**Parameter Type:** Integer
+
+**Default Value:** -1
+
+**Allowed Value:** 0, -1, or any positive number value in megabytes
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies a file size threshold in megabytes, after which audit logs are eligible for compression. If the parameter is set to -1, compression of the log file on a size basis does not occur.
+
+## edb_audit_archiver_compress_command
+
+**Parameter Type:** String
+
+**Default Value:** `gzip %p`
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the command to execute compressing of the audit log files. The default value for `edb_audit_archiver_compress_command` is `gzip %p`. The `gzip` provides a standard method of compressing files. The `%p` in the string is replaced by the path name of the file to archive.
+
+## edb_audit_archiver_compress_suffix
+
+**Parameter Type:** String
+
+**Default Value:** `.gz`
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the file name of an already compressed log file; the file name must align with `edb_audit_archiver_compress_command`. The default file name is `.gz`. 
+
+## edb_audit_archiver_expire_time_limit
+
+**Parameter Type:** Integer
+
+**Default Value:** -1
+
+**Allowed Value:** 0, -1, or any positive number value in seconds
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the time in seconds after which audit logs are eligible for expiration. The possible values to set this parameter are: `0` = expiration starts as soon as the log file is not a current file, `-1` = expiration of the log file on a timely basis does not occur.
+
+# edb_audit_archiver_expire_size_limit 
+
+**Parameter Type:** Integer
+
+**Default Value:** -1
+
+**Allowed Value:** 0, -1, or any positive number value in megabytes
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies a file size threshold in megabytes, after which audit logs are eligible for expiration. If the parameter is set to -1, the expiration of a log file on the size basis does not occur.
+
+## edb_audit_archiver_expire_command 
+
+**Parameter Type:** String
+
+**Default Value:** ''
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Specifies the command to execute on an expired audit log file before removal.
+
+# edb_audit_archiver_sort_file 
+
+**Parameter Type:** String
+
+**Default Value:** `mtime`
+
+**Range:** n/a
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Identifies the oldest log file to be sorted alphabetically or based on `mtime`. `mtime` indicates sorting of files based on file modification time; `alphabetic` indicates sorting of files alphabetically based on the file name.
+

@@ -1,0 +1,33 @@
+---
+title: "%ISOPEN"
+---
+
+<div id="%isopen" class="registered_link"></div>
+
+The `%ISOPEN` attribute is used to test whether or not a cursor is open.
+
+```text
+<cursor_name>%ISOPEN
+```
+
+`cursor_name` is the name of the cursor for which a `BOOLEAN` data type of `TRUE` will be returned if the cursor is open, `FALSE` otherwise.
+
+The following is an example of using `%ISOPEN`.
+
+```text
+CREATE OR REPLACE PROCEDURE cursor_example
+IS
+        ...
+    CURSOR emp_cur_1 IS SELECT * FROM emp;
+        ...
+BEGIN
+        ...
+    IF emp_cur_1%ISOPEN THEN
+        NULL;
+    ELSE
+        OPEN emp_cur_1;
+    END IF;
+    FETCH emp_cur_1 INTO ...
+        ...
+END;
+```

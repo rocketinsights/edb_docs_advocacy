@@ -1,0 +1,298 @@
+---
+title: "Upgrading to Advanced Server 14"
+---
+
+You can use `pg_upgrade` to upgrade from an existing installation of Advanced Server into the cluster built by the Advanced Server 14 installer or into an alternate cluster created using the `initdb` command. In this section, we will provide the details of upgrading into the cluster provided by the installer.
+
+The basic steps to perform an upgrade into an empty cluster created with the `initdb` command are the same as the steps to upgrade into the cluster created by the Advanced Server 14 installer, but you can omit Step 2 `(Empty the edb database)`, and substitute the location of the alternate cluster when specifying a target cluster for the upgrade.
+
+If a problem occurs during the upgrade process, you can revert to the previous version. See [Reverting to the old cluster](06_reverting_to_the_old_cluster/#reverting_to_the_old_cluster) Section for detailed information about this process.
+
+You must be an operating system superuser or Windows Administrator to perform an Advanced Server upgrade.
+
+**Step 1 - Install the New Server**
+
+Install Advanced Server 14, specifying the same non-server components that were installed during the previous Advanced Server installation. The new cluster and the old cluster must reside in different directories.
+
+**Step 2 - Empty the target database**
+
+The target cluster must not contain any data; you can create an empty cluster using the `initdb` command, or you can empty a database that was created during the installation of Advanced Server 14. If you have installed Advanced Server in PostgreSQL mode, the installer creates a single database named `postgres`; if you have installed Advanced Server in Oracle mode, it creates a database named `postgres` and a database named `edb`.
+
+The easiest way to empty the target database is to drop the database and then create a new database. Before invoking the `DROP DATABASE` command, you must disconnect any users and halt any services that are currently using the database.
+
+On Windows, navigate through the `Control Panel` to the `Services` manager; highlight each service in the `Services` list, and select `Stop`.
+
+On Linux, open a terminal window, assume superuser privileges, and manually stop each service; for example, invoke the following command to stop the pgAgent service:
+
+```text
+service edb-pgagent-14 stop
+```
+
+After stopping any services that are currently connected to Advanced Server, you can use the EDB-PSQL command line client to drop and create a database. When the client opens, connect to the `template1` database as the database superuser; if prompted, provide authentication information. Then, use the following command to drop your database:
+
+```text
+DROP DATABASE <database_name>;
+```
+
+Where `database_name` is the name of the database.
+
+Then, create an empty database based on the contents of the `template1` database.
+
+```text
+CREATE DATABASE <database_name>;
+```
+
+**Step 3 - Set both servers in trust mode**
+
+During the upgrade process, `pg_upgrade` will connect to the old and new servers several times; to make the connection process easier, you can edit the `pg_hba.conf` file, setting the authentication mode to `trust`. To modify the `pg_hba.conf` file, navigate through the `Start` menu to the `EDB Postgres` menu; to the `Advanced Server` menu, and open the `Expert Configuration` menu; select the `Edit pg_hba.conf` menu option to open the `pg_hba.conf` file.
+
+You must allow trust authentication for the previous Advanced Server installation, and Advanced Server 14 servers. Edit the `pg_hba.conf` file for both installations of Advanced Server as shown in the following figure.
+
+![Configuring Advanced Server to use trust authentication.](../images/configuring_advanced_server_to_use_trust_authentication.png)
+
+<div style="text-align: center"> Fig. 1: Configuring Advanced Server to use trust authentication </div>
+
+
+After editing each file, save the file and exit the editor.
+
+If the system is required to maintain `md5` authentication mode during the upgrade process, you can specify user passwords for the database superuser in a password file (`pgpass.conf` on Windows, `.pgpass` on Linux). For more information about configuring a password file, see the PostgreSQL Core Documentation, available at:
+
+<https://www.postgresql.org/docs/current/static/libpq-pgpass.html>
+
+**Step 4 - Stop All Component Services and Servers**
+
+Before you invoke `pg_upgrade`, you must stop any services that belong to the original Advanced Server installation, Advanced Server 14, or the supporting components. This ensures that a service will not attempt to access either cluster during the upgrade process.
+
+The services that are most likely to be running in your installation are:
+
+| **Service:**                                   | **On Linux:**                          | **On Windows:**                                            |
+| ---------------------------------------------- | -------------------------------------- | ---------------------------------------------------------- |
+| EnterpriseDB Postgres Advanced Server 9.6      | edb-as-9.6                             | edb-as-9.6                                                 |
+| EnterpriseDB Postgres Advanced Server 10       | edb-as-10                              | edb-as-10                                                  |
+| EnterpriseDB Postgres Advanced Server 11       | edb-as-11                              | edb-as-11                                                  |
+| EnterpriseDB Postgres Advanced Server 12       | edb-as-12                              | edb-as-12                                                  |
+| EnterpriseDB Postgres Advanced Server 13       | edb-as-13                              | edb-as-13                                                  |
+| EnterpriseDB Postgres Advanced Server 14       | edb-as-14                              | edb-as-14                                                  |
+| Advanced Server 9.6 Scheduling Agent (pgAgent) | edb-pgagent-9.6                        | EnterpriseDB Postgres Advanced Server 9.6 Scheduling Agent |
+| Infinite Cache 9.6                             | edb-icache                             | N/A                                                        |
+| Infinite Cache 10                              | edb-icache                             | N/A                                                        |
+| PgBouncer                                      | Pgbouncer                              | Pgbouncer                                                  |
+| PgBouncer 1.6                                  | ppas-pgbouncer-1.6 or ppas-pgbouncer16 | ppas-pgbouncer-1.6                                         |
+| PgBouncer 1.7                                  | edb-pgbouncer-1.7                      | edb-pgbouncer-1.7                                          |
+| PgPool                                         | ppas-pgpool                            | N/A                                                        |
+| PgPool 3.4                                     | ppas-pgpool-3.4 or ppas-pgpool34       | N/A                                                        |
+| pgPool-II                                      | edb-pgpool-3.5                         | N/A                                                        |
+| Slony 9.6                                      | edb-slony-replication-9.6              | edb-slony-replication-9.6                                  |
+| xDB Publication Server 9.0                     | edb-xdbpubserver-90                    | Publication Service 90                                     |
+| xDB Publication Server 9.1                     | edb-xdbpubserver-91                    | Publication Service 91                                     |
+| xDB Subscription Server                        | edb-xdbsubserver-90                    | Subscription Service 90                                    |
+| xDB Subscription Server                        | edb-xdbsubserver-91                    | Subscription Service 91                                    |
+| EDB Replication Server v6.x                    | edb-xdbpubserver                       | Publication Service for xDB Replication Server             |
+| EDB Subscription Server v6.x                   | edb-xdbsubserver                       | Subscription Service for xDB Replication Server            |
+
+**To stop a service on Windows:**
+
+Open the `Services` applet; highlight each Advanced Server or supporting component service displayed in the list, and select `Stop`.
+
+**To stop a service on Linux:**
+
+Open a terminal window and manually stop each service at the command line.
+
+**Step 5 For Linux only - Assume the identity of the cluster owner**
+
+If you are using Linux, assume the identity of the Advanced Server cluster owner. (The following example assumes Advanced Server was installed in the default, compatibility with Oracle database mode, thus assigning `enterprisedb` as the cluster owner. If installed in compatibility with PostgreSQL database mode, `postgres` is the cluster owner.)
+
+```text
+su - enterprisedb
+```
+
+Enter the Advanced Server cluster owner password if prompted. Then, set the path to include the location of the `pg_upgrade` executable:
+
+```text
+export PATH=$PATH:/usr/edb/as14/bin
+```
+
+During the upgrade process, `pg_upgrade` writes a file to the current working directory of the `enterprisedb` user; you must invoke `pg_upgrade` from a directory where the `enterprisedb` user has `write` privileges. After performing the above commands, navigate to a directory in which the `enterprisedb` user has sufficient privileges to write a file.
+
+```text
+cd /tmp
+```
+
+Proceed to Step 6.
+
+**Step 5 For Windows only - Assume the identity of the cluster owner**
+
+If you are using Windows, open a terminal window, assume the identity of the Advanced Server cluster owner and set the path to the `pg_upgrade` executable.
+
+If the `--serviceaccount service_account_user` parameter was specified during the initial installation of Advanced Server, then `service_account_user` is the Advanced Server cluster owner and is the user to be given with the `RUNAS` command.
+
+```text
+RUNAS /USER:service_account_user "CMD.EXE"
+SET PATH=%PATH%;C:\Program Files\edb\as14\bin
+```
+
+During the upgrade process, `pg_upgrade` writes a file to the current working directory of the service account user; you must invoke `pg_upgrade` from a directory where the service account user has `write` privileges. After performing the above commands, navigate to a directory in which the service account user has sufficient privileges to write a file.
+
+```text
+cd %TEMP%
+```
+
+Proceed to Step 6.
+
+If the `--serviceaccount` parameter was omitted during the initial installation of Advanced Server, then the default owner of the Advanced Server service and the database cluster is `NT AUTHORITY\NetworkService`.
+
+When `NT AUTHORITY\NetworkService` is the service account user, the `RUNAS` command may not be usable as it prompts for a password and the `NT AUTHORITY\NetworkService` account is not assigned a password. Thus, there is typically a failure with an error message such as, “Unable to acquire user password”.
+
+Under this circumstance a Windows utility program named `PsExec` must be used to run `CMD.EXE` as the service account `NT AUTHORITY\NetworkService`.
+
+The `PsExec` program must be obtained by downloading `PsTools`, which is available at the following site:
+
+<https://technet.microsoft.com/en-us/sysinternals/bb897553.aspx>.
+
+You can then use the following command to run `CMD.EXE` as `NT AUTHORITY\NetworkService`, and then set the path to the `pg_upgrade` executable.
+
+```text
+psexec.exe -u "NT AUTHORITY\NetworkService" CMD.EXE
+SET PATH=%PATH%;C:\Program Files\edb\as14\bin
+```
+
+During the upgrade process, `pg_upgrade` writes a file to the current working directory of the service account user; you must invoke `pg_upgrade` from a directory where the service account user has `write` privileges. After performing the above commands, navigate to a directory in which the service account user has sufficient privileges to write a file.
+
+```text
+cd %TEMP%
+```
+
+Proceed with Step 6.
+
+**Step 6 - Perform a consistency check**
+
+Before attempting an upgrade, perform a consistency check to assure that the old and new clusters are compatible and properly configured. Include the `--check` option to instruct `pg_upgrade` to perform the consistency check.
+
+The following example demonstrates invoking `pg_upgrade` to perform a consistency check on Linux:
+
+```text
+pg_upgrade -d /var/lib/edb/as13/data
+-D /var/lib/edb/as14/data -U enterprisedb
+-b /usr/edb/as13/bin -B /usr/edb/as14/bin -p 5444 -P 5445 --check
+```
+
+If the command is successful, it will return `*Clusters are compatible*`.
+
+If you are using Windows, you must quote any directory names that contain a space:
+
+```text
+pg_upgrade.exe
+-d "C:\Program Files\ PostgresPlus\13AS\data"
+-D "C:\Program Files\edb\as14\data" -U enterprisedb
+-b "C:\Program Files\PostgresPlus\13AS\bin"
+-B "C:\Program Files\edb\as14\bin" -p 5444 -P 5445 --check
+```
+
+During the consistency checking process, `pg_upgrade` will log any discrepancies that it finds to a file located in the directory from which `pg_upgrade` was invoked. When the consistency check completes, review the file to identify any missing components or upgrade conflicts. You must resolve any conflicts before invoking `pg_upgrade` to perform a version upgrade.
+
+If `pg_upgrade` alerts you to a missing component, you can use StackBuilder Plus to add the component that contains the component. Before using StackBuilder Plus, you must restart the Advanced Server 14 service. After restarting the service, open StackBuilder Plus by navigating through the `Start` menu to the `Advanced Server 14` menu, and selecting `StackBuilder Plus`. Follow the onscreen advice of the StackBuilder Plus wizard to download and install the missing components.
+
+When `pg_upgrade` has confirmed that the clusters are compatible, you can perform a version upgrade.
+
+**Step 7 - Run pg_upgrade**
+
+After confirming that the clusters are compatible, you can invoke `pg_upgrade` to upgrade the old cluster to the new version of Advanced Server.
+
+On Linux:
+
+```text
+pg_upgrade -d /var/lib/edb/as13/data
+-D /var/lib/edb/as14/data -U enterprisedb
+-b /usr/edb/as13/bin -B /usr/edb/as14/bin -p 5444 -P 5445
+```
+
+On Windows:
+
+```text
+pg_upgrade.exe -d "C:\Program Files\PostgresPlus\13AS\data"
+-D "C:\Program Files\edb\as14\data" -U enterprisedb
+-b "C:\Program Files\PostgresPlus\13AS\bin"
+-B "C:\Program Files\edb\as14\bin" -p 5444 -P 5445
+```
+
+`pg_upgrade` will display the progress of the upgrade onscreen:
+
+```text
+$ pg_upgrade -d /var/lib/edb/as13/data -D /var/lib/edb/as14/data -U
+enterprisedb -b /usr/edb/as13/bin -B /usr/edb/as14/bin -p 5444 -P 5445
+Performing Consistency Checks
+-----------------------------
+Checking current, bin, and data directories            ok
+Checking cluster versions                              ok
+Checking database user is a superuser                  ok
+Checking for prepared transactions                     ok
+Checking for reg* system OID user data types           ok
+Checking for contrib/isn with bigint-passing mismatch  ok
+Creating catalog dump                                  ok
+Checking for presence of required libraries            ok
+Checking database user is a superuser                  ok
+Checking for prepared transactions                     ok
+
+If pg_upgrade fails after this point, you must re-initdb the
+new cluster before continuing.
+
+Performing Upgrade
+------------------
+Analyzing all rows in the new cluster                  ok
+Freezing all rows on the new cluster                   ok
+Deleting files from new pg_clog                        ok
+Copying old pg_clog to new server                      ok
+Setting next transaction ID for new cluster            ok
+Resetting WAL archives                                 ok
+Setting frozenxid counters in new cluster              ok
+Creating databases in the new cluster                  ok
+Adding support functions to new cluster                ok
+Restoring database schema to new cluster               ok
+Removing support functions from new cluster            ok
+Copying user relation files                            ok
+
+Setting next OID for new cluster                       ok
+Creating script to analyze new cluster                 ok
+Creating script to delete old cluster                  ok
+
+Upgrade Complete
+----------------
+Optimizer statistics are not transferred by pg_upgrade so,
+once you start the new server, consider running:
+    analyze_new_cluster.sh
+
+Running this script will delete the old cluster's data files:
+    delete_old_cluster.sh
+```
+
+While `pg_upgrade` runs, it may generate SQL scripts that handle special circumstances that it has encountered during your upgrade. For example, if the old cluster contains large objects, you may need to invoke a script that defines the default permissions for the objects in the new cluster. When performing the pre-upgrade consistency check `pg_upgrade` will alert you to any script that you may be required to run manually.
+
+You must invoke the scripts after `pg_upgrade` completes. To invoke the scripts, connect to the new cluster as a database superuser with the EDB-PSQL command line client, and invoke each script using the `\i` option:
+
+```text
+\i complete_path_to_script/script.sql
+```
+
+It is generally unsafe to access tables referenced in rebuild scripts until the rebuild scripts have completed; accessing the tables could yield incorrect results or poor performance. Tables not referenced in rebuild scripts can be accessed immediately.
+
+If `pg_upgrade` fails to complete the upgrade process, the old cluster will be unchanged, except that `$PGDATA/global/pg_control` is renamed to `pg_control.old` and each tablespace is renamed to `tablespace.old`. To revert to the pre-invocation state:
+
+1.  Delete any tablespace directories created by the new cluster.
+2.  Rename `$PGDATA/global/pg_control`, removing the `.old` suffix.
+3.  Rename the old cluster tablespace directory names, removing the `.old` suffix.
+4.  Remove any database objects (from the new cluster) that may have been moved before the upgrade failed.
+
+After performing these steps, resolve any upgrade conflicts encountered before attempting the upgrade again.
+
+When the upgrade is complete, `pg_upgrade` may also recommend vacuuming the new cluster, and will provide a script that allows you to delete the old cluster.
+
+!!! Note
+    Before removing the old cluster, ensure that the cluster has been upgraded as expected, and that you have preserved a backup of the cluster in case you need to revert to a previous version.
+
+**Step 8 - Restore the authentication settings in the pg_hba.conf file**
+
+If you modified the `pg_hba.conf` file to permit `trust` authentication, update the contents of the `pg_hba.conf` file to reflect your preferred authentication settings.
+
+**Step 9 - Move and identify user-defined tablespaces (Optional)**
+
+If you have data stored in a user-defined tablespace, you must manually relocate tablespace files after upgrading; move the files to the new location and update the symbolic links (located in the `pg_tblspc` directory under your cluster's `data` directory) to point to the files.

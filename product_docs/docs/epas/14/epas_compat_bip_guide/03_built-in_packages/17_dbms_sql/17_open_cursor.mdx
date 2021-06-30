@@ -1,0 +1,34 @@
+---
+title: "OPEN_CURSOR"
+---
+
+The `OPEN_CURSOR` function creates a new cursor. A cursor must be used to parse and execute any dynamic SQL statement. Once a cursor has been opened, it can be re-used with the same or different SQL statements. The cursor does not have to be closed and re-opened in order to be re-used.
+
+```text
+<c> INTEGER OPEN_CURSOR
+```
+
+**Parameters**
+
+`c`
+
+ Cursor ID number associated with the newly created cursor.
+
+**Examples**
+
+The following example creates a new cursor:
+
+```text
+DECLARE
+    curid           NUMBER;
+    v_sql           VARCHAR2(150);
+    v_status        INTEGER;
+BEGIN
+    v_sql:='INSERT INTO dept VALUES (50,''HR'',''LOS ANGELES'')';
+    curid := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(curid,v_sql,DBMS_SQL.native);
+    v_status := DBMS_SQL.EXECUTE(curid);
+    DBMS_OUTPUT.PUT_LINE('Number of rows processed: ' || v_status);
+    DBMS_SQL.CLOSE_CURSOR(curid);
+END;
+```

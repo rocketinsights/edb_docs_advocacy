@@ -1,0 +1,42 @@
+---
+title: "Setting Advanced Server Environment Variables"
+---
+
+<div id="setting_advanced_server_environment_variables" class="registered_link"></div>
+
+The graphical installer provides a script that simplifies the task of setting environment variables for Windows users. The script sets the environment variables for your current shell session; when your shell session ends, the environment variables are destroyed. You may wish to invoke `pgplus_env.bat` from your system-wide shell startup script, so that environment variables are automatically defined for each shell session.
+
+The `pgplus_env` script is created during the Advanced Server installation process and reflects the choices made during installation. To invoke the script, open a command line and enter:
+
+```text
+C:\Program Files\edb\as14\pgplus_env.bat
+```
+
+As the `pgplus_env.bat` script executes, it sets the following environment variables:
+
+```text
+PATH="C:\Program Files\edb\as14\bin";%PATH%
+EDBHOME=C:\Program Files\edb\as14
+PGDATA=C:\Program Files\edb\as14\data
+PGDATABASE=edb
+REM @SET PGUSER=enterprisedb
+PGPORT=5444
+PGLOCALEDIR=C:\Program Files\edb\as14\share\locale
+```
+
+If you have used an installer created by EDB to install PostgreSQL, the `pg_env` script performs the same function:
+
+```text
+C:\Progra~1\PostgreSQL\14\pg_env.bat
+```
+
+As the `pg_env.bat` script executes on PostgreSQL, it sets the following environment variables:
+
+```text
+PATH="C:\Program Files\PostgreSQL\14\bin";%PATH%
+PGDATA=C:\Program Files\PostgreSQL\14\data
+PGDATABASE=postgres
+PGUSER=postgres
+PGPORT=5432
+PGLOCALEDIR=C:\Program Files\PostgreSQL\14\share\locale
+```

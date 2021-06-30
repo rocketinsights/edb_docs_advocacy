@@ -1,0 +1,26 @@
+---
+title: "Performing an Unattended Installation"
+---
+
+<div id="performing_an_unattended_installation" class="registered_link"></div>
+
+To specify that the installer should run without user interaction, include the `--mode unattended` command line option. In unattended mode, the installer uses one of the following sources for configuration parameters:
+
+-   command line options (specified when invoking the installer)
+-   parameters specified in an option file
+-   Advanced Server installation defaults
+
+You can embed the non-interactive Advanced Server installer within another application installer; during the installation process, a progress bar allows the user to view the progression of the installation.
+
+You must have administrative privileges to install Advanced Server using the `--mode unattended` option. If you are using the `--mode unattended` option to install Advanced Server with a client, the calling client must be invoked with superuser or administrative privileges.
+
+To start the installer in unattended mode, navigate to the directory that contains the executable file, and enter:
+
+```text
+edb-as14-server-14.x.x-x-windows-x64.exe --mode unattended --superpassword
+database_superuser_password --servicepassword system_password
+```
+
+When invoking the installer, include the `--servicepassword` option to specify an operating system password for the user installing Advanced Server.
+
+Use the `--superpassword` option to specify a password that conforms to the password security policies defined on the host; enforced password policies on your system may not accept the default password `(enterprisedb)`.

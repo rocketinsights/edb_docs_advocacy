@@ -1,0 +1,10 @@
+---
+title: "Upgrading a pgAgent Installation"
+---
+
+If your existing Advanced Server installation uses pgAgent, you can use a script provided with the Advanced Server 14 installer to update pgAgent. The script is named `dbms_job.upgrade.script.sql`, and is located in the `/share/contrib/` directory under your Advanced Server installation.
+
+If you are using `pg_upgrade` to upgrade your installation, you should:
+
+1.  Perform the upgrade.
+2.  Invoke the `dbms_job.upgrade.script.sql` script to update the catalog files. If your existing pgAgent installation was performed with a script, the update will convert the installation to an extension.

@@ -1,0 +1,552 @@
+---
+title: "Using Descriptors"
+---
+
+<div id="using_descriptors" class="registered_link"></div>
+
+Dynamic SQL allows a client application to execute SQL statements that are composed at runtime. This is useful when you don't know the content or form a statement will take when you are writing a client application. ECPGPlus does *not* allow you to use a host variable in place of an identifier (such as a table name, column name or index name); instead, you should use dynamic SQL statements to build a string that includes the information, and then execute that string. The string is passed between the client and the server in the form of a *descriptor*. A descriptor is a data structure that contains both the data and the information about the shape of the data.
+
+A client application must use a `GET DESCRIPTOR` statement to retrieve information from a descriptor. The following steps describe the basic flow of a client application using dynamic SQL:
+
+1.  Use an `ALLOCATE DESCRIPTOR` statement to allocate a descriptor for the result set (select list).
+2.  Use an `ALLOCATE DESCRIPTOR` statement to allocate a descriptor for the input parameters (bind variables).
+3.  Obtain, assemble or compute the text of an SQL statement.
+4.  Use a `PREPARE` statement to parse and syntax-check the SQL statement.
+5.  Use a `DESCRIBE` statement to describe the select list into the select-list descriptor.
+6.  Use a `DESCRIBE` statement to describe the input parameters into the bind-variables descriptor.
+7.  Prompt the user (if required) for a value for each input parameter. Use a `SET DESCRIPTOR` statement to assign the values into a descriptor.
+8.  Use a `DECLARE CURSOR` statement to define a cursor for the statement.
+9.  Use an `OPEN CURSOR` statement to open a cursor for the statement.
+10. Use a `FETCH` statement to fetch each row from the cursor, storing each row in select-list descriptor.
+11. Use a `GET DESCRIPTOR` command to interrogate the select-list descriptor to find the value of each column in the current row.
+12. Use a `CLOSE CURSOR` statement to close the cursor and free any cursor resources.
+
+A descriptor may contain the attributes listed in the table below:
+
+| **Field**                     | **Type**  | **Attribute Description**                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CARDINALITY`                 | `integer` | The number of rows in the result set.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `DATA`                        | N/A       | The data value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `DATETIME_INTERVAL_CODE`      | `integer` | If `TYPE` is `9`: <br />  <br /> `1 - DATE`   <br />   <br />   `2 - TIME`   <br />   <br />   `3 - TIMESTAMP`   <br />   <br />   `4 - TIME WITH TIMEZONE`   <br />   <br />   `5 - TIMESTAMP WITH TIMEZONE`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `DATETIME_INTERVAL_PRECISION` | `integer` | Unused.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `INDICATOR`                   | `integer` | Indicates a `NULL` or truncated value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `KEY_MEMBER`                  | `integer` | Unused (returns `FALSE`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `LENGTH`                      | `integer` | The data length (as stored on server).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `NAME`                        | `string`  | The name of the column in which the data resides.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `NULLABLE`                    | `integer` | Unused (returns `TRUE`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `OCTET_LENGTH`                | `integer` | The data length (in bytes) as stored on server.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `PRECISION`                   | `integer` | The data precision (if the data is of `numeric` type).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `RETURNED_LENGTH`             | `integer` | Actual length of data item.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `RETURNED_OCTET_LENGTH`       | `integer` | Actual length of data item.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `SCALE`                       | `integer` | The data scale (if the data is of `numeric` type).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `TYPE`                        | `integer` | A numeric code that represents the data type of the column: <br />  <br /> `1 - SQL3_CHARACTER`  <br />  <br />  `2 - SQL3_NUMERIC`  <br />  <br />  `3 - SQL3_DECIMAL`  <br />  <br />  `4 - SQL3_INTEGER`  <br />  <br />  `5 - SQL3_SMALLINT`  <br />  <br />  `6 - SQL3_FLOAT`  <br />  <br />  `7 - SQL3_REAL`  <br />  <br />  `8 - SQL3_DOUBLE_PRECISION`  <br />  <br />  `9 - SQL3_DATE_TIME_TIMESTAMP`  <br />  <br />  `10 - SQL3_INTERVAL`  <br />  <br />  `12 - SQL3_CHARACTER_VARYING`  <br />  <br />  `13 - SQL3_ENUMERATED`  <br />  <br />  `14 - SQL3_BIT`  <br />  <br />  `15 - SQL3_BIT_VARYING`  <br />  <br />  `16 - SQL3_BOOLEAN` |
+
+## Example - Using a Descriptor to Return Data
+
+The following simple application executes an SQL statement entered by an end user. The code sample demonstrates:
+
+-   how to use a SQL descriptor to execute a `SELECT` statement.
+-   how to find the data and metadata returned by the statement.
+
+The application accepts an SQL statement from an end user, tests the statement to see if it includes the `SELECT` keyword, and executes the statement.
+
+When invoking the application, an end user must provide the name of the database on which the SQL statement will be performed, and a string that contains the text of the query.
+
+For example, a user might invoke the sample with the following command:
+
+```text
+./exec_stmt edb "SELECT * FROM emp"
+
+
+/************************************************************
+/* exec_stmt.pgc
+*
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sql3types.h>
+#include <sqlca.h>
+
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+static void print_meta_data( char * desc_name );
+
+char *md1 = "col field                data              ret";
+char *md2 = "num name                 type              len";
+char *md3 = "--- -------------------- ----------------- ---";
+
+int main( int argc, char *argv[] )
+{
+
+  EXEC SQL BEGIN DECLARE SECTION;
+    char  *db   = argv[1];
+    char  *stmt = argv[2];
+    int    col_count;
+  EXEC SQL END DECLARE SECTION;
+
+  EXEC SQL CONNECT TO :db;
+
+  EXEC SQL ALLOCATE DESCRIPTOR parse_desc;
+  EXEC SQL PREPARE query FROM :stmt;
+  EXEC SQL DESCRIBE query INTO SQL DESCRIPTOR parse_desc;
+  EXEC SQL GET DESCRIPTOR 'parse_desc' :col_count = COUNT;
+
+if( col_count == 0 )
+{
+    EXEC SQL EXECUTE IMMEDIATE :stmt;
+
+    if( sqlca.sqlcode >= 0 )
+      EXEC SQL COMMIT;
+}
+else
+{
+    int row;
+
+    EXEC SQL ALLOCATE DESCRIPTOR row_desc;
+    EXEC SQL DECLARE my_cursor CURSOR FOR query;
+    EXEC SQL OPEN my_cursor;
+
+    for( row = 0; ; row++ )
+    {
+       EXEC SQL BEGIN DECLARE SECTION;
+         int     col;
+       EXEC SQL END DECLARE SECTION;
+       EXEC SQL FETCH IN my_cursor
+         INTO SQL DESCRIPTOR row_desc;
+
+       if( sqlca.sqlcode != 0 )
+          break;
+
+       if( row == 0 )
+          print_meta_data( "row_desc" );
+
+       printf("[RECORD %d]\n", row+1);
+
+       for( col = 1; col <= col_count; col++ )
+       {
+           EXEC SQL BEGIN DECLARE SECTION;
+             short   ind;
+             varchar val[40+1];
+             varchar name[20+1];
+           EXEC SQL END DECLARE SECTION;
+
+           EXEC SQL GET DESCRIPTOR 'row_desc'
+             VALUE :col
+             :val = DATA, :ind = INDICATOR, :name = NAME;
+
+           if( ind == -1 )
+             printf( "  %-20s : <null>\n", name.arr );
+           else if( ind > 0 )
+             printf( "  %-20s : <truncated>\n", name.arr );
+           else
+             printf( "  %-20s : %s\n", name.arr, val.arr );
+       }
+
+       printf( "\n" );
+
+    }
+    printf( "%d rows\n", row );
+}
+
+exit( 0 );
+}
+
+static void print_meta_data( char *desc_name )
+{
+   EXEC SQL BEGIN DECLARE SECTION;
+     char  *desc = desc_name;
+     int    col_count;
+     int    col;
+   EXEC SQL END DECLARE SECTION;
+
+static char *types[] =
+{
+  "unused           ",
+  "CHARACTER        ",
+  "NUMERIC          ",
+  "DECIMAL          ",
+  "INTEGER          ",
+  "SMALLINT         ",
+  "FLOAT            ",
+  "REAL             ",
+  "DOUBLE           ",
+  "DATE_TIME        ",
+  "INTERVAL         ",
+  "unused           ",
+  "CHARACTER_VARYING",
+  "ENUMERATED       ",
+  "BIT              ",
+  "BIT_VARYING      ",
+  "BOOLEAN          ",
+  "abstract         "
+};
+
+EXEC SQL GET DESCRIPTOR :desc :col_count = count;
+
+
+printf( "%s\n", md1 );
+printf( "%s\n", md2 );
+printf( "%s\n", md3 );
+
+for( col = 1; col <= col_count; col++ )
+{
+
+   EXEC SQL BEGIN DECLARE SECTION;
+     int     type;
+     int     ret_len;
+     varchar name[21];
+   EXEC SQL END DECLARE SECTION;
+   char *type_name;
+
+   EXEC SQL GET DESCRIPTOR :desc
+     VALUE :col
+     :name = NAME,
+     :type = TYPE,
+     :ret_len = RETURNED_OCTET_LENGTH;
+
+   if( type > 0 && type < SQL3_abstract )
+     type_name = types[type];
+   else
+     type_name = "unknown";
+
+   printf( "%02d: %-20s %-17s %04d\n",
+     col, name.arr, type_name, ret_len );
+}
+printf( "\n" );
+}
+
+/************************************************************
+```
+
+The code sample begins by including the prototypes and type definitions for the C `stdio` and `stdlib` libraries, SQL data type symbols, and the `SQLCA` (SQL communications area) structure:
+
+```text
+#include <stdio.h>
+#include <stdlib.h>
+#include <sql3types.h>
+#include <sqlca.h>
+```
+
+The sample provides minimal error handling; when the application encounters an SQL error, it prints the error message to screen:
+
+```text
+EXEC SQL WHENEVER SQLERROR SQLPRINT;
+```
+
+The application includes a forward-declaration for a function named `print_meta_data()` that will print the metadata found in a descriptor:
+
+```text
+static void print_meta_data( char * desc_name );
+```
+
+The following code specifies the column header information that the application will use when printing the metadata:
+
+```text
+char *md1 = "col field data ret";
+char *md2 = "num name type len";
+char *md3 = "--- -------------------- ----------------- ---";
+
+int main( int argc, char *argv[] )
+{
+```
+
+The following declaration section identifies the host variables that will contain the name of the database to which the application will connect, the content of the SQL Statement, and a host variable that will hold the number of columns in the result set (if any).
+
+```text
+EXEC SQL BEGIN DECLARE SECTION;
+  char *db = argv[1];
+  char *stmt = argv[2];
+  int col_count;
+EXEC SQL END DECLARE SECTION;
+```
+
+The application connects to the database (using the default credentials):
+
+```text
+EXEC SQL CONNECT TO :db;
+```
+
+Next, the application allocates an SQL descriptor to hold the metadata for a statement:
+
+```text
+EXEC SQL ALLOCATE DESCRIPTOR parse_desc;
+```
+
+The application uses a `PREPARE` statement to syntax check the string provided by the user:
+
+```text
+EXEC SQL PREPARE query FROM :stmt;
+```
+
+and a `DESCRIBE` statement to move the metadata for the query into the SQL descriptor.
+
+```text
+EXEC SQL DESCRIBE query INTO SQL DESCRIPTOR parse_desc;
+```
+
+Then, the application interrogates the descriptor to discover the number of columns in the result set, and stores that in the host variable `col_count`.
+
+```text
+EXEC SQL GET DESCRIPTOR parse_desc :col_count = COUNT;
+```
+
+If the column count is zero, the end user did not enter a `SELECT` statement; the application uses an `EXECUTE IMMEDIATE` statement to process the contents of the statement:
+
+```text
+if( col_count == 0 )
+{
+   EXEC SQL EXECUTE IMMEDIATE :stmt;
+```
+
+If the statement executes successfully, the application performs a `COMMIT`:
+
+```text
+if( sqlca.sqlcode >= 0 )
+  EXEC SQL COMMIT;
+}
+else
+{
+```
+
+If the statement entered by the user is a `SELECT` statement (which we know because the column count is non-zero), the application declares a variable named `row`.
+
+```text
+int row;
+```
+
+Then, the application allocates another descriptor that holds the description and the values of a specific row in the result set:
+
+```text
+EXEC SQL ALLOCATE DESCRIPTOR row_desc;
+```
+
+The application declares and opens a cursor for the prepared statement:
+
+```text
+EXEC SQL DECLARE my_cursor CURSOR FOR query;
+EXEC SQL OPEN my_cursor;
+```
+
+Loops through the rows in result set:
+
+```text
+for( row = 0; ; row++ )
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+    int col;
+  EXEC SQL END DECLARE SECTION;
+```
+
+Then, uses a `FETCH` to retrieve the next row from the cursor into the descriptor:
+
+```text
+EXEC SQL FETCH IN my_cursor INTO SQL DESCRIPTOR row_desc;
+```
+
+The application confirms that the `FETCH` did not fail; if the `FETCH` fails, the application has reached the end of the result set, and breaks the loop:
+
+```text
+if( sqlca.sqlcode != 0 )
+   break;
+```
+
+The application checks to see if this is the first row of the cursor; if it is, the application prints the metadata for the row.
+
+```text
+if( row == 0 )
+   print_meta_data( "row_desc" );
+```
+
+Next, it prints a record header containing the row number:
+
+```text
+printf("[RECORD %d]\n", row+1);
+```
+
+Then, it loops through each column in the row:
+
+```text
+for( col = 1; col <= col_count; col++ )
+{
+   EXEC SQL BEGIN DECLARE SECTION;
+     short ind;
+     varchar val[40+1];
+     varchar name[20+1];
+   EXEC SQL END DECLARE SECTION;
+```
+
+The application interrogates the row descriptor `(row_desc)` to copy the column value `(:val)`, null indicator `(:ind)` and column name `(:name)` into the host variables declared above. Notice that you can retrieve multiple items from a descriptor using a comma-separated list.
+
+```text
+EXEC SQL GET DESCRIPTOR row_desc
+  VALUE :col
+  :val = DATA, :ind = INDICATOR, :name = NAME;
+```
+
+If the null indicator `(ind)` is negative, the column value is `NULL`; if the null indicator is greater than `0`, the column value is too long to fit into the val host variable (so we print `<truncated>)`; otherwise, the null indicator is `0` (meaning `NOT NULL`) so we print the value. In each case, we prefix the value (or `<null>` or `<truncated>`) with the name of the column.
+
+```text
+if( ind == -1 )
+  printf( " %-20s : <null>\n", name.arr );
+else if( ind > 0 )
+  printf( " %-20s : <truncated>\n", name.arr );
+else
+  printf( " %-20s : %s\n", name.arr, val.arr );
+}
+
+printf( "\n" );
+}
+```
+
+When the loop terminates, the application prints the number of rows fetched, and exits:
+
+```text
+   printf( "%d rows\n", row );
+  }
+
+exit( 0 );
+}
+```
+
+The `print_meta_data()` function extracts the metadata from a descriptor and prints the name, data type, and length of each column:
+
+```text
+static void print_meta_data( char *desc_name )
+{
+```
+
+The application declares host variables:
+
+```text
+EXEC SQL BEGIN DECLARE SECTION;
+  char *desc = desc_name;
+  int col_count;
+  int col;
+EXEC SQL END DECLARE SECTION;
+```
+
+The application then defines an array of character strings that map data type values `(numeric)` into data type names. We use the numeric value found in the descriptor to index into this array. For example, if we find that a given column is of type `2`, we can find the name of that type `(NUMERIC)` by writing `types[2]`.
+
+```text
+static char *types[] =
+{
+  "unused ",
+  "CHARACTER ",
+  "NUMERIC ",
+  "DECIMAL ",
+  "INTEGER ",
+  "SMALLINT ",
+  "FLOAT ",
+  "REAL ",
+  "DOUBLE ",
+  "DATE_TIME ",
+  "INTERVAL ",
+  "unused ",
+  "CHARACTER_VARYING",
+  "ENUMERATED ",
+  "BIT ",
+  "BIT_VARYING ",
+  "BOOLEAN ",
+  "abstract "
+};
+```
+
+The application retrieves the column count from the descriptor. Notice that the program refers to the descriptor using a host variable `(desc)` that contains the name of the descriptor. In most scenarios, you would use an identifier to refer to a descriptor, but in this case, the caller provided the descriptor name, so we can use a host variable to refer to the descriptor.
+
+```text
+EXEC SQL GET DESCRIPTOR :desc :col_count = count;
+```
+
+The application prints the column headers (defined at the beginning of this application):
+
+```text
+printf( "%s\n", md1 );
+printf( "%s\n", md2 );
+printf( "%s\n", md3 );
+```
+
+Then, loops through each column found in the descriptor, and prints the name, type and length of each column.
+
+```text
+for( col = 1; col <= col_count; col++ )
+{
+  EXEC SQL BEGIN DECLARE SECTION;
+    int type;
+    int ret_len;
+    varchar name[21];
+  EXEC SQL END DECLARE SECTION;
+  char *type_name;
+```
+
+It retrieves the name, type code, and length of the current column:
+
+```text
+EXEC SQL GET DESCRIPTOR :desc
+ VALUE :col
+ :name = NAME,
+ :type = TYPE,
+ :ret_len = RETURNED_OCTET_LENGTH;
+```
+
+If the numeric type code matches a 'known' type code (that is, a type code found in the `types[]` array), it sets `type_name` to the name of the corresponding type; otherwise, it sets `type_name` to `"unknown"`.
+
+```text
+if( type > 0 && type < SQL3_abstract )
+  type_name = types[type];
+else
+  type_name = "unknown";
+```
+
+and prints the column number, name, type name, and length:
+
+```text
+   printf( "%02d: %-20s %-17s %04d\n",
+     col, name.arr, type_name, ret_len );
+  }
+  printf( "\n" );
+}
+```
+
+If you invoke the sample application with the following command:
+
+```text
+./exec_stmt test "SELECT * FROM emp WHERE empno IN(7902, 7934)"
+```
+
+The application returns:
+
+```text
+col field                data              ret
+num name                 type              len
+--- -------------------- ----------------- ---
+01: empno                NUMERIC           0004
+02: ename                CHARACTER_VARYING 0004
+03: job                  CHARACTER_VARYING 0007
+04: mgr                  NUMERIC           0004
+05: hiredate             DATE_TIME         0018
+06: sal                  NUMERIC           0007
+07: comm                 NUMERIC           0000
+08: deptno               NUMERIC           0002
+
+[RECORD 1]
+  empno                : 7902
+  ename                : FORD
+  job                  : ANALYST
+  mgr                  : 7566
+  hiredate             : 03-DEC-81 00:00:00
+  sal                  : 3000.00
+  comm                 : <null>
+  deptno               : 20
+
+[RECORD 2]
+  empno                : 7934
+  ename                : MILLER
+  job                  : CLERK
+  mgr                  : 7782
+  hiredate             : 23-JAN-82 00:00:00
+  sal                  : 1300.00
+  comm                 : <null>
+  deptno               : 10
+
+2 rows
+```

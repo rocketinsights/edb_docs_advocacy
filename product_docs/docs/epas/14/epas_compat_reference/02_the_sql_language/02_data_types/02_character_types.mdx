@@ -1,0 +1,56 @@
+---
+title: "Character Types"
+---
+
+<div id="character_types" class="registered_link"></div>
+
+The following table lists the general-purpose character types available in Advanced Server:
+
+| Name           | Description                                                                                           |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| `CHAR[(n)]`    | Fixed-length character string, blank-padded to the size specified by `n`                              |
+| `CLOB`         | Large variable-length up to 1 GB                                                                      |
+| `LONG`         | Variable unlimited length.                                                                            |
+| `NVARCHAR(n)`  | Variable-length national character string, with limit                                                 |
+| `NVARCHAR2(n)` | Variable-length national character string, with limit                                                 |
+| `STRING`       | Alias for `VARCHAR2`                                                                                  |
+| `VARCHAR(n)`   | Variable-length character string, with limit (considered deprecated, but supported for compatibility) |
+| `VARCHAR2(n)`  | Variable-length character string, with limit                                                          |
+
+Where `n` is a positive integer; these types can store strings up to `n` characters in length. An attempt to assign a value that exceeds the length of `n` will result in an error, unless the excess characters are all spaces, in which case the string will be truncated to the maximum length.
+
+The storage requirement for data of these types is the actual string plus 1 byte if the string is less than 127 bytes, or 4 bytes if the string is 127 bytes or greater. In the case of `CHAR`, the padding also requires storage. Long strings are compressed by the system automatically, so the physical requirement on disk may be less. Long values are stored in background tables so they do not interfere with rapid access to the shorter column values.
+
+The database character set determines the character set used to store textual values.
+
+`CHAR`
+
+ If you do not specify a value for `n`, `n` will default to `1`. If the string to be assigned is shorter than `n`, values of type `CHAR` will be space-padded to the specified width (`n`), and will be stored and displayed that way.
+
+ Padding spaces are treated as semantically insignificant. That is, trailing spaces are disregarded when comparing two values of type `CHAR`, and they will be removed when converting a `CHAR` value to one of the other string types.
+
+ If you explicitly cast an over-length value to a `CHAR(n)` type, the value will be truncated to `n` characters without raising an error (as specified by the SQL standard).
+
+```
+VARCHAR, VARCHAR2, NVARCHAR and NVARCHAR2
+```
+
+ If the string to be assigned is shorter than `n`, values of type `VARCHAR`, `VARCHAR2`, `NVARCHAR` and `NVARCHAR2` will store the shorter string without padding.
+
+ **Note**: The trailing spaces `are` semantically significant in `VARCHAR` values.
+
+ If you explicitly cast a value to a `VARCHAR` type, an over-length value will be truncated to `n` characters without raising an error (as specified by the SQL standard).
+
+`CLOB`
+
+ You can store a large character string in a `CLOB` type. `CLOB` is semantically equivalent to `VARCHAR2` except no length limit is specified. Generally, you should use a `CLOB` type if the maximum string length is not known.
+
+ The longest possible character string that can be stored in a `CLOB` type is about 1 GB.
+
+ **Note**: The `CLOB` data type is actually a `DOMAIN` based on the PostgreSQL `TEXT` data type. For information on a `DOMAIN`, see the PostgreSQL core documentation at <https://www.postgresql.org/docs/current/static/sql-createdomain.html>
+
+ Thus, usage of the `CLOB` type is limited by what can be done for `TEXT` such as a maximum size of approximately 1 GB.
+
+ For usage of larger amounts of data, instead of using the `CLOB` data type, use the PostgreSQL `Large Objects` feature that relies on the `pg_largeobject` system catalog. For information on large objects, see the PostgreSQL core documentation at:
+
+ <https://www.postgresql.org/docs/current/static/largeobjects.html>

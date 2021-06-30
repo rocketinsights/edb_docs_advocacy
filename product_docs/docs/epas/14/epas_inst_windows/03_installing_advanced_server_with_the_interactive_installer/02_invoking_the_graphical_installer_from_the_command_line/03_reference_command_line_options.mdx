@@ -1,0 +1,178 @@
+---
+title: "Reference - Command Line Options"
+---
+
+<div id="reference_command_line_options" class="registered_link"></div>
+
+You can optionally include the following parameters for an Advanced Server installation on the command line, or in a configuration file when invoking the Advanced Server installer.
+
+`--create_samples { yes | no }`
+
+Use the `--create_samples` option to specify whether the installer should create the sample tables and procedures for the database dialect specified with the `--databasemode` parameter. The default is `yes`.
+
+`--databasemode { oracle | postgresql }`
+
+Use the `--databasemode` parameter to specify a database dialect. The default is `oracle`.
+
+`--datadir data_directory`
+
+Use the `--datadir` parameter to specify a location for the cluster's data directory. `data_directory` is the name of the directory; include the complete path to the desired directory.
+
+`--debuglevel { 0 | 1 | 2 | 3 | 4 }`
+
+Use the `--debuglevel` parameter to set the level of detail written to the `debug_log` file (see `--debugtrace`). Higher values produce more detail in a longer trace file. The default is `2`.
+
+`--debugtrace debug_log`
+
+Use the `--debugtrace` parameter to troubleshoot installation problems. `debug_log` is the name of the file that contains troubleshooting details.
+
+`--disable-components component_list`
+
+Use the `--disable-components` parameter to specify a list of Advanced Server components to exclude from the installation. By default, `component_list` contains '' (the empty string). `component_list` is a comma-separated list containing one or more of the following components:
+
+`dbserver`
+
+EDB Postgres Advanced Server 14.
+
+`pgadmin4`
+
+The EDB Postgres pgAdmin 4 provides a powerful graphical interface for database management and monitoring.
+
+`--enable_acledit { 1 | 0 }`
+
+The `--enable_acledit 1` option instructs the installer to grant permission to the user specified by the `--serviceaccount` option to access the Advanced Server binaries and `data` directory. By default, this option is disabled if `--enable_acledit 0` is specified or if the `--enable_acledit` option is completely omitted.
+
+!!! Note
+    Specification of this option is valid only when installing on Windows. The `--enable_acledit 1` option should be specified when a `discretionary access control list` (DACL) needs to be set for allowing access to objects on which Advanced Server is to be installed. See the following for information on a DACL: <https://msdn.microsoft.com/en-us/library/windows/desktop/aa446597(v=vs.85).aspx
+
+In order to perform future operations such as upgrading Advanced Server, access to the `data` directory must exist for the service account user specified by the `--serviceaccount` option. By specifying the `--enable_acledit 1` option, access to the `data` directory by the service account user is provided.
+
+`--enable-components component_list`
+
+Although this option is listed when you run the installer with the `--help` option, the `--enable-components` parameter has absolutely no effect on which components are installed. All components will be installed regardless of what is specified in `component_list`. In order to install only specific selected components, you must use the `--disable-components` parameter previously described in this section to list the components you do not want to install.
+
+`--extract-only { yes | no }`
+
+Include the `--extract-only` parameter to indicate that the installer should extract the Advanced Server binaries without performing a complete installation. Superuser privileges are not required for the `--extract-only` option. The default value is `no`.
+
+`--help`
+
+Include the `--help` parameter to view a list of the optional parameters.
+
+`--installer-language { en | ja | zh_CN | zh_TW | ko }`
+
+Use the `--installer-language` parameter to specify an installation language for Advanced Server. The default is `en`.
+
+`en` specifies English.
+
+`ja` specifies Japanese
+
+`zh_CN` specifies Chinese Simplified.
+
+`zh_TW` specifies Traditional Chinese.
+
+`ko` specifies Korean.
+
+`--install_runtimes { yes | no }`
+
+Include `--install_runtimes` to specify whether the installer should install the Microsoft Visual C++ runtime libraries. Default is `yes`.
+
+`--locale locale`
+
+Specifies the locale for the Advanced Server cluster. By default, the installer will use to the locale detected by `initdb`.
+
+`--mode { unattended }`
+
+Use the `--mode unattended` parameter to specify that the installer should perform an installation that requires no user input during the installation process.
+
+`--optionfile config_file`
+
+Use the `--optionfile` parameter to specify the name of a file that contains the installation configuration parameters. `config_file` must specify the complete path to the configuration parameter file.
+
+`--prefix installation_dir/as14`
+
+Use the `--prefix` parameter to specify an installation directory for Advanced Server. The installer will append a version-specific sub-directory (that is, `as14`) to the specified directory. The default installation directory is:
+
+```text
+C:\Program Files\edb\as14
+```
+
+`--serverport port_number`
+
+Use the `--serverport` parameter to specify a listener port number for Advanced Server.
+
+If you are installing Advanced Server in unattended mode, and do not specify a value using the `--serverport` parameter, the installer will use port `5444`, or the first available port after port `5444` as the default listener port.
+
+`--server_utilization {33 | 66 | 100}`
+
+Use the `--server_utilization` parameter to specify a value for the `edb_dynatune` configuration parameter. The `edb_dynatune` configuration parameter determines how Advanced Server allocates system resources.
+
+-   A value of `33` is appropriate for a system used for development. A low value dedicates the least amount of the host machine’s resources to the database server.
+-   A value of `66` is appropriate for an application server with a fixed number of applications. A mid-range value dedicates a moderate amount of system resources to the database server. The default value is 66.
+-   A value of `100` is appropriate for a host machine that is dedicated to running Advanced Server. A high value dedicates most of the system resources to the database server.
+
+When the installation is complete, you can adjust the value of `edb_dynatune` by editing the `postgresql.conf` file, located in the `data` directory of your Advanced Server installation. After editing the `postgresql.conf` file, you must restart the server for the changes to take effect.
+
+`--serviceaccount user_account_name`
+
+Use the `--serviceaccount` parameter to specify the name of the user account that owns the server process.
+
+-   If `--databasemode` is set to `oracle` (the default), the default value of `--serviceaccount` is `enterprisedb`.
+-   If `--databasemode` is `postgresql`, the default value of `--serviceaccount` is set to `postgres`.
+
+Please note that for security reasons, the `--serviceaccount` parameter must specify the name of an account that does not hold administrator privileges.
+
+If you specify both the `--serviceaccount` option and the `--enable_acledit 1` option when invoking the installer, the database service and pgAgent will use the same service account, thereby having the required permissions to access the Advanced Server binaries and `data` directory.
+
+!!! Note
+    If you do not include the `--serviceaccount` option when invoking the installer, the `NetworkService` account will own the database service, and the pgAgent service will be owned by either `enterprisedb` or `postgres` (depending on the installation mode).
+
+`--servicename service_name`
+
+Use the `--servicename` parameter to specify the name of the Advanced Server service. The default is `edb-as-14`.
+
+`--servicepassword user_password`
+
+Use `--servicepassword` to specify the OS system password. If unspecified, the value of `--servicepassword` defaults to the value of `--superpassword`.
+
+`--superaccount super_user_name`
+
+Use the `--superaccount` parameter to specify the user name of the database superuser.
+
+-   If `--databasemode` is set to `oracle` (the default), the default value of `--superaccount` is `enterprisedb`.
+-   If `--databasemode` is set to `postgresql`, the default value of `--superaccount` is set to `postgres`.
+
+`--superpassword superuser_password`
+
+Use `--superpassword` to specify the database superuser password. If you are installing in non-interactive mode, `--superpassword` defaults to `enterprisedb`.
+
+`--unattendedmodeui { none | minimal | minimalWithDialogs }`
+
+Use the `--unattendedmodeui` parameter to specify installer behavior during an unattended installation.
+
+Include `--unattendedmodeui none` to specify that the installer should not display progress bars during the Advanced Server installation.
+
+Include `--unattendedmodeui minimal` to specify that the installer should display progress bars during the installation process. This is the default behavior.
+
+Include `--unattendedmodeui minimalWithDialogs` to specify that the installer should display progress bars and report any errors encountered during the installation process (in additional dialogs).
+
+`--version`
+
+Include the `--version` parameter to retrieve version information about the installer:
+
+`EDB Postgres Advanced Server 14.0.3-1 --- Built on 2020-10-23 00:12:44 IB: 20.6.0-202008110127`
+
+`--workload_profile {oltp | mixed | reporting}`
+
+Use the `--workload_profile` parameter to specify an initial value for the `edb_dynatune_profile` configuration parameter. `edb_dynatune_profile` controls aspects of performance-tuning based on the type of work that the server performs.
+
+-   Specify `oltp` if the Advanced Server installation will be used to support heavy online transaction processing workloads.
+-   The default value is `oltp`.
+-   Specify `mixed` if Advanced Server will provide a mix of transaction processing and data reporting.
+-   Specify `reporting` if Advanced Server will be used for heavy data reporting.
+
+After the installation is complete, you can adjust the value of `edb_dynatune_profile` by editing the `postgresql.conf` file, located in the `data` directory of your Advanced Server installation. After editing the `postgresql.conf` file, you must restart the server for the changes to take effect.
+
+For more information about `edb_dynatune` and other performance-related topics, see the *EDB Postgres Advanced Server Guide* available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)

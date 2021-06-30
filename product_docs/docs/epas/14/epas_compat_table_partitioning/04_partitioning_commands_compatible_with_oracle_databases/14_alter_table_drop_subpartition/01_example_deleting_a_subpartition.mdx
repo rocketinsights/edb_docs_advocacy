@@ -1,0 +1,60 @@
+---
+title: "Example - Deleting a Subpartition"
+---
+
+<div id="example_deleting_a_subpartition" class="registered_link"></div>
+
+The example that follows deletes a subpartition of the `sales` table. Use the following command to create the `sales` table:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+  SUBPARTITION BY LIST (country)
+  (
+    PARTITION first_half_2012 VALUES LESS THAN('01-JUL-2012')
+    (
+      SUBPARTITION europe VALUES ('ITALY', 'FRANCE'),
+      SUBPARTITION americas VALUES ('CANADA', 'US'),
+      SUBPARTITION asia VALUES ('PAKISTAN', 'INDIA')
+    ),
+    PARTITION second_half_2012 VALUES LESS THAN('01-JAN-2013')
+);
+```
+
+Querying the `ALL_TAB_SUBPARTITIONS` view displays the subpartition names.
+
+```text
+edb=# SELECT subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+ subpartition_name |     high_value
+-------------------+---------------------
+ EUROPE            | 'ITALY', 'FRANCE'
+ AMERICAS          | 'CANADA', 'US'
+ ASIA              | 'PAKISTAN', 'INDIA'
+ SYS0101           | DEFAULT
+(4 rows)
+```
+
+To delete the `americas` subpartition from the `sales` table, invoke the following command:
+
+```text
+ALTER TABLE sales DROP SUBPARTITION americas;
+```
+
+Querying the `ALL_TAB_SUBPARTITIONS` view demonstrates that the subpartition has been successfully deleted.
+
+```text
+edb=# SELECT subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+ subpartition_name |     high_value
+-------------------+---------------------
+ EUROPE            | 'ITALY', 'FRANCE'
+ ASIA              | 'PAKISTAN', 'INDIA'
+ SYS0101           | DEFAULT
+(3 rows)
+```

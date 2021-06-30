@@ -1,0 +1,74 @@
+---
+title: "DEFINE_COLUMN_RAW"
+---
+
+The `DEFINE_COLUMN_RAW` procedure defines a `RAW` column or expression in the `SELECT` list that is to be returned and retrieved in a cursor.
+
+```text
+DEFINE_COLUMN_RAW(<c> NUMBER, <position> NUMBER, <column> RAW,
+  <column_size> NUMBER)
+```
+
+**Parameters**
+
+`c`
+
+ Cursor id of the cursor associated with the `SELECT` command.
+
+`position`
+
+ Position of the column or expression in the `SELECT` list that is being defined.
+
+`column`
+
+ A `RAW` variable.
+
+`column_size`
+
+ The maximum length of the returned data. Returned data exceeding `column_size` is truncated to `column_size` characters.
+
+## DEFINE_COLUMN_LONG
+
+<div id="define_column_long" class="registered_link"></div>
+
+The `DEFINE_COLUMN_LONG` procedure defines a long column for a `SELECT` cursor.
+
+```text
+DEFINE_COLUMN_LONG(<c> NUMBER, <position> NUMBER)
+```
+
+**Parameters**
+
+`c`
+
+ Cursor id of the cursor for a row defined to be selected.
+
+`position`
+
+ Position of the column in a row that is being defined.
+
+**Examples**
+
+The following example shows an anonymous block that defines a long column in the `SELECT` list using `DEFINE_COLUMN_LONG` procedure and returns a part of the `LONG` column value into a variable using procedure `COLUMN_VALUE_LONG`.
+
+```text
+DECLARE
+    curid          NUMBER;
+    v_ename        VARCHAR(20);
+    sql_stmt       VARCHAR2(50) := 'SELECT ename ' || ' FROM emp WHERE empno
+                                 = 7844';
+    v_status       INTEGER;
+    v_length       INTEGER;
+BEGIN
+    curid := DBMS_SQL.OPEN_CURSOR;
+    DBMS_SQL.PARSE(curid, sql_stmt, DBMS_SQL.native);
+    DBMS_SQL.DEFINE_COLUMN_LONG(curid, 1);
+    v_status := DBMS_SQL.EXECUTE(curid);
+    v_status := DBMS_SQL.FETCH_ROWS(curid);
+    DBMS_SQL.COLUMN_VALUE_LONG(curid, 1, 7, 0, v_ename, v_length);
+    DBMS_OUTPUT.PUT_LINE('ename: ' || v_ename || ' & length: ' || v_length);
+    DBMS_SQL.CLOSE_CURSOR(curid);
+END;
+
+ename: TURNER & length: 6
+```

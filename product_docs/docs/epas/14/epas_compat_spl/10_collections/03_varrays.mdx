@@ -1,0 +1,94 @@
+---
+title: "Varrays"
+---
+
+<div id="varrays" class="registered_link"></div>
+
+A *varray* or *variable-size array* is a type of collection that associates a positive integer with a value. In many respects, it is similar to a nested table.
+
+A varray has the following characteristics:
+
+-   A *varray type* must be defined along with a maximum size limit. After the varray type is defined, *varray variables* can be declared of that varray type. Data manipulation occurs using the varray variable, or simply, “varray” for short. The number of elements in the varray cannot exceed the maximum size limit established in the varray type definition.
+-   When a varray variable is declared, the varray initially does not exist (it is a null collection). The null varray must be initialized with a *constructor*. You can also initialize the varray by using an assignment statement where the right-hand side of the assignment is an initialized varray of the same type.
+-   The key is a positive integer.
+-   The constructor establishes the number of elements in the varray, which must not exceed the maximum size limit. The `EXTEND` method can add additional elements to the varray up to the maximum size limit. See [Collection Methods](../11_collection_methods/#collection_methods) for information on collection methods.
+-   Unlike a nested table, a varray cannot be sparse - there are no gaps in the assignment of values to keys.
+-   An attempt to reference a varray element beyond its initialized or extended size, but within the maximum size limit will result in a `SUBSCRIPT_BEYOND_COUNT` exception.
+-   An attempt to reference a varray element beyond the maximum size limit or extend a varray beyond the maximum size limit will result in a `SUBSCRIPT_OUTSIDE_LIMIT` exception.
+
+The `TYPE IS VARRAY` statement is used to define a varray type within the declaration section of an SPL program.
+
+```text
+TYPE <varraytype> IS { VARRAY | VARYING ARRAY }(<maxsize>)
+  OF { <datatype> | <objtype> };
+```
+
+`varraytype` is an identifier assigned to the varray type. `datatype` is a scalar data type such as `VARCHAR2` or `NUMBER`. `maxsize` is the maximum number of elements permitted in varrays of that type. `objtype` is a previously defined object type.
+
+The `CREATE TYPE` command can be used to define a varray type that is available to all SPL programs in the database. In order to make use of the varray, a *variable* must be declared of that varray type. The following is the syntax for declaring a varray variable:
+
+```text
+<varray varraytype>
+```
+
+`varray` is an identifier assigned to the varray. `varraytype` is the identifier of a previously defined varray type.
+
+A varray is initialized using the varray type’s constructor.
+
+```text
+<varraytype> ([ { <expr1> | NULL } [, { <expr2> | NULL } ]
+  [, ...] ])
+```
+
+`varraytype` is the identifier of the varray type’s constructor, which has the same name as the varray type. `expr1, expr2, …` are expressions that are type-compatible with the element type of the varray. If `NULL` is specified, the corresponding element is set to null. If the parameter list is empty, then an empty varray is returned, which means there are no elements in the varray. If the varray is defined from an object type, then `exprn` must return an object of that object type. The object can be the return value of a function or the return value of the object type’s constructor. The object can also be an element of another varray of the same varray type.
+
+If a collection method other than `EXISTS` is applied to an uninitialized varray, a `COLLECTION_IS_NULL` exception is thrown. See [Collection Methods](../11_collection_methods/#collection_methods) for information on collection methods.
+
+The following is an example of a constructor for a varray:
+
+```text
+DECLARE
+    TYPE varray_typ IS VARRAY(2) OF CHAR(1);
+    v_varray        varray_typ := varray_typ('A','B');
+```
+
+An element of the varray is referenced using the following syntax.
+
+```text
+<varray>(<n>)[<.element> ]
+```
+
+`varray` is the identifier of a previously declared varray. `n` is a positive integer. If the varray type of `varray` is defined from an object type, then `[.element ]` must reference an attribute within the object type from which the varray type is defined. Alternatively, the entire object can be referenced by omitting `[.element ].`
+
+The following is an example of a varray where it is known that there will be four elements.
+
+```text
+DECLARE
+    TYPE dname_varray_typ IS VARRAY(4) OF VARCHAR2(14);
+    dname_varray    dname_varray_typ;
+    CURSOR dept_cur IS SELECT dname FROM dept ORDER BY dname;
+    i               INTEGER := 0;
+BEGIN
+    dname_varray := dname_varray_typ(NULL, NULL, NULL, NULL);
+    FOR r_dept IN dept_cur LOOP
+        i := i + 1;
+        dname_varray(i) := r_dept.dname;
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('DNAME');
+    DBMS_OUTPUT.PUT_LINE('----------');
+    FOR j IN 1..i LOOP
+        DBMS_OUTPUT.PUT_LINE(dname_varray(j));
+    END LOOP;
+END;
+```
+
+The above example produces the following output:
+
+```text
+DNAME
+----------
+ACCOUNTING
+OPERATIONS
+RESEARCH
+SALES
+```

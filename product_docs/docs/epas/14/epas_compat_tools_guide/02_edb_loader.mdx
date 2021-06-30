@@ -1,0 +1,1522 @@
+---
+title: "EDB*Loader"
+---
+
+EDB\*Loader is a high-performance bulk data loader that provides an interface compatible with Oracle databases for Advanced Server. The EDB\*Loader command line utility loads data from an input source, typically a file, into one or more tables using a subset of the parameters offered by Oracle SQL\*Loader.
+
+EDB\*Loader features include:
+
+-   Support for the Oracle SQL\*Loader data loading methods - conventional path load, direct path load, and parallel direct path load
+-   Syntax for control file directives compatible with Oracle SQL\*Loader
+-   Input data with delimiter-separated or fixed-width fields
+-   Bad file for collecting rejected records
+-   Loading of multiple target tables
+-   Discard file for collecting records that do not meet the selection criteria of any target table
+-   Log file for recording the EDB\*Loader session and any error messages
+-   Data loading from standard input and remote loading, particularly useful for large data sources on remote hosts
+
+These features are explained in detail in the following sections.
+
+!!! Note
+    The following are important version compatibility restrictions between the EDB\*Loader client and the database server.
+
+    -   When you invoke the EDB\*Loader program (called `edbldr`), you pass in parameters and directive information to the database server. **We strongly recommend that the version 14 EDB\*Loader client (the edbldr program supplied with Advanced Server 14) be used to load data only into version 14 of the database server. In general, the EDB\*Loader client and database server should be the same version.**
+
+    -   Using EDB\*Loader in conjunction with connection poolers such as PgPool-II and PgBouncer is not supported. EDB\*Loader must connect directly to Advanced Server version 14. Alternatively, the following commands are some of the options that can be used for loading data through connection poolers:
+
+        ```
+        psql \copy
+        jdbc copyIn
+        psycopg2 copy_from
+        ```
+
+<div id="data_loading_methods" class="registered_link"></div>
+
+## Data Loading Methods
+
+As with Oracle SQL\*Loader, EDB\*Loader supports three data loading methods:
+
+-   Conventional path load
+-   Direct path load
+-   Parallel direct path load
+
+Conventional path load is the default method used by EDB\*Loader. Basic insert processing is used to add rows to the table.
+
+The advantage of a conventional path load over the other methods is that table constraints and database objects defined on the table such as primary keys, not null constraints, check constraints, unique indexes, foreign key constraints, and triggers are enforced during a conventional path load.
+
+One exception is that the Advanced Server *rules* defined on the table are not enforced. EDB\*Loader can load tables on which rules are defined, but the rules are not executed. As a consequence, partitioned tables implemented using rules cannot be loaded using EDB\*Loader.
+
+!!! Note
+    Advanced Server rules are created by the `CREATE RULE` command. Advanced Server rules are not the same database objects as rules and rule sets used in Oracle.
+
+EDB\*Loader also supports direct path loads. A direct path load is faster than a conventional path load, but requires the removal of most types of constraints and triggers from the table. For more information, see [Direct Path Load](#direct-path-load).
+
+Finally, EDB\*Loader supports parallel direct path loads. A parallel direct path load provides even greater performance improvement by permitting multiple EDB\*Loader sessions to run simultaneously to load a single table. For more information, see [Parallel Direct Path Load](#parallel-direct-path-load).
+
+<div id="general_usage" class="registered_link"></div>
+
+## General Usage
+
+EDB\*Loader can load data files with either delimiter-separated or fixed-width fields, in single-byte or multi-byte character sets. The delimiter can be a string consisting of one or more single-byte or multi-byte characters. Data file encoding and the database encoding may be different. Character set conversion of the data file to the database encoding is supported.
+
+Each EDB\*Loader session runs as a single, independent transaction. If an error should occur during the EDB\*Loader session that aborts the transaction, all changes made during the session are rolled back.
+
+Generally, formatting errors in the data file do not result in an aborted transaction. Instead, the badly formatted records are written to a text file called the *bad file*. The reason for the error is recorded in the *log file*.
+
+Records causing database integrity errors do result in an aborted transaction and rollback. As with formatting errors, the record causing the error is written to the bad file and the reason is recorded in the log file.
+
+!!! Note
+    EDB\*Loader differs from Oracle SQL\*Loader in that a database integrity error results in a rollback in EDB\*Loader. In Oracle SQL\*Loader, only the record causing the error is rejected. Records that were previously inserted into the table are retained and loading continues after the rejected record.
+
+The following are examples of types of formatting errors that do not abort the transaction:
+
+-   Attempt to load non-numeric value into a numeric column
+-   Numeric value is too large for a numeric column
+-   Character value is too long for the maximum length of a character column
+-   Attempt to load improperly formatted date value into a date column
+
+The following are examples of types of database errors that abort the transaction and result in the rollback of all changes made in the EDB\*Loader session:
+
+-   Violation of a unique constraint such as a primary key or unique index
+-   Violation of a referential integrity constraint
+-   Violation of a check constraint
+-   Error thrown by a trigger fired as a result of inserting rows
+
+<div id="building_the_edb_loader_control_file" class="registered_link"></div>
+
+## Building the EDB\*Loader Control File
+
+When you invoke EDB\*Loader, the list of arguments provided must include the name of a control file. The control file includes the instructions that EDB\*Loader uses to load the table (or tables) from the input data file. The control file includes information such as:
+
+-   The name of the input data file containing the data to be loaded.
+-   The name of the table or tables to be loaded from the data file.
+-   Names of the columns within the table or tables and their corresponding field placement in the data file.
+-   Specification of whether the data file uses a delimiter string to separate the fields, or if the fields occupy fixed column positions.
+-   Optional selection criteria to choose which records from the data file to load into a given table.
+-   The name of the file that will collect illegally formatted records.
+-   The name of the discard file that will collect records that do not meet the selection criteria of any table.
+
+The syntax for the EDB\*Loader control file is as follows:
+
+```text
+[ OPTIONS (<param=value> [, <param=value> ] ...) ]
+LOAD DATA
+  [ CHARACTERSET <charset> ]
+  [ INFILE '{ <data_file> | <stdin> }' ]
+  [ BADFILE '<bad_file>' ]
+  [ DISCARDFILE '<discard_file>' ]
+  [ { DISCARDMAX | DISCARDS } <max_discard_recs> ]
+[ INSERT | APPEND | REPLACE | TRUNCATE ]
+[ PRESERVE BLANKS ]
+{ INTO TABLE <target_table>
+  [ WHEN <field_condition> [ AND <field_condition> ] ...]
+  [ FIELDS TERMINATED BY '<termstring>'
+    [ OPTIONALLY ENCLOSED BY '<enclstring>' ] ]
+  [ RECORDS DELIMITED BY '<delimstring>' ]
+  [ TRAILING NULLCOLS ]
+   (<field_def> [, <field_def> ] ...)
+} ...
+```
+
+where `field_def` defines a field in the specified `data_file` that describes the location, data format, or value of the data to be inserted into `column_name` of the `target_table`. The syntax of `field_def` is the following:
+
+```text
+<column_name> {
+  CONSTANT <val> |
+  FILLER [ POSITION (<start:end>) ] [ <fieldtype> ] |
+  BOUNDFILLER [ POSITION (<start:end>) ] [ <fieldtype> ] |
+  [ POSITION (<start:end>) ] [ <fieldtype> ]
+  [ NULLIF <field_condition> [ AND <field_condition> ] ...]
+  [ PRESERVE BLANKS ] [ "<expr>" ]
+}
+```
+
+where `fieldtype` is one of:
+
+```text
+CHAR [(<length>)] | DATE [(<length>)] | TIMESTAMP [(<length>)] [ "<datemask>" ] | 
+INTEGER EXTERNAL [(<length>)] |
+FLOAT EXTERNAL [(<length>)] | DECIMAL EXTERNAL [(<length>)] |
+ZONED EXTERNAL [(<length>)] | ZONED [(<precision> [,<scale>])]
+```
+
+**Description**
+
+The specification of `data_file`, `bad_file`, and `discard_file` may include the full directory path or a relative directory path to the file name. If the file name is specified alone or with a relative directory path, the file is then assumed to exist (in the case of `data_file`), or is created (in the case of `bad_file` or `discard_file`), relative to the current working directory from which `edbldr` is invoked.
+
+You can include references to environment variables within the EDB\*Loader control file when referring to a directory path and/or file name. Environment variable references are formatted differently on Windows systems than on Linux systems:
+
+-   On Linux, the format is `$ENV_VARIABLE` or `${ENV_VARIABLE}`
+-   On Windows, the format is `%ENV_VARIABLE%`
+
+Where `ENV_VARIABLE` is the environment variable that is set to the directory path and/or file name.
+
+The `EDBLDR_ENV_STYLE` environment variable instructs Advanced Server to interpret environment variable references as Windows-styled references or Linux-styled references irregardless of the operating system on which EDB\*Loader resides. You can use this environment variable to create portable control files for EDB\*Loader.
+
+-   On a Windows system, set `EDBLDR_ENV_STYLE` to `linux` or `unix` to instruct Advanced Server to recognize Linux-style references within the control file.
+-   On a Linux system, set `EDBLDR_ENV_STYLE` to `windows` to instruct Advanced Server to recognize Windows-style references within the control file.
+
+The operating system account `enterprisedb` must have read permission on the directory and file specified by `data_file`.
+
+The operating system account enterprisedb must have write permission on the directories where `bad_file` and `discard_file` are to be written.
+
+!!! Note
+    The file names for `data_file`, `bad_file`, and `discard_file` should include extensions of `.dat`, `.bad`, and `.dsc`, respectively. If the provided file name does not contain an extension, EDB\*Loader assumes the actual file name includes the appropriate aforementioned extension.
+
+If an EDB\*Loader session results in data format errors and the `BADFILE` clause is not specified, nor is the BAD parameter given on the command line when `edbldr` is invoked, a bad file is created with the name `control_file_base.bad` in the current working directory from which `edbldr` is invoked. `control_file_base` is the base name of the control file (that is, the file name without any extension) used in the `edbldr` session.
+
+If all of the following conditions are true, the discard file is not created even if the EDB\*Loader session results in discarded records:
+
+-   The `DISCARDFILE` clause for specifying the discard file is not included in the control file.
+-   The `DISCARD` parameter for specifying the discard file is not included on the command line.
+-   The `DISCARDMAX` clause for specifying the maximum number of discarded records is not included in the control file.
+-   The `DISCARDS` clause for specifying the maximum number of discarded records is not included in the control file.
+-   The `DISCARDMAX` parameter for specifying the maximum number of discarded records is not included on the command line.
+
+If neither the `DISCARDFILE` clause nor the `DISCARD` parameter for explicitly specifying the discard file name are specified, but `DISCARDMAX` or `DISCARDS` is specified, then the EDB\*Loader session creates a discard file using the data file name with an extension of `.dsc`.
+
+!!! Note
+    There is a distinction between keywords `DISCARD` and `DISCARDS`. `DISCARD` is an EDB\*Loader command line parameter used to specify the discard file name (see [General Usage](#general-usage)). `DISCARDS` is a clause of the `LOAD DATA` directive that may only appear in the control file. Keywords `DISCARDS` and `DISCARDMAX` provide the same functionality of specifying the maximum number of discarded records allowed before terminating the EDB\*Loader session. Records loaded into the database before termination of the EDB\*Loader session due to exceeding the `DISCARDS` or `DISCARDMAX` settings are kept in the database and are not rolled back.
+
+If one of `INSERT`, `APPEND`, `REPLACE`, or `TRUNCATE` is specified, it establishes the default action of how rows are to be added to target tables. If omitted, the default action is as if `INSERT` had been specified.
+
+If the `FIELDS TERMINATED BY` clause is specified, then the `POSITION (start:end)` clause may not be specified for any `field_def`. Alternatively if the `FIELDS TERMINATED BY` clause is not specified, then every `field_def` must contain either the `POSITION (start:end)` clause, the `fieldtype(length)` clause, or the `CONSTANT` clause.
+
+**Parameters**
+
+`OPTIONS param=value`
+
+ Use the `OPTIONS` clause to specify `param=value` pairs that represent an EDB\*Loader directive. If a parameter is specified in both the `OPTIONS` clause and on the command line when `edbldr` is invoked, the command line setting is used.
+
+ Specify one or more of the following parameter/value pairs:
+
+-   `DIRECT= { FALSE | TRUE }`
+
+    If `DIRECT` is set to `TRUE` EDB\*Loader performs a direct path load instead of a conventional path load. The default value of `DIRECT` is `FALSE`.
+
+    You should not set `DIRECT=true` when loading the data into a replicated table. If you are using EDB\*Loader to load data into a replicated table and set `DIRECT=true`, indexes may omit rows that are in a table or may potentially contain references to rows that have been deleted. EnterpriseDB does not support direct inserts to load data into replicated tables.
+
+    For information on direct path loads see, [Direct Path Load](#direct-path-load).
+
+-   `ERRORS=error_count`
+
+    `error_count` specifies the number of errors permitted before aborting the EDB\*Loader session. The default is `50`.
+
+-   `FREEZE= { FALSE | TRUE }`
+
+    Set `FREEZE` to `TRUE` to indicate that the data should be copied with the rows `frozen`. A tuple guaranteed to be visible to all current and future transactions is marked as frozen to prevent transaction ID wrap-around. For more information about frozen tuples, see the PostgreSQL core documentation at:
+
+    <https://www.postgresql.org/docs/current/static/routine-vacuuming.html>
+
+    You must specify a data-loading type of `TRUNCATE` in the control file when using the `FREEZE` option. `FREEZE` is not supported for direct loading.
+
+    By default, `FREEZE is FALSE`.
+
+-   `PARALLEL= { FALSE | TRUE }`
+
+    Set `PARALLEL` to `TRUE` to indicate that this EDB\*Loader session is one of a number of concurrent EDB\*Loader sessions participating in a parallel direct path load. The default value of `PARALLEL` is `FALSE`.
+
+    When `PARALLEL` is `TRUE`, the `DIRECT` parameter must also be set to `TRUE`. For more information about parallel direct path loads, see [Parallel Direct Path Load](#parallel-direct-path-load).
+
+-   `ROWS=n`
+
+    `n` specifies the number of rows that EDB\*Loader will commit before loading the next set of `n` rows.
+
+    If EDB\*Loader encounters an invalid row during a load (in which the `ROWS` parameter is specified), those rows committed prior to encountering the error will remain in the destination table.
+
+-   `SKIP=skip_count`
+
+    `skip_count` specifies the number of records at the beginning of the input data file that should be skipped before loading begins. The default is `0`.
+
+-   `SKIP_INDEX_MAINTENANCE={ FALSE | TRUE }`
+
+    If `SKIP_INDEX_MAINTENANCE` is `TRUE`, index maintenance is not performed as part of a direct path load, and indexes on the loaded table are marked as invalid. The default value of `SKIP_INDEX_MAINTENANCE` is `FALSE`.
+
+    !!! Note
+        During a parallel direct path load, target table indexes are not updated, and are marked as invalid after the load is complete.
+
+    You can use the `REINDEX` command to rebuild an index. For more information about the `REINDEX` command, see the PostgreSQL core documentation availabe at:
+
+    <https://www.postgresql.org/docs/current/static/sql-reindex.html>
+
+`charset`
+
+ Use the `CHARACTERSET` clause to identify the character set encoding of `data_file` where `charset` is the character set name. This clause is required if the data file encoding differs from the control file encoding. (The control file encoding must always be in the encoding of the client where `edbldr` is invoked.)
+
+ Examples of `charset` settings are `UTF8`, `SQL_ASCII`, and `SJIS`.
+
+ For more information about client to database character set conversion, see the PostgreSQL core documentation available at:
+
+ <https://www.postgresql.org/docs/current/static/multibyte.html>
+
+`data_file`
+
+ File containing the data to be loaded into `target_table`. Each record in the data file corresponds to a row to be inserted into `target_table`.
+
+ If an extension is not provided in the file name, EDB\*Loader assumes the file has an extension of `.dat`, for example, `mydatafile.dat`.
+
+ **Note**: If the `DATA` parameter is specified on the command line when `edbldr` is invoked, the file given by the command line `DATA` parameter is used instead.
+
+ If the `INFILE` clause is omitted as well as the command line `DATA` parameter, then the data file name is assumed to be identical to the control file name, but with an extension of `.dat`.
+
+`stdin`
+
+ Specify `stdin` (all lowercase letters) if you want to use standard input to pipe the data to be loaded directly to EDB\*Loader. This is useful for data sources generating a large number of records to be loaded.
+
+`bad_file`
+
+ A file that receives `data_file` records that cannot be loaded due to errors. The bad file is generated for collecting rejected or bad records.
+
+ From Advanced Server version 12 and onwards, a bad file will be generated only if there are any bad or rejected records. However, if there is an existing bad file with identical name and location, and no bad records are generated after invoking a new version of `ebdldr`, the existing bad file remains untouched.
+
+ If an extension is not provided in the file name, EDB\*Loader assumes the file has an extension of `.bad`, for example, `mybadfile.bad`.
+
+ **Note**: If the `BAD` parameter is specified on the command line when `edbldr` is invoked, the file given by the command line `BAD` parameter is used instead.
+
+`discard_file`
+
+ File that receives input data records that are not loaded into any table because none of the selection criteria are met for tables with the `WHEN` clause, and there are no tables without a `WHEN` clause. (All records meet the selection criteria of a table without a `WHEN` clause.)
+
+ If an extension is not provided in the file name, EDB\*Loader assumes the file has an extension of `.dsc`, for example, `mydiscardfile.dsc`.
+
+ **Note**: If the `DISCARD` parameter is specified on the command line when `edbldr` is invoked, the file given by the command line `DISCARD` parameter is used instead.
+
+`{ DISCARDMAX | DISCARDS } max_discard_recs`
+
+ Maximum number of discarded records that may be encountered from the input data records before terminating the EDB\*Loader session. (A discarded record is described in the preceding description of the `discard_file` parameter.) Either keyword `DISCARDMAX` or `DISCARDS` may be used preceding the integer value specified by `max_discard_recs`.
+
+ For example, if `max_discard_recs` is `0`, then the EDB\*Loader session is terminated if and when a first discarded record is encountered. If `max_discard_recs` is `1`, then the EDB\*Loader session is terminated if and when a second discarded record is encountered.
+
+ When the EDB\*Loader session is terminated due to exceeding `max_discard_recs`, prior input data records that have been loaded into the database are retained. They are not rolled back.
+
+`INSERT | APPEND | REPLACE | TRUNCATE`
+
+ Specifies how data is to be loaded into the target tables. If one of `INSERT`, `APPEND`, `REPLACE`, or `TRUNCATE` is specified, it establishes the default action for all tables, overriding the default of `INSERT`.
+
+-   `INSERT`
+
+    Data is to be loaded into an empty table. EDB\*Loader throws an exception and does not load any data if the table is not initially empty.
+
+    !!! Note
+        If the table contains rows, the `TRUNCATE` command must be used to empty the table prior to invoking EDB\*Loader. EDB\*Loader throws an exception if the `DELETE` command is used to empty the table instead of the `TRUNCATE` command. Oracle SQL\*Loader allows the table to be emptied by using either the `DELETE` or `TRUNCATE` command.
+
+-   `APPEND`
+
+    Data is to be added to any existing rows in the table. The table may be initially empty as well.
+
+-   `REPLACE`
+
+    The `REPLACE` keyword and `TRUNCATE` keywords are functionally identical. The table is truncated by EDB\*Loader prior to loading the new data.
+
+    !!! Note
+        Delete triggers on the table are not fired as a result of the `REPLACE` operation.
+
+-   `TRUNCATE`
+
+    The table is truncated by EDB\*Loader prior to loading the new data. Delete triggers on the table are not fired as a result of the `TRUNCATE` operation.
+
+`PRESERVE BLANKS`
+
+ The `PRESERVE BLANKS` option works only with the `OPTIONALLY ENCLOSED BY` clause and retains leading and trailing whitespaces for both delimited and predetermined size fields. 
+ 
+ In case of `NO PRESERVE BLANKS`, if the fields are delimited, then only leading whitespaces are omitted, and if any trailing whitespaces are present, they are left untouched. In the case of predetermined-sized fields with `NO PRESERVE BLANKS`, the trailing whitespaces are omitted, and the leading whitespaces if any, are left untouched. 
+
+ **Note**: If neither `PRESERVE BLANKS` nor `NO PRESERVE BLANKS` is explicitly provided, then the behavior defaults to `NO PRESERVE BLANKS`. This option does not work for ideographic whitespaces. 
+ 
+`target_table`
+
+ Name of the table into which data is to be loaded. The table name may be schema-qualified (for example, `enterprisedb.emp`). The specified target must not be a view.
+
+`field_condition`
+
+ Conditional clause taking the following form:
+
+```
+[ ( ] { (start:end) | column_name } { = | != | <> } 'val' [ ) ]
+```
+
+ This conditional clause is used for the `WHEN` clause, which is part of the `INTO TABLE target_table` clause, and the `NULLIF` clause, which is part of the field definition denoted as `field_def` in the syntax diagram.
+
+ `start` and `end` are positive integers specifying the column positions in `data_file` that mark the beginning and end of a field that is to be compared with the constant `val`. The first character in each record begins with a `start` value of `1`.
+
+ `column_name` specifies the name assigned to a field definition of the data file as defined by `field_def` in the syntax diagram.
+
+ Use of either (`start`:`end`) or `column_name` defines the portion of the record in `data_file` that is to be compared with the value specified by 'val' to evaluate as either true or false.
+
+ All characters used in the `field_condition` text (particularly in the `val` string) must be valid in the database encoding. (For performing data conversion, EDB\*Loader first converts the characters in `val` string to the database encoding and then to the data file encoding.)
+
+ In the `WHEN field_condition [ AND field_condition ]` clause, if all such conditions evaluate to `TRUE` for a given record, then EDB\*Loader attempts to insert that record into `target_table`. If the insert operation fails, the record is written to `bad_file`.
+
+ If for a given record, none of the `WHEN` clauses evaluate to `TRUE` for all `INTO TABLE` clauses, the record is written to `discard_file`, if a discard file was specified for the EDB\*Loader session.
+
+ See the description of the `NULLIF` clause in this Parameters list for the effect of `field_condition` on this clause.
+
+`termstring`
+
+ String of one or more characters that separates each field in `data_file`. The characters may be single-byte or multi-byte as long as they are valid in the database encoding. Two consecutive appearances of `termstring` with no intervening character results in the corresponding column set to null.
+
+`enclstring`
+
+ String of one or more characters used to enclose a field value in `data_file`. The characters may be single-byte or multi-byte as long as they are valid in the database encoding. Use `enclstring` on fields where `termstring` appears as part of the data.
+
+`delimstring`
+
+ String of one or more characters that separates each record in `data_file`. The characters may be single-byte or multi-byte as long as they are valid in the database encoding. Two consecutive appearances of `delimstring` with no intervening character results in no corresponding row loaded into the table. The last record (in other words, the end of the data file) must also be terminated by the `delimstring` characters, otherwise the final record is not loaded into the table.
+
+ **Note**: The `RECORDS DELIMITED BY` `'delimstring'` clause is not compatible with Oracle databases.
+
+`TRAILING NULLCOLS`
+
+ If `TRAILING NULLCOLS` is specified, then the columns in the column list for which there is no data in `data_file` for a given record, are set to null when the row is inserted. This applies only to one or more consecutive columns at the end of the column list.
+
+ If fields are omitted at the end of a record and `TRAILING NULLCOLS` is not specified, EDB\*Loader assumes the record contains formatting errors and writes it to the bad file.
+
+`column_name`
+
+ Name of a column in `target_table` into which a field value defined by `field_def` is to be inserted. If the field definition includes the `FILLER` or `BOUNDFILLER` clause, then `column_name` is not required to be the name of a column in the table. It can be any identifier name since the `FILLER` and `BOUNDFILLER` clauses prevent the loading of the field data into a table column.
+
+`CONSTANT val`
+
+ Specifies a constant that is type-compatible with the column data type to which it is assigned in a field definition. Single or double quotes may enclose `val`. If `val` contains white space, then enclosing quotation marks must be used.
+
+ The use of the `CONSTANT` clause completely determines the value to be assigned to a column in each inserted row. No other clause may appear in the same field definition.
+
+ If the `TERMINATED BY` clause is used to delimit the fields in `data_file`, there must be no delimited field in `data_file` corresponding to any field definition with a `CONSTANT` clause. In other words, EDB\*Loader assumes there is no field in `data_file` for any field definition with a `CONSTANT` clause.
+
+`FILLER`
+
+ Specifies that the data in the field defined by the field definition is not to be loaded into the associated column if the identifier of the field definition is an actual column name in the table. In such case, the column is set to null. Use of the `FILLER` or `BOUNDFILLER` clause is the only circumstance in which the field definition does not have to be identified by an actual column name.
+
+ Unlike the `BOUNDFILLER` clause, an identifier defined with the `FILLER` clause must not be referenced in a `SQL` expression. See the discussion of the `expr` parameter.
+
+`BOUNDFILLER`
+
+ Specifies that the data in the field defined by the field definition is not to be loaded into the associated column if the identifier of the field definition is an actual column name in the table. In such case, the column is set to null. Use of the `FILLER` or `BOUNDFILLER` clause is the only circumstance in which the field definition does not have to be identified by an actual column name.
+
+ Unlike the `FILLER` clause, an identifier defined with the `BOUNDFILLER` clause may be referenced in a SQL expression. See the discussion of the `expr` parameter.
+
+`POSITION (start:end)`
+
+ Defines the location of the field in a record in a fixed-width field data file. `start` and `end` are positive integers. The first character in the record has a start value of `1`.
+
+```
+CHAR [(<length>)] | DATE [(<length>)] | TIMESTAMP [(<length>)] [ "<datemask>" ] | 
+INTEGER EXTERNAL [(<length>)] |
+FLOAT EXTERNAL [(<length>)] | DECIMAL EXTERNAL [(<length>)] |
+ZONED EXTERNAL [(<length>)] | ZONED [(<precision>[,<scale>])]
+```
+
+ Field type that describes the format of the data field in `data_file`.
+
+ **Note**: Specification of a field type is optional (for descriptive purposes only) and has no effect on whether or not EDB\*Loader successfully inserts the data in the field into the table column. Successful loading depends upon the compatibility of the column data type and the field value. For example, a column with data type `NUMBER(7,2)` successfully accepts a field containing `2600`, but if the field contains a value such as `26XX`, the insertion fails and the record is written to `bad_file`.
+
+ Please note that `ZONED` data is not human-readable; `ZONED` data is stored in an internal format where each digit is encoded in a separate nibble/nybble/4-bit field. In each `ZONED` value, the last byte contains a single digit (in the high-order 4 bits) and the sign (in the low-order 4 bits).
+
+`length`
+
+ Specifies the length of the value to be loaded into the associated column.
+
+ If the `POSITION` (`start`:`end`) clause is specified along with a `fieldtype(length)` clause, then the ending position of the field is overridden by the specified `length` value. That is, the length of the value to be loaded into the column is determined by the `length` value beginning at the `start` position, and not by the `end` position of the `POSITION` (`start`:`end`) clause. Thus, the value to be loaded into the column may be shorter than the field defined by `POSITION` (`start`:`end`), or it may go beyond the *end* position depending upon the specified `length` size.
+
+ If the `FIELDS TERMINATED BY` `'termstring'` clause is specified as part of the `INTO TABLE` clause, and a field definition contains the `fieldtype(length)` clause, then a record is accepted as long as the specified `length` values are greater than or equal to the field lengths as determined by the `termstring` characters enclosing all such fields of the record. If the specified `length` value is less than a field length as determined by the enclosing `termstring` characters for any such field, then the record is rejected.
+
+ If the `FIELDS TERMINATED BY` `'termstring'` clause is not specified, and the `POSITION` (`start`:`end`) clause is not included with a field containing the `fieldtype(length)` clause, then the starting position of this field begins with the next character following the ending position of the preceding field. The ending position of the preceding field is either the end of its `length` value if the preceding field contains the `fieldtype(length)` clause, or by its `end` parameter if the field contains the `POSITION` (`start`:`end`) clause without the `fieldtype(length)` clause.
+
+`precision`
+
+ Use `precision` to specify the length of the `ZONED` value.
+
+ If the `precision` value specified for `ZONED` conflicts with the length calculated by the server based on information provided with the `POSITION` clause, EDB\*Loader will use the value specified for `precision`.
+
+`scale`
+
+ `scale` specifies the number of digits to the right of the decimal point in a `ZONED` value.
+
+`datemask`
+
+ Specifies the ordering and abbreviation of the day, month, and year components of a date field.
+
+ **Note**: If the `DATE` or `TIMESTAMP` field type is specified along with a SQL expression for the column, then `datemask` must be specified after `DATE` or `TIMESTAMP` and before the SQL expression. See the following discussion of the `expr` parameter.
+
+ When using the `TIMESTAMP` field datatype, if you specify `time_stamp timestamp "yyyymmddhh24miss"` the `datemask` is converted to the SQL expression. However, in case of `time_stamp timestamp "select to_timestamp(:time_stamp, 'yyyymmddhh24miss')"`, the EDB\*Loader cannot differentiate between datemask and the SQL expression. It treats the third field (SQL expression in the example) as datemask and prepares the SQL expression, which will not be valid. Where:
+ 
+-   `first field` specifies the column name 
+-   `second field` specifies the datatype
+-   `third field` specifies the datemask
+
+If you want to provide an SQL expression, then the simple workaround is to specify the datemask and SQL expression using the `TO_CHAR` function as: 
+ 
+ ```text
+ time_stamp timestamp "yyyymmddhh24miss" "to_char(to_timestamp(:time_stamp, 'yyyymmddhh24miss'), 'yyyymmddhh24miss')"
+ ```
+
+`NULLIF field_condition [ AND field_condition ] ...`
+
+ See the description of `field_condition` previously listed in this Parameters section for the syntax of `field_condition`.
+
+ If all field conditions evaluate to `TRUE`, then the column identified by `column_name` in the field definition is set to null. If any field condition evaluates to `FALSE`, then the column is set to the appropriate value as would normally occur according to the field definition.
+
+`PRESERVE BLANKS`
+
+ The `PRESERVE BLANKS` option works only with the `OPTIONALLY ENCLOSED BY` clause and retains leading and trailing whitespaces for both delimited and predetermined size fields. 
+ 
+ In case of `NO PRESERVE BLANKS`, if the fields are delimited, then only leading whitespaces are omitted, and if any trailing whitespaces are present, they are left untouched. In the case of predetermined-sized fields with `NO PRESERVE BLANKS`, the trailing whitespaces are omitted, and the leading whitespaces if any, are left untouched. 
+
+ **Note**: If neither `PRESERVE BLANKS` nor `NO PRESERVE BLANKS` is explicitly provided, then the behavior defaults to `NO PRESERVE BLANKS`. This option does not work for ideographic whitespaces. 
+ 
+`expr`
+
+ A SQL expression returning a scalar value that is type-compatible with the column data type to which it is assigned in a field definition. Double quotes must enclose `expr`. `expr` may contain a reference to any column in the field list (except for fields with the `FILLER` clause) by prefixing the column name by a colon character `(:)`.
+
+ `expr` may also consist of a SQL `SELECT` statement. If a `SELECT` statement is used then the following rules must apply:
+
+-   The `SELECT` statement must be enclosed within parentheses `(SELECT ...)`.
+-   The select list must consist of exactly one expression following the `SELECT` keyword.
+-   The result set must not return more than one row. If no rows are returned, then the returned value of the resulting expression is null.
+
+    The following is the syntax for use of the `SELECT` statement:
+
+    ```
+    "(SELECT <expr> [ FROM <table_list> [ WHERE <condition> ] ])"
+    ```
+
+    !!! Note
+        Omitting the `FROM table_list` clause is not compatible with Oracle databases. If no tables need to be specified, use of the `FROM DUAL` clause is compatible with Oracle databases.
+
+### EDB Loader Control File Examples
+
+The following are some examples of control files and their corresponding data files.
+
+**Delimiter-Separated Field Data File**
+
+The following control file uses a delimiter-separated data file that appends rows to the `emp` table:
+
+```text
+LOAD DATA
+  INFILE 'emp.dat'
+    BADFILE 'emp.bad'
+  APPEND
+  INTO TABLE emp
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    TRAILING NULLCOLS
+  (
+    empno,
+    ename,
+    job,
+    mgr,
+    hiredate,
+    sal,
+    deptno,
+    comm
+  )
+```
+
+In the preceding control file, the `APPEND` clause is used to allow the insertion of additional rows into the `emp` table.
+
+The following is the corresponding delimiter-separated data file:
+
+```text
+9101,ROGERS,CLERK,7902,17-DEC-10,1980.00,20
+9102,PETERSON,SALESMAN,7698,20-DEC-10,2600.00,30,2300.00
+9103,WARREN,SALESMAN,7698,22-DEC-10,5250.00,30,2500.00
+9104,"JONES, JR.",MANAGER,7839,02-APR-09,7975.00,20
+```
+
+The use of the `TRAILING NULLCOLS` clause allows the last field supplying the `comm` column to be omitted from the first and last records. The `comm` column is set to null for the rows inserted from these records.
+
+The double quotation mark enclosure character surrounds the value `JONES, JR.` in the last record since the comma delimiter character is part of the field value.
+
+The following query displays the rows added to the table after the EDB\*Loader session:
+
+```text
+SELECT * FROM emp WHERE empno > 9100;
+
+ empno| ename     | job     | mgr|   hiredate        | sal   | comm   |deptno
+------+-----------+---------+----+-------------------+-------+--------+------
+  9101| ROGERS    | CLERK   |7902| 17-DEC-10 00:00:00|1980.00|        |  20
+  9102| PETERSON  | SALESMAN|7698| 20-DEC-10 00:00:00|2600.00| 2300.00|  30
+  9103| WARREN    | SALESMAN|7698| 22-DEC-10 00:00:00|5250.00| 2500.00|  30
+  9104| JONES, JR.| MANAGER |7839| 02-APR-09 00:00:00|7975.00|        |  20
+(4 rows)
+```
+
+**Fixed-Width Field Data File**
+
+The following example is a control file that loads the same rows into the `emp` table, but uses a data file containing fixed-width fields:
+
+```text
+LOAD DATA
+  INFILE 'emp_fixed.dat'
+    BADFILE 'emp_fixed.bad'
+  APPEND
+  INTO TABLE emp
+    TRAILING NULLCOLS
+  (
+    empno POSITION (1:4),
+    ename POSITION (5:14),
+    job POSITION (15:23),
+    mgr POSITION (24:27),
+    hiredate POSITION (28:38),
+    sal POSITION (39:46),
+    deptno POSITION (47:48),
+    comm POSITION (49:56)
+  )
+```
+
+In the preceding control file, the `FIELDS TERMINATED BY` and `OPTIONALLY ENCLOSED BY` clauses are absent. Instead, each field now includes the `POSITION` clause.
+
+The following is the corresponding data file containing fixed-width fields:
+
+```text
+9101ROGERS    CLERK    790217-DEC-10    1980.0020
+9102PETERSON  SALESMAN 769820-DEC-10    2600.0030 2300.00
+9103WARREN    SALESMAN 769822-DEC-10    5250.0030 2500.00
+9104JONES, JR.MANAGER  783902-APR-09    7975.0020
+```
+
+**Single Physical Record Data File – RECORDS DELIMITED BY Clause**
+
+The following example is a control file that loads the same rows into the `emp` table, but uses a data file with one physical record. Each individual record that is to be loaded as a row in the table is terminated by the semicolon character `(;)` specified by the `RECORDS DELIMITED BY` clause.
+
+```text
+LOAD DATA
+  INFILE 'emp_recdelim.dat'
+    BADFILE 'emp_recdelim.bad'
+  APPEND
+  INTO TABLE emp
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    RECORDS DELIMITED BY ';'
+    TRAILING NULLCOLS
+  (
+    empno,
+    ename,
+    job,
+    mgr,
+    hiredate,
+    sal,
+    deptno,
+    comm
+  )
+```
+
+The following is the corresponding data file. The content is a single, physical record in the data file. The record delimiter character is included following the last record (that is, at the end of the file).
+
+```text
+9101,ROGERS,CLERK,7902,17-DEC-10,1980.00,20,;9102,PETERSON,SALESMAN,7698,20-DEC-10,
+2600.00,30,2300.00;9103,WARREN,SALESMAN,7698,22-DEC-10,5250.00,30,2500.00;9104,"JONES, 
+JR.",MANAGER,7839,02-APR-09,7975.00,20,;
+```
+
+**FILLER Clause**
+
+The following control file illustrates the use of the `FILLER` clause in the data fields for the `sal` and `comm` columns. EDB\*Loader ignores the values in these fields and sets the corresponding columns to null.
+
+```text
+LOAD DATA
+  INFILE       'emp_fixed.dat'
+    BADFILE    'emp_fixed.bad'
+  APPEND
+  INTO TABLE emp
+    TRAILING NULLCOLS
+  (
+    empno       POSITION (1:4),
+    ename       POSITION (5:14),
+    job         POSITION (15:23),
+    mgr         POSITION (24:27),
+    hiredate    POSITION (28:38),
+    sal         FILLER POSITION (39:46),
+    deptno      POSITION (47:48),
+    comm        FILLER POSITION (49:56)
+  )
+```
+
+Using the same fixed-width data file as in the prior fixed-width field example, the resulting rows in the table appear as follows:
+
+```text
+SELECT * FROM emp WHERE empno > 9100;
+
+ empno| ename     | job     | mgr|   hiredate        | sal   | comm   |deptno
+------+-----------+---------+----+-------------------+-------+--------+------
+  9101| ROGERS    | CLERK   |7902| 17-DEC-10 00:00:00|       |        |  20
+  9102| PETERSON  | SALESMAN|7698| 20-DEC-10 00:00:00|       |        |  30
+  9103| WARREN    | SALESMAN|7698| 22-DEC-10 00:00:00|       |        |  30
+  9104| JONES, JR.| MANAGER |7839| 02-APR-09 00:00:00|       |        |  20
+(4 rows)
+```
+
+**BOUNDFILLER Clause**
+
+The following control file illustrates the use of the `BOUNDFILLER` clause in the data fields for the `job` and `mgr` columns. EDB\*Loader ignores the values in these fields and sets the corresponding columns to null in the same manner as the `FILLER` clause. However, unlike columns with the `FILLER` clause, columns with the `BOUNDFILLER` clause are permitted to be used in an expression as shown for column `jobdesc`.
+
+```text
+LOAD DATA
+  INFILE    'emp.dat'
+    BADFILE 'emp.bad'
+  APPEND
+  INTO TABLE empjob
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    TRAILING NULLCOLS
+  (
+    empno,
+    ename,
+    job          BOUNDFILLER,
+    mgr          BOUNDFILLER,
+    hiredate     FILLER,
+    sal          FILLER,
+    deptno       FILLER,
+    comm         FILLER,
+    jobdesc      ":job || ' for manager ' || :mgr"
+  )
+```
+
+The following is the delimiter-separated data file used in this example.
+
+```text
+9101,ROGERS,CLERK,7902,17-DEC-10,1980.00,20
+9102,PETERSON,SALESMAN,7698,20-DEC-10,2600.00,30,2300.00
+9103,WARREN,SALESMAN,7698,22-DEC-10,5250.00,30,2500.00
+9104,"JONES, JR.",MANAGER,7839,02-APR-09,7975.00,20
+```
+
+The following table is loaded using the preceding control file and data file.
+
+```text
+CREATE TABLE empjob (
+    empno               NUMBER(4) NOT NULL CONSTRAINT empjob_pk PRIMARY KEY,
+    ename               VARCHAR2(10),
+    job                 VARCHAR2(9),
+    mgr                 NUMBER(4),
+    jobdesc             VARCHAR2(25)
+);
+```
+
+The resulting rows in the table appear as follows:
+
+```text
+SELECT * FROM empjob;
+
+ empno |    ename   | job | mgr |         jobdesc
+-------+------------+-----+-----+---------------------------
+ 9101  | ROGERS     |     |     | CLERK for manager 7902
+ 9102  | PETERSON   |     |     | SALESMAN for manager 7698
+ 9103  | WARREN     |     |     | SALESMAN for manager 7698
+ 9104  | JONES, JR. |     |     | MANAGER for manager 7839
+(4 rows)
+```
+
+**Field Types with Length Specification**
+
+The following example is a control file that contains the field type clauses with the length specification:
+
+```text
+LOAD DATA
+  INFILE 'emp_fixed.dat'
+    BADFILE 'emp_fixed.bad'
+  APPEND
+  INTO TABLE emp
+    TRAILING NULLCOLS
+  (
+    empno       CHAR(4),
+    ename       CHAR(10),
+    job         POSITION (15:23) CHAR(9),
+    mgr         INTEGER EXTERNAL(4),
+    hiredate    DATE(11) "DD-MON-YY",
+    sal         DECIMAL EXTERNAL(8),
+    deptno      POSITION (47:48),
+    comm        POSITION (49:56) DECIMAL EXTERNAL(8)
+  )
+```
+
+!!! Note
+    The `POSITION` clause and the `fieldtype(length)` clause can be used individually or in combination as long as each field definition contains at least one of the two clauses.
+
+The following is the corresponding data file containing fixed-width fields:
+
+```text
+9101ROGERS     CLERK      790217-DEC-10  1980.0020
+9102PETERSON   SALESMAN   769820-DEC-10  2600.0030  2300.00
+9103WARREN     SALESMAN   769822-DEC-10  5250.0030  2500.00
+9104JONES, JR. MANAGER    783902-APR-09  7975.0020
+```
+
+The resulting rows in the table appear as follows:
+
+```text
+SELECT * FROM emp WHERE empno > 9100;
+
+ empno| ename     | job     | mgr|   hiredate        | sal   | comm   |deptno
+------+-----------+---------+----+-------------------+-------+--------+------
+  9101| ROGERS    | CLERK   |7902| 17-DEC-10 00:00:00|1980.00|        |  20
+  9102| PETERSON  | SALESMAN|7698| 20-DEC-10 00:00:00|2600.00| 2300.00|  30
+  9103| WARREN    | SALESMAN|7698| 22-DEC-10 00:00:00|5250.00| 2500.00|  30
+  9104| JONES, JR.| MANAGER |7839| 02-APR-09 00:00:00|7975.00|        |  20
+(4 rows)
+```
+
+**NULLIF Clause**
+
+The following example uses the `NULLIF` clause on the `sal` column to set it to null for employees of job `MANAGER` as well as on the `comm` column to set it to null if the employee is not a `SALESMAN` and is not in department `30`. In other words, a `comm` value is accepted if the employee is a `SALESMAN` or is a member of department `30`.
+
+The following is the control file:
+
+```text
+LOAD DATA
+  INFILE    'emp_fixed_2.dat'
+    BADFILE 'emp_fixed_2.bad'
+  APPEND
+  INTO TABLE emp
+    TRAILING NULLCOLS
+  (
+    empno       POSITION (1:4),
+    ename       POSITION (5:14),
+    job         POSITION (15:23),
+    mgr         POSITION (24:27),
+    hiredate    POSITION (28:38),
+    sal         POSITION (39:46) NULLIF job = 'MANAGER',
+    deptno      POSITION (47:48),
+    comm        POSITION (49:56) NULLIF job <> 'SALESMAN' AND deptno <> '30'
+  )
+```
+
+The following is the corresponding data file:
+
+```text
+9101ROGERS       CLERK        790217-DEC-10     1980.0020
+9102PETERSON     SALESMAN     769820-DEC-10     2600.0030     2300.00
+9103WARREN       SALESMAN     769822-DEC-10     5250.0030     2500.00
+9104JONES, JR.   MANAGER      783902-APR-09     7975.0020
+9105ARNOLDS      CLERK        778213-SEP-10     3750.0030     800.00
+9106JACKSON      ANALYST      756603-JAN-11     4500.0040     2000.00
+9107MAXWELL      SALESMAN     769820-DEC-10     2600.0010     1600.00
+```
+
+The resulting rows in the table appear as follows:
+
+```text
+SELECT empno, ename, job, NVL(TO_CHAR(sal),'--null--') "sal",
+  NVL(TO_CHAR(comm),'--null--') "comm", deptno FROM emp WHERE empno > 9100;
+
+ empno |   ename    |    job   |   sal    |   comm   | deptno
+-------+------------+----------+----------+----------+-------
+  9101 | ROGERS     | CLERK    | 1980.00  | --null-- |   20
+  9102 | PETERSON   | SALESMAN | 2600.00  | 2300.00  |   30
+  9103 | WARREN     | SALESMAN | 5250.00  | 2500.00  |   30
+  9104 | JONES, JR. | MANAGER  | --null-- | --null-- |   20
+  9105 | ARNOLDS    | CLERK    | 3750.00  |  800.00  |   30
+  9106 | JACKSON    | ANALYST  | 4500.00  | --null-- |   40
+  9107 | MAXWELL    | SALESMAN | 2600.00  | 1600.00  |   10
+(7 rows)
+```
+
+!!! Note
+    The `sal` column for employee `JONES, JR.` is null since the job is `MANAGER`.
+
+The `comm` values from the data file for employees `PETERSON`, `WARREN`, `ARNOLDS`, and `MAXWELL` are all loaded into the `comm` column of the `emp` table since these employees are either `SALESMAN` or members of department `30`.
+
+The `comm` value of `2000.00` in the data file for employee `JACKSON` is ignored and the `comm` column of the `emp` table set to null since this employee is neither a `SALESMAN` nor is a member of department `30`.
+
+**SELECT Statement in a Field Expression**
+
+The following example uses a `SELECT` statement in the expression of the field definition to return the value to be loaded into the column.
+
+```text
+LOAD DATA
+  INFILE    'emp_fixed.dat'
+    BADFILE 'emp_fixed.bad'
+  APPEND
+  INTO TABLE emp
+    TRAILING NULLCOLS
+  (
+    empno       POSITION (1:4),
+    ename       POSITION (5:14),
+    job         POSITION (15:23) "(SELECT dname FROM dept WHERE deptno = :deptno)",
+    mgr         POSITION (24:27),
+    hiredate    POSITION (28:38),
+    sal         POSITION (39:46),
+    deptno      POSITION (47:48),
+    comm        POSITION (49:56)
+  )
+```
+
+The content of the `dept` table used in the `SELECT` statement is the following:
+
+```text
+SELECT * FROM dept;
+
+ deptno |    dname   |   loc
+---------+------------+---------
+   10   | ACCOUNTING | NEW YORK
+   20   | RESEARCH   | DALLAS
+   30   | SALES      | CHICAGO
+   40   | OPERATIONS | BOSTON
+(4 rows)
+```
+
+The following is the corresponding data file:
+
+```text
+9101ROGERS     CLERK     790217-DEC-10    1980.0020
+9102PETERSON   SALESMAN  769820-DEC-10    2600.0030   2300.00
+9103WARREN     SALESMAN  769822-DEC-10    5250.0030   2500.00
+9104JONES, JR. MANAGER   783902-APR-09    7975.0020
+```
+
+The resulting rows in the table appear as follows:
+
+```text
+SELECT * FROM emp WHERE empno > 9100;
+
+ empno| ename     | job     | mgr|   hiredate        | sal   | comm   |deptno
+------+-----------+---------+----+-------------------+-------+--------+------
+  9101| ROGERS    | RESEARCH|7902| 17-DEC-10 00:00:00|1980.00|        |  20
+  9102| PETERSON  | SALES   |7698| 20-DEC-10 00:00:00|2600.00| 2300.00|  30
+  9103| WARREN    | SALES   |7698| 22-DEC-10 00:00:00|5250.00| 2500.00|  30
+  9104| JONES, JR.| RESEARCH|7839| 02-APR-09 00:00:00|7975.00|        |  20
+(4 rows)
+```
+
+!!! Note
+    The `job` column contains the value from the `dname` column of the `dept` table returned by the `SELECT` statement instead of the job name from the data file.
+
+**Multiple INTO TABLE Clauses**
+
+The following example illustrates the use of multiple `INTO TABLE` clauses. For this example, two empty tables are created with the same data definition as the `emp` table. The following `CREATE TABLE` commands create these two empty tables, while inserting no rows from the original `emp` table:
+
+```text
+CREATE TABLE emp_research AS SELECT * FROM emp WHERE deptno = 99;
+CREATE TABLE emp_sales AS SELECT * FROM emp WHERE deptno = 99;
+```
+
+The following control file contains two `INTO TABLE` clauses. Also note that there is no `APPEND` clause so the default operation of `INSERT` is used, which requires that tables `emp_research` and `emp_sales` be empty.
+
+```text
+LOAD DATA
+  INFILE        'emp_multitbl.dat'
+    BADFILE     'emp_multitbl.bad'
+    DISCARDFILE 'emp_multitbl.dsc'
+  INTO TABLE emp_research
+    WHEN (47:48) = '20'
+    TRAILING NULLCOLS
+  (
+    empno      POSITION (1:4),
+    ename      POSITION (5:14),
+    job        POSITION (15:23),
+    mgr        POSITION (24:27),
+    hiredate   POSITION (28:38),
+    sal        POSITION (39:46),
+    deptno     CONSTANT '20',
+    comm       POSITION (49:56)
+  )
+  INTO TABLE emp_sales
+    WHEN (47:48) = '30'
+    TRAILING NULLCOLS
+  (
+    empno     POSITION (1:4),
+    ename     POSITION (5:14),
+    job       POSITION (15:23),
+    mgr       POSITION (24:27),
+    hiredate  POSITION (28:38),
+    sal       POSITION (39:46),
+    deptno    CONSTANT '30',
+    comm      POSITION (49:56) "ROUND(:comm + (:sal * .25), 0)"
+  )
+```
+
+The `WHEN` clauses specify that when the field designated by columns 47 thru 48 contains `20`, the record is inserted into the `emp_research` table and when that same field contains `30`, the record is inserted into the `emp_sales` table. If neither condition is true, the record is written to the discard file named `emp_multitbl.dsc`.
+
+The `CONSTANT` clause is given for column `deptno` so the specified constant value is inserted into `deptno` for each record. When the `CONSTANT` clause is used, it must be the only clause in the field definition other than the column name to which the constant value is assigned.
+
+Finally, column `comm` of the `emp_sales` table is assigned a SQL expression. Column names may be referenced in the expression by prefixing the column name with a colon character `(:)`.
+
+The following is the corresponding data file:
+
+```text
+9101ROGERS     CLERK     790217-DEC-10   1980.0020
+9102PETERSON   SALESMAN  769820-DEC-10   2600.0030  2300.00
+9103WARREN     SALESMAN  769822-DEC-10   5250.0030  2500.00
+9104JONES, JR. MANAGER   783902-APR-09   7975.0020
+9105ARNOLDS    CLERK     778213-SEP-10   3750.0010
+9106JACKSON    ANALYST   756603-JAN-11   4500.0040
+```
+
+Since the records for employees `ARNOLDS` and `JACKSON` contain `10` and `40` in columns 47 thru 48, which do not satisfy any of the `WHEN` clauses, EDB\*Loader writes these two records to the discard file, `emp_multitbl.dsc`, whose content is shown by the following:
+
+```text
+9105ARNOLDS   CLERK     778213-SEP-10   3750.0010
+9106JACKSON   ANALYST   756603-JAN-11   4500.0040
+```
+
+The following are the rows loaded into the `emp_research` and `emp_sales` tables:
+
+```text
+SELECT * FROM emp_research;
+
+empno  |   ename    |   job   |  mgr |      hiredate      |   sal   | comm | deptno
+-------+------------+---------+------+--------------------+---------+------+-------
+ 9101  | ROGERS     | CLERK   | 7902 | 17-DEC-10 00:00:00 | 1980.00 |      | 20.00
+ 9104  | JONES, JR. | MANAGER | 7839 | 02-APR-09 00:00:00 | 7975.00 |      | 20.00
+(2 rows)
+
+SELECT * FROM emp_sales;
+
+empno  |   ename  |    job   |  mgr |       hiredate     |    sal  |   comm  | deptno
+-------+----------+----------+------+--------------------+---------+---------+--------
+ 9102  | PETERSON | SALESMAN | 7698 | 20-DEC-10 00:00:00 | 2600.00 | 2950.00 | 30.00
+ 9103  | WARREN   | SALESMAN | 7698 | 22-DEC-10 00:00:00 | 5250.00 | 3813.00 | 30.00
+(2 rows)
+```
+
+<div id="invoking_edb_loader" class="registered_link"></div>
+
+## Invoking EDB\*Loader
+
+You must have superuser privileges to run EDB\*Loader. Use the following command to invoke EDB\*Loader from the command line:
+
+```text
+edbldr [ -d <dbname> ] [ -p <port> ] [ -h <host> ]
+[ USERID={ <username/password> | <username>/ | <username> | / } ]
+[ { -c | connstr= } <CONNECTION_STRING> ]
+  CONTROL=<control_file>
+[ DATA=<data_file> ]
+[ BAD=<bad_file>]
+[ DISCARD=<discard_file> ]
+[ DISCARDMAX=<max_discard_recs> ]
+[ HANDLE_CONFLICTS={ FALSE | TRUE } ]
+[ LOG=<log_file> ]
+[ PARFILE=<param_file> ]
+[ DIRECT={ FALSE | TRUE } ]
+[ FREEZE={ FALSE | TRUE } ]
+[ ERRORS=<error_count> ]
+[ PARALLEL={ FALSE | TRUE } ]
+[ ROWS=<n> ]
+[ SKIP=<skip_count> ]
+[ SKIP_INDEX_MAINTENANCE={ FALSE | TRUE } ]
+[ edb_resource_group=<group_name> ]
+```
+
+**Description**
+
+If the `-d` option, the `-p` option, or the `-h` option are omitted, the defaults for the database, port, and host are determined according to the same rules as other Advanced Server utility programs such as `edb-psql`, for example.
+
+Any parameter listed in the preceding syntax diagram except for the `-d` option, `-p` option, `-h` option, and the `PARFILE` parameter may be specified in a *parameter file*. The parameter file is specified on the command line when `edbldr` is invoked using `PARFILE=param_file`. Some parameters may be specified in the `OPTIONS` clause in the control file. For more information on the control file, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+The specification of `control_file`, `data_file`, `bad_file`, `discard_file`, `log_file`, and `param_file` may include the full directory path or a relative directory path to the file name. If the file name is specified alone or with a relative directory path, the file is assumed to exist (in the case of `control_file`, `data_file`, or `param_file`), or to be created (in the case of `bad_file`, `discard_file`, or `log_file`) relative to the current working directory from which `edbldr` is invoked.
+
+!!! Note
+    The control file must exist in the character set encoding of the client where `edbldr` is invoked. If the client is in a different encoding than the database encoding, then the `PGCLIENTENCODING` environment variable must be set on the client to the client’s encoding prior to invoking `edbldr`. This must be done to ensure character set conversion is properly done between the client and the database server.
+
+The operating system account used to invoke `edbldr` must have read permission on the directories and files specified by `control_file`, `data_file`, and `param_file`.
+
+The operating system account `enterprisedb` must have write permission on the directories where `bad_file`, `discard_file`, and `log_file` are to be written.
+
+!!! Note
+    The file names for `control_file`, `data_file`, `bad_file`, `discard_file`, and `log_file` should include extensions of `.ctl`, `.dat`, `.bad`, `.dsc`, and `.log`, respectively. If the provided file name does not contain an extension, EDB\*Loader assumes the actual file name includes the appropriate aforementioned extension.
+
+**Parameters**
+
+`dbname`
+
+ Name of the database containing the tables to be loaded.
+
+`port`
+
+ Port number on which the database server is accepting connections.
+
+`host`
+
+ IP address of the host on which the database server is running.
+
+`USERID={ username/password | username/ | username | / }`
+
+ EDB\*Loader connects to the database with `username`. `username` must be a superuser. `password` is the password for `username`.
+
+ If the `USERID` parameter is omitted, EDB\*Loader prompts for `username` and `password`. If `USERID=username/` is specified, then EDB\*Loader 1) uses the password file specified by environment variable `PGPASSFILE` if `PGPASSFILE` is set, or 2) uses the `.pgpass` password file `(pgpass.conf` on Windows systems) if `PGPASSFILE` is not set. If `USERID=username` is specified, then EDB\*Loader prompts for `password`. If `USERID=/` is specified, the connection is attempted using the operating system account as the user name.
+
+ **Note**: The Advanced Server connection environment variables `PGUSER` and `PGPASSWORD` are ignored by EDB\*Loader. See the PostgreSQL core documentation for information on the `PGPASSFILE` environment variable and the password file.
+
+`-c CONNECTION_STRING`
+
+`connstr=CONNECTION_STRING`
+
+ The `-c` or `connstr=` option allows you to specify all the connection parameters supported by libpq. With this option, SSL connection parameters or other connection parameters supported by libpq can also be specified. If connection options such as `-d`, `-h`, `-p` or `userid=dbuser/dbpass` are provided separately, they may override the values provided via the `-c` or `connstr=` option.
+
+`CONTROL=control_file`
+
+ `control_file` specifies the name of the control file containing EDB\*Loader directives. If a file extension is not specified, an extension of `.ctl` is assumed.
+
+ For more information on the control file, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+`DATA=data_file`
+
+ `data_file` specifies the name of the file containing the data to be loaded into the target table. If a file extension is not specified, an extension of `.dat` is assumed. Specifying a `data_file` on the command line overrides the `INFILE` clause specified in the control file.
+
+ For more information about `data_file`, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+`BAD=bad_file`
+
+ `bad_file` specifies the name of a file that receives input data records that cannot be loaded due to errors. Specifying a `bad_file` on the command line overrides any `BADFILE` clause specified in the control file.
+
+ For more information about `bad_file`, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+`DISCARD=discard_file`
+
+ `discard_file` is the name of the file that receives input data records that do not meet any table’s selection criteria. Specifying a `discard_file` on the command line overrides the `DISCARDFILE` clause in the control file.
+
+ For more information about `discard_file`, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+`DISCARDMAX=max_discard_recs`
+
+ `max_discard_recs` is the maximum number of discarded records that may be encountered from the input data records before terminating the EDB\*Loader session. Specifying `max_discard_recs` on the command line overrides the `DISCARDMAX` or `DISCARDS` clause in the control file.
+
+ For more information about `max_discard_recs`, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+
+`HANDLE_CONFLICTS={ FALSE | TRUE }`
+
+ If any record insertion fails due to a unique constraint violation, EDB\*Loader will abort the entire operation. You can instruct EDB\*Loader to instead move the duplicate record to the `BAD` file and continue processing by setting `HANDLE_CONFLICTS` to `TRUE`. This behavior will only apply if indexes are present. By default, `HANDLE_CONFLICTS` is set to `FALSE`.
+
+ `HANDLE_CONFLICTS` set to `TRUE` is not supported with direct path loading; if set to `TRUE` when direct path loading, EDB\*Loader will throw an error.
+
+`LOG=log_file`
+
+ `log_file` specifies the name of the file in which EDB\*Loader records the results of the EDB\*Loader session.
+
+ If the `LOG` parameter is omitted, EDB\*Loader creates a log file with the name `control_file_base.log` in the directory from which `edbldr` is invoked. `control_file_base` is the base name of the control file used in the EDB\*Loader session. The operating system account `enterprisedb` must have write permission on the directory where the log file is to be written.
+
+`PARFILE=param_file`
+
+ `param_file` specifies the name of the file that contains command line parameters for the EDB\*Loader session. Any command line parameter listed in this section except for the `-d`, `-p`, and `-h` options, and the `PARFILE` parameter itself, can be specified in `param_file` instead of on the command line.
+
+ Any parameter given in `param_file` overrides the same parameter supplied on the command line before the `PARFILE` option. Any parameter given on the command line that appears after the `PARFILE` option overrides the same parameter given in `param_file`.
+
+ **Note**: Unlike other EDB\*Loader files, there is no default file name or extension assumed for `param_file`, though by Oracle SQL\*Loader convention, `.par` is typically used, but not required, as an extension.
+
+`DIRECT= { FALSE | TRUE }`
+
+ If `DIRECT` is set to `TRUE` EDB\*Loader performs a direct path load instead of a conventional path load. The default value of `DIRECT` is `FALSE`.
+
+ You should not set `DIRECT=true` when loading the data into a replicated table. If you are using EDB\*Loader to load data into a replicated table and set `DIRECT=true`, indexes may omit rows that are in a table or may potentially contain references to rows that have been deleted. EnterpriseDB does not support direct inserts to load data into replicated tables.
+
+ For information about direct path loads, see [Direct Path Load](#direct-path-load).
+
+`FREEZE= { FALSE | TRUE }`
+
+ Set `FREEZE` to `TRUE` to indicate that the data should be copied with the rows `frozen`. A tuple guaranteed to be visible to all current and future transactions is marked as frozen to prevent transaction ID wrap-around. For more information about frozen tuples, see the PostgreSQL core documentation at:
+
+ <https://www.postgresql.org/docs/current/static/routine-vacuuming.html>
+
+ You must specify a data-loading type of `TRUNCATE` in the control file when using the `FREEZE` option. `FREEZE` is not supported for direct loading.
+
+ By default, `FREEZE` is `FALSE`.
+
+`ERRORS=error_count`
+
+ `error_count` specifies the number of errors permitted before aborting the EDB\*Loader session. The default is `50`.
+
+`PARALLEL= { FALSE | TRUE }`
+
+ Set `PARALLEL` to `TRUE` to indicate that this EDB\*Loader session is one of a number of concurrent EDB\*Loader sessions participating in a parallel direct path load. The default value of `PARALLEL` is `FALSE`.
+
+ When `PARALLEL` is `TRUE`, the `DIRECT` parameter must also be set to `TRUE`.
+
+ For more information about parallel direct path loads, see [Parallel Direct Path Load](#parallel-direct-path-load).
+
+`ROWS=n`
+
+ `n` specifies the number of rows that EDB\*Loader will commit before loading the next set of `n` rows.
+
+`SKIP=skip_count`
+
+ Number of records at the beginning of the input data file that should be skipped before loading begins. The default is `0`.
+
+`SKIP_INDEX_MAINTENANCE= { FALSE | TRUE }`
+
+ If set to `TRUE`, index maintenance is not performed as part of a direct path load, and indexes on the loaded table are marked as invalid. The default value of `SKIP_INDEX_MAINTENANCE` is `FALSE`.
+
+ During a parallel direct path load, target table indexes are not updated, and are marked as invalid after the load is complete.
+
+ You can use the `REINDEX` command to rebuild an index. For more information about the `REINDEX` command, see the PostgreSQL core documentation available at:
+
+ <https://www.postgresql.org/docs/current/static/sql-reindex.html>
+
+`edb_resource_group=group_name`
+
+ `group_name` specifies the name of an EDB Resource Manager resource group to which the EDB\*Loader session is to be assigned.
+
+ Any default resource group that may have been assigned to the session (for example, a database user running the EDB\*Loader session who had been assigned a default resource group with the `ALTER ROLE ... SET` `edb_resource_group` command) is overridden by the resource group given by the `edb_resource_group` parameter specified on the `edbldr` command line.
+
+**Examples**
+
+In the following example EDB\*Loader is invoked using a control file named `emp.ctl` located in the current working directory to load a table in database `edb`:
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb USERID=enterprisedb/password
+CONTROL=emp.ctl
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+
+Successfully loaded (4) records
+```
+
+In the following example, EDB\*Loader prompts for the user name and password since they are omitted from the command line. In addition, the files for the bad file and log file are specified with the `BAD` and `LOG` command line parameters.
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb CONTROL=emp.ctl BAD=/tmp/emp.bad
+LOG=/tmp/emp.log
+Enter the user name : enterprisedb
+Enter the password :
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+
+Successfully loaded (4) records
+```
+
+The following example runs EDB\*Loader with the same parameters as shown in the preceding example, but using a parameter file located in the current working directory. The `SKIP` and `ERRORS` parameters are altered from their defaults in the parameter file as well. The parameter file, `emp.par`, contains the following:
+
+```text
+CONTROL=emp.ctl
+BAD=/tmp/emp.bad
+LOG=/tmp/emp.log
+SKIP=1
+ERRORS=10
+```
+
+EDB\*Loader is invoked with the parameter file as shown by the following:
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb PARFILE=emp.par
+Enter the user name : enterprisedb
+Enter the password :
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+
+Successfully loaded (3) records
+```
+
+In the following example EDB\*Loader is invoked using a `connstr=` option using `emp.ctl` control file located in the current working directory to load a table in a database named `edb`:
+
+```text
+$ /usr/edb/as14/bin/edbldr connstr=\"sslmode=verify-ca sslcompression=0
+host=127.0.0.1 dbname=edb port=5444 user=enterprisedb\" CONTROL=emp.ctl
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+
+Successfully loaded (4) records
+```
+
+<div id="exit_codes" class="registered_link"></div>
+
+### Exit Codes
+
+When EDB\*Loader exits, it will return one of the following codes:
+
+| Exit Code | Description                                                                                                                                                                 |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`       | Indicates that all rows loaded successfully.                                                                                                                                |
+| `1`       | Indicates that EDB\*Loader encountered command line or syntax errors, or aborted the load operation due to an unrecoverable error.                                          |
+| `2`       | Indicates that the load completed, but some (or all) rows were rejected or discarded.                                                                                       |
+| `3`       | Indicates that EDB\*Loader encountered fatal errors (such as OS errors). This class of errors is equivalent to the `FATAL` or `PANIC` severity levels of PostgreSQL errors. |
+
+<div id="direct_path_load" class="registered_link"></div>
+
+## Direct Path Load
+
+During a direct path load, EDB\*Loader writes the data directly to the database pages, which is then synchronized to disk. The insert processing associated with a conventional path load is bypassed, thereby resulting in a performance improvement.
+
+Bypassing insert processing reduces the types of constraints that may exist on the target table. The following types of constraints are permitted on the target table of a direct path load:
+
+-   Primary key
+-   Not null constraints
+-   Indexes (unique or non-unique)
+
+The restrictions on the target table of a direct path load are the following:
+
+-   Triggers are not permitted
+-   Check constraints are not permitted
+-   Foreign key constraints on the target table referencing another table are not permitted
+-   Foreign key constraints on other tables referencing the target table are not permitted
+-   The table must not be partitioned
+-   Rules may exist on the target table, but they are not executed
+
+!!! Note
+    Currently, a direct path load in EDB\*Loader is more restrictive than in Oracle SQL\*Loader. The preceding restrictions do not apply to Oracle SQL\*Loader in most cases. The following restrictions apply to a control file used in a direct path load:
+
+    -   Multiple table loads are not supported. That is, only one `INTO TABLE` clause may be specified in the control file.
+    -   SQL expressions may not be used in the data field definitions of the `INTO TABLE` clause.
+    -   The `FREEZE` option is not supported for direct path loading.
+
+To run a direct path load, add the `DIRECT=TRUE` option as shown by the following example:
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb USERID=enterprisedb/password
+CONTROL=emp.ctl DIRECT=TRUE
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+
+Successfully loaded (4) records
+```
+
+<div id="parallel_direct_path_load" class="registered_link"></div>
+
+## Parallel Direct Path Load
+
+The performance of a direct path load can be further improved by distributing the loading process over two or more sessions running concurrently. Each session runs a direct path load into the same table.
+
+Since the same table is loaded from multiple sessions, the input records to be loaded into the table must be divided amongst several data files so that each EDB\*Loader session uses its own data file and the same record is not loaded more than once into the table.
+
+The target table of a parallel direct path load is under the same restrictions as a direct path load run in a single session.
+
+The restrictions on the target table of a direct path load are the following:
+
+-   Triggers are not permitted
+-   Check constraints are not permitted
+-   Foreign key constraints on the target table referencing another table are not permitted
+-   Foreign key constraints on other tables referencing the target table are not permitted
+-   The table must not be partitioned
+-   Rules may exist on the target table, but they are not executed
+
+In addition, the `APPEND` clause must be specified in the control file used by each EDB\*Loader session.
+
+To run a parallel direct path load, run EDB\*Loader in a separate session for each participant of the parallel direct path load. Invocation of each such EDB\*Loader session must include the `DIRECT=TRUE` and `PARALLEL=TRUE` parameters.
+
+Each EDB\*Loader session runs as an independent transaction so if one of the parallel sessions aborts and rolls back its changes, the loading done by the other parallel sessions are not affected.
+
+!!! Note
+    In a parallel direct path load, each EDB\*Loader session reserves a fixed number of blocks in the target table in a round-robin fashion. Some of the blocks in the last allocated chunk may not be used,and those blocks remain uninitialized. A subsequent use of the `VACUUM` command on the target table may show warnings regarding these uninitialized blocks such as the following:
+
+```text
+WARNING: relation "emp" page 98264 is uninitialized --- fixing
+
+WARNING: relation "emp" page 98265 is uninitialized --- fixing
+
+WARNING: relation "emp" page 98266 is uninitialized --- fixing
+```
+
+This is an expected behavior and does not indicate data corruption.
+
+Indexes on the target table are not updated during a parallel direct path load and are therefore marked as invalid after the load is complete. You must use the `REINDEX` command to rebuild the indexes.
+
+The following example shows the use of a parallel direct path load on the `emp` table.
+
+!!! Note
+    If you attempt a parallel direct path load on the sample `emp` table provided with Advanced Server, you must first remove the triggers and constraints referencing the `emp` table. In addition the primary key column, `empno`, was expanded from `NUMBER(4)` to `NUMBER` in this example to allow for the insertion of a larger number of rows.
+
+The following is the control file used in the first session:
+
+```text
+LOAD DATA
+  INFILE    '/home/user/loader/emp_parallel_1.dat'
+  APPEND
+  INTO TABLE emp
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    TRAILING NULLCOLS
+  (
+    empno,
+    ename,
+    job,
+    mgr,
+    hiredate,
+    sal,
+    deptno,
+    comm
+  )
+```
+
+The `APPEND` clause must be specified in the control file for a parallel direct path load.
+
+The following shows the invocation of EDB\*Loader in the first session. The `DIRECT=TRUE` and `PARALLEL=TRUE` parameters must be specified.
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb USERID=enterprisedb/password
+CONTROL=emp_parallel_1.ctl DIRECT=TRUE PARALLEL=TRUE
+WARNING: index maintenance will be skipped with PARALLEL load
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+```
+
+The control file used for the second session appears as follows. Note that it is the same as the one used in the first session, but uses a different data file.
+
+```text
+LOAD DATA
+  INFILE '/home/user/loader/emp_parallel_2.dat'
+  APPEND
+  INTO TABLE emp
+    FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+    TRAILING NULLCOLS
+  (
+    empno,
+    ename,
+    job,
+    mgr,
+    hiredate,
+    sal,
+    deptno,
+    comm
+  )
+```
+
+The preceding control file is used in a second session as shown by the following:
+
+```text
+$ /usr/edb/as14/bin/edbldr -d edb USERID=enterprisedb/password
+CONTROL=emp_parallel_2.ctl DIRECT=TRUE PARALLEL=TRUE
+WARNING: index maintenance will be skipped with PARALLEL load
+EDB*Loader: Copyright (c) 2007-2021, EnterpriseDB Corporation.
+```
+
+EDB\*Loader displays the following message in each session when its respective load operation completes:
+
+```text
+Successfully loaded (10000) records
+```
+
+The following query shows that the index on the emp table has been marked as `INVALID`:
+
+```text
+SELECT index_name, status FROM user_indexes WHERE table_name = 'EMP';
+
+  index_name | status
+-------------+---------
+   EMP_PK    | INVALID
+ (1 row)
+```
+
+!!! Note
+    `user_indexes` is the view of indexes compatible with Oracle databases owned by the current user.
+
+Queries on the `emp` table will not utilize the index unless it is rebuilt using the `REINDEX` command as shown by the following:
+
+```text
+REINDEX INDEX emp_pk;
+```
+
+A subsequent query on `user_indexes` shows that the index is now marked as `VALID`:
+
+```text
+SELECT index_name, status FROM user_indexes WHERE table_name = 'EMP';
+
+  index_name | status
+-------------+--------
+   EMP_PK    | VALID
+ (1 row)
+```
+
+<div id="remote_loading" class="registered_link"></div>
+
+## Remote Loading
+
+EDB\*Loader supports a feature called *remote loading*. In remote loading, the database containing the table to be loaded is running on a database server on a different host than from where EDB\*Loader is invoked with the input data source.
+
+This feature is useful if you have a large amount of data to be loaded, and you do not want to create a large data file on the host running the database server.
+
+In addition, you can use the standard input feature to pipe the data from the data source such as another program or script, directly to EDB\*Loader, which then loads the table in the remote database. This bypasses the process of having to create a data file on disk for EDB\*Loader.
+
+Performing remote loading along with using standard input requires the following:
+
+-   The `edbldr` program must be installed on the client host on which it is to be invoked with the data source for the EDB\*Loader session.
+-   The control file must contain the clause `INFILE 'stdin'` so you can pipe the data directly into EDB\*Loader’s standard input. For more information, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file) for information on the `INFILE` clause and the EDB\*Loader control file.
+-   All files used by EDB\*Loader such as the control file, bad file, discard file, and log file must reside on, or are created on, the client host on which `edbldr` is invoked.
+-   When invoking EDB\*Loader, use the `-h` option to specify the IP address of the remote database server. For more information, see [Invoking EDB\*Loader](#invoking-edbloader) for information on invoking EDB\*Loader.
+-   Use the operating system pipe operator `(|)` or input redirection operator `(<)` to supply the input data to EDB\*Loader.
+
+The following example loads a database running on a database server at `192.168.1.14` using data piped from a source named `datasource`.
+
+```text
+datasource | ./edbldr -d edb -h 192.168.1.14 USERID=enterprisedb/password
+CONTROL=remote.ctl
+```
+
+The following is another example of how standard input can be used:
+
+```text
+./edbldr -d edb -h 192.168.1.14 USERID=enterprisedb/password
+CONTROL=remote.ctl < datasource
+```
+
+<div id="updating_a_table_with_a_conventional_path_load" class="registered_link"></div>
+
+## Updating a Table with a Conventional Path Load
+
+You can use EDB\*Loader with a conventional path load to update the rows within a table, merging new data with the existing data. When you invoke EDB\*Loader to perform an update, the server searches the table for an existing row with a matching primary key:
+
+-   If the server locates a row with a matching key, it replaces the existing row with the new row.
+-   If the server does not locate a row with a matching key, it adds the new row to the table.
+
+To use EDB\*Loader to update a table, the table must have a primary key. Please note that you cannot use EDB\*Loader to `UPDATE` a partitioned table.
+
+To perform an `UPDATE`, use the same steps as when performing a conventional path load:
+
+1.  Create a data file that contains the rows you wish to `UPDATE` or `INSERT`.
+2.  Define a control file that uses the `INFILE` keyword to specify the name of the data file. For information about building the EDB\*Loader control file, see [Building the EDB\*Loader Control File](#building-the-edbloader-control-file).
+3.  Invoke EDB\*Loader, specifying the database name, connection information, and the name of the control file. For information about invoking EDB\*Loader, see [Invoking EDB\*Loader](#invoking-edbloader).
+
+The following example uses the `emp` table that is distributed with the Advanced Server sample data. By default, the table contains:
+
+```text
+edb=# select * from emp;
+empno|ename |   job   |  mgr |       hiredate     |   sal    | comm  | deptno
+-----+------+---------+------+--------------------+--------- +-------+--------
+7369 |SMITH |CLERK    | 7902 | 17-DEC-80 00:00:00 | 800.00   |       |   20
+7499 |ALLEN |SALESMAN | 7698 | 20-FEB-81 00:00:00 | 1600.00  |300.00 |   30
+7521 |WARD  |SALESMAN | 7698 | 22-FEB-81 00:00:00 | 1250.00  |500.00 |   30
+7566 |JONES |MANAGER  | 7839 | 02-APR-81 00:00:00 | 2975.00  |       |   20
+7654 |MARTIN|SALESMAN | 7698 | 28-SEP-81 00:00:00 | 1250.00  |1400.00|   30
+7698 |BLAKE |MANAGER  | 7839 | 01-MAY-81 00:00:00 | 2850.00  |       |   30
+7782 |CLARK |MANAGER  | 7839 | 09-JUN-81 00:00:00 | 2450.00  |       |   10
+7788 |SCOTT |ANALYST  | 7566 | 19-APR-87 00:00:00 | 3000.00  |       |   20
+7839 |KING  |PRESIDENT|      | 17-NOV-81 00:00:00 | 5000.00  |       |   10
+7844 |TURNER|SALESMAN | 7698 | 08-SEP-81 00:00:00 | 1500.00  | 0.00  |   30
+7876 |ADAMS |CLERK    | 7788 | 23-MAY-87 00:00:00 | 1100.00  |       |   20
+7900 |JAMES |CLERK    | 7698 | 03-DEC-81 00:00:00 | 950.00   |       |   30
+7902 |FORD  |ANALYST  | 7566 | 03-DEC-81 00:00:00 | 3000.00  |       |   20
+7934 |MILLER|CLERK    | 7782 | 23-JAN-82 00:00:00 | 1300.00  |       |   10
+(14 rows)
+```
+
+The following control file (`emp_update.ctl`) specifies the fields in the table in a comma-delimited list. The control file performs an `UPDATE` on the `emp` table:
+
+```text
+LOAD DATA
+  INFILE 'emp_update.dat'
+  BADFILE 'emp_update.bad'
+  DISCARDFILE 'emp_update.dsc'
+UPDATE INTO TABLE emp
+FIELDS TERMINATED BY ","
+(empno, ename, job, mgr, hiredate, sal, comm, deptno)
+```
+
+The data that is being updated or inserted is saved in the `emp_update.dat` file. `emp_update.dat` contains:
+
+```text
+7521,WARD,MANAGER,7839,22-FEB-81 00:00:00,3000.00,0.00,30
+7566,JONES,MANAGER,7839,02-APR-81 00:00:00,3500.00,0.00,20
+7903,BAKER,SALESMAN,7521,10-JUN-13 00:00:00,1800.00,500.00,20
+7904,MILLS,SALESMAN,7839,13-JUN-13 00:00:00,1800.00,500.00,20
+7654,MARTIN,SALESMAN,7698,28-SEP-81 00:00:00,1500.00,400.00,30
+```
+
+Invoke EDB\*Loader, specifying the name of the database (`edb`), the name of a database superuser (and their associated password) and the name of the control file (`emp_update.ctl`):
+
+```
+edbldr -d edb userid=user_name/password control=emp_update.ctl
+```
+
+After performing the update, the `emp` table contains:
+
+```text
+edb=# select * from emp;
+empno|ename |   job   |  mgr |      hiredate      |   sal   |  comm  | deptno
+-----+------+---------+------+--------------------+---------+--------+--------
+7369 |SMITH |CLERK    | 7902 | 17-DEC-80 00:00:00 | 800.00  |        |  20
+7499 |ALLEN |SALESMAN | 7698 | 20-FEB-81 00:00:00 | 1600.00 | 300.00 |  30
+7521 |WARD  |MANAGER  | 7839 | 22-FEB-81 00:00:00 | 3000.00 | 0.00   |  30
+7566 |JONES |MANAGER  | 7839 | 02-APR-81 00:00:00 | 3500.00 | 0.00   |  20
+7654 |MARTIN|SALESMAN | 7698 | 28-SEP-81 00:00:00 | 1500.00 | 400.00 |  30
+7698 |BLAKE |MANAGER  | 7839 | 01-MAY-81 00:00:00 | 2850.00 |        |  30
+7782 |CLARK |MANAGER  | 7839 | 09-JUN-81 00:00:00 | 2450.00 |        |  10
+7788 |SCOTT |ANALYST  | 7566 | 19-APR-87 00:00:00 | 3000.00 |        |  20
+7839 |KING  |PRESIDENT|      | 17-NOV-81 00:00:00 | 5000.00 |        |  10
+7844 |TURNER|SALESMAN | 7698 | 08-SEP-81 00:00:00 | 1500.00 | 0.00   |  30
+7876 |ADAMS |CLERK    | 7788 | 23-MAY-87 00:00:00 | 1100.00 |        |  20
+7900 |JAMES |CLERK    | 7698 | 03-DEC-81 00:00:00 | 950.00  |        |  30
+7902 |FORD  |ANALYST  | 7566 | 03-DEC-81 00:00:00 | 3000.00 |        |  20
+7903 |BAKER |SALESMAN | 7521 | 10-JUN-13 00:00:00 | 1800.00 | 500.00 |  20
+7904 |MILLS |SALESMAN | 7839 | 13-JUN-13 00:00:00 | 1800.00 | 500.00 |  20
+7934 |MILLER|CLERK    | 7782 | 23-JAN-82 00:00:00 | 1300.00 |        |  10
+(16 rows)
+```
+
+The rows containing information for the three employees that are currently in the `emp` table are updated, while rows are added for the new employees (`BAKER` and `MILLS`)

@@ -1,0 +1,248 @@
+---
+title: "ECPGPlus - Overview"
+---
+
+<div id="overview" class="registered_link"></div>
+
+EDB has enhanced ECPG (the PostgreSQL pre-compiler) to create ECPGPlus. ECPGPlus is a Pro\*C-compatible version of the PostgreSQL C pre-compiler. ECPGPlus translates a program that combines C code and embedded SQL statements into an equivalent C program. As it performs the translation, ECPGPlus verifies that the syntax of each SQL construct is correct.
+
+The following diagram charts the path of a program containing embedded SQL statements as it is compiled into an executable:
+
+![Compilation of a program containing embedded SQL statements](images/ecpg_path.png)
+
+Compilation of a program containing embedded SQL statements
+
+To produce an executable from a C program that contains embedded SQL statements, pass the program (`my_program.pgc` in the diagram above) to the ECPGPlus pre-compiler. ECPGPlus translates each SQL statement in `my_program.pgc` into C code that calls the `ecpglib` API, and produces a C program (`my_program.c`). Then, pass the C program to a C compiler; the C compiler generates an object file (`my_program.o`). Finally, pass the object file (`my_program.o`), as well as the `ecpglib` library file, and any other required libraries to the linker, which in turn produces the executable (`my_program`).
+
+While the ECPGPlus preprocessor validates the *syntax* of each SQL statement, it cannot validate the *semantics*. For example, the preprocessor will confirm that an `INSERT` statement is syntactically correct, but it cannot confirm that the table mentioned in the `INSERT` statement actually exists.
+
+**Behind the Scenes**
+
+A client application contains a mix of C code and SQL code comprised of the following elements:
+
+-   C preprocessor directives
+-   C declarations (variables, types, functions, ...)
+-   C definitions (variables, types, functions, ...)
+-   SQL preprocessor directives
+-   SQL statements
+
+For example:
+
+```text
+1 #include <stdio.h>
+2 EXEC SQL INCLUDE sqlca;
+3
+4 extern void printInt(char *label, int val);
+5 extern void printStr(char *label, char *val);
+6 extern void printFloat(char *label, float val);
+7
+8 void displayCustomer(int custNumber)
+9 {
+10  EXEC SQL BEGIN DECLARE SECTION;
+11    VARCHAR custName[50];
+12    float custBalance;
+13    int custID = custNumber;
+14  EXEC SQL END DECLARE SECTION;
+15
+16  EXEC SQL SELECT name, balance
+17    INTO :custName, :custBalance
+18    FROM customer
+19    WHERE id = :custID;
+20
+21  printInt("ID", custID);
+22  printStr("Name", custName);
+23  printFloat("Balance", custBalance);
+24 }
+```
+
+In the above code fragment:
+
+-   Line 1 specifies a directive to the C preprocessor.
+
+    C preprocessor directives may be interpreted or ignored; the option is controlled by a command line option (`-C PROC`) entered when you invoke ECPGPlus. In either case, ECPGPlus copies each C preprocessor directive to the output file (4) without change; any C preprocessor directive found in the source file will appear in the output file.
+
+-   Line 2 specifies a directive to the SQL preprocessor.
+
+    SQL preprocessor directives are interpreted by the ECPGPlus preprocessor, and are not copied to the output file.
+
+-   Lines 4 through 6 contain C declarations.
+
+    C declarations are copied to the output file without change, except that each `VARCHAR` declaration is translated into an equivalent `struct` declaration.
+
+-   Lines 10 through 14 contain an embedded-SQL declaration section.  
+
+    C variables that you refer to within SQL code are known as `host  variables`. If you invoke the ECPGPlus preprocessor in Pro\*C mode (`-C PROC`), you may refer to *any* C variable within a SQL statement; otherwise you must declare each host variable within a `BEGIN/END DECLARATION SECTION` pair.
+
+-   Lines 16 through 19 contain a SQL statement.
+
+    SQL statements are translated into calls to the ECPGPlus run-time library.
+
+-   Lines 21 through 23 contain C code.
+
+    C code is copied to the output file without change.
+
+Any SQL statement must be prefixed with `EXEC SQL` and extends to the next (unquoted) semicolon. For example:
+
+```text
+printf(“Updating employee salaries\n”);
+
+EXEC SQL UPDATE emp SET sal = sal * 1.25;
+EXEC SQL COMMIT;
+
+printf(“Employee salaries updated\n”);
+```
+
+When the preprocessor encounters the code fragment shown above, it passes the C code (the first line and the last line) to the output file without translation and converts each `EXEC SQL` statement into a call to an `ecpglib` function. The result would appear similar to the following:
+
+```text
+printf("Updating employee salaries\n");
+
+{
+  ECPGdo( __LINE__, 0, 1, NULL, 0, ECPGst_normal,
+         "update emp set sal = sal * 1.25",
+         ECPGt_EOIT, ECPGt_EORT);
+}
+
+{
+  ECPGtrans(__LINE__, NULL, "commit");
+}
+
+printf(“Employee salaries updated\n”);
+```
+
+## Installation and Configuration
+
+On Windows, ECPGPlus is installed by the Advanced Server installation wizard as part of the `Database Server` component. On Linux, install with the `edb-asxx-server-devel` RPM package where `xx` is the Advanced Server version number. By default, the executable is located in:
+
+On Windows:
+
+```text
+C:\Program Files\edb\as14\bin
+```
+
+On Linux:
+
+```text
+/usr/edb/as14/bin
+```
+
+When invoking the ECPGPlus compiler, the executable must be in your search path (`%PATH%` on Windows, `$PATH` on Linux). For example, the following commands set the search path to include the directory that holds the ECPGPlus executable file `ecpg`.
+
+On Windows:
+
+```text
+set EDB_PATH=C:\Program Files\edb\as14\bin
+set PATH=%EDB_PATH%;%PATH%
+```
+
+On Linux:
+
+```text
+export EDB_PATH==/usr/edb/as14/bin
+export PATH=$EDB_PATH:$PATH
+```
+
+## Constructing a Makefile
+
+A `makefile` contains a set of instructions that tell the `make` utility how to transform a program written in C (that contains embedded SQL) into a C program. To try the examples in this guide, you will need:
+
+-   a C compiler (and linker)
+-   the `make` utility
+-   ECPGPlus preprocessor and library
+-   a `makefile` that contains instructions for ECPGPlus
+
+The following code is an example of a `makefile` for the samples included in this guide. To use the sample code, save it in a file named `makefile` in the directory that contains the source code file.
+
+```text
+INCLUDES = -I$(shell pg_config --includedir)
+LIBPATH = -L $(shell pg_config --libdir)
+CFLAGS += $(INCLUDES) -g
+LDFLAGS += -g
+LDLIBS += $(LIBPATH) -lecpg -lpq
+
+.SUFFIXES: .pgc,.pc
+
+.pgc.c:
+     ecpg -c $(INCLUDES) $?
+
+.pc.c:
+     ecpg -C PROC -c $(INCLUDES) $?
+```
+
+The first two lines use the `pg_config` program to locate the necessary header files and library directories:
+
+```text
+INCLUDES = -I$(shell pg_config --includedir)
+LIBPATH = -L $(shell pg_config --libdir)
+```
+
+The `pg_config` program is shipped with Advanced Server.
+
+`make` knows that it should use the `CFLAGS` variable when running the C compiler and `LDFLAGS` and `LDLIBS` when invoking the linker. ECPG programs must be linked against the ECPG run-time library (`-lecpg`) and the libpq library (`-lpq`)
+
+```text
+CFLAGS += $(INCLUDES) -g
+LDFLAGS += -g
+LDLIBS += $(LIBPATH) -lecpg -lpq
+```
+
+The sample `makefile` instructs make how to translate a `.pgc` or a `.pc` file into a C program. Two lines in the `makefile` specify the mode in which the source file will be compiled. The first compile option is:
+
+```text
+.pgc.c:
+      ecpg -c $(INCLUDES) $?
+```
+
+The first option tells `make` how to transform a file that ends in `.pgc` (presumably, an ECPG source file) into a file that ends in `.c` (a C program), using community ECPG (without the ECPGPlus enhancements). It invokes the ECPG pre-compiler with the `-c` flag (instructing the compiler to convert SQL code into C), using the value of the `INCLUDES` variable and the name of the `.pgc` file.
+
+```text
+.pc.c:
+    ecpg -C PROC -c $(INCLUDES) $?
+```
+
+The second option tells make how to transform a file that ends in `.pg` (an ECPG source file) into a file that ends in `.c` (a C program), using the ECPGPlus extensions. It invokes the ECPG pre-compiler with the `-c` flag (instructing the compiler to convert SQL code into C), as well as the `-C PROC` flag (instructing the compiler to use ECPGPlus in Pro\*C-compatibility mode), using the value of the `INCLUDES` variable and the name of the `.pgc` file.
+
+When you run `make`, pass the name of the ECPG source code file you wish to compile. For example, to compile an ECPG source code file named `customer_list.pgc`, use the command:
+
+```text
+make customer_list
+```
+
+The `make` utility consults the `makefile` (located in the current directory), discovers that the `makefile` contains a rule that will compile `customer_list.pgc` into a C program (`customer_list.c`), and then uses the rules built into `make` to compile `customer_list.c` into an executable program.
+
+## ECPGPlus Command Line Options
+
+In the sample `makefile` shown above, `make` includes the `-C` option when invoking ECPGPlus to specify that ECPGPlus should be invoked in Pro\*C compatible mode.
+
+If you include the `-C` `PROC` keywords on the command line, in addition to the ECPG syntax, you may use Pro\*C command line syntax; for example:
+
+```text
+$ ecpg -C PROC INCLUDE=/usr/edb/as14/include acct_update.c
+```
+
+To display a complete list of the other ECPGPlus options available, navigate to the ECPGPlus installation directory, and enter:
+
+```text
+./ecpg --help
+```
+
+The command line options are:
+
+| **Option**   | **Description**                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| -c           | Automatically generate C code from embedded SQL code.                                                                                                                                                                                                                                                                                                                                                                                    |
+| -C *mode*    | Use the `-C` option to specify a compatibility mode:<br /><br />`INFORMIX`<br /><br />`INFORMIX_SE`<br /><br />`PROC`                                                                                                                                                                                                                                                                                                                    |
+| -D *symbol*  | Define a preprocessor *symbol*.<br /><br />The *-D* keyword is not supported when compiling in *PROC mode.* Instead, use the Oracle-style *‘DEFINE=’* clause.                                                                                                                                                                                                                                                                            |
+| -h           | Parse a header file, this option includes option `'-c'`.                                                                                                                                                                                                                                                                                                                                                                                 |
+| -i           | Parse system, include files as well.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| -I directory | Search *directory* for `include` files.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| -o *outfile* | Write the result to *outfile*.                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -r *option*  | Specify run-time behavior; *option* can be:<br /><br />`no_indicator` - Do not use indicators, but instead use special values to represent NULL values.<br /><br />`prepare` - Prepare all statements before using them.<br /><br />`questionmarks` - Allow use of a question mark as a placeholder.<br /><br />`usebulk` - Enable bulk processing for `INSERT`, `UPDATE`, and `DELETE` statements that operate on host variable arrays. |
+| --regression | Run in regression testing mode.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -t           | Turn on `autocommit` of transactions.                                                                                                                                                                                                                                                                                                                                                                                                    |
+| -l           | Disable `#line` directives.                                                                                                                                                                                                                                                                                                                                                                                                              |
+| --help       | Display the help options.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --version    | Output version information.                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+!!! Note
+    If you do not specify an output file name when invoking ECPGPlus, the output file name is created by stripping off the `.pgc` filename extension, and appending `.c` to the file name.

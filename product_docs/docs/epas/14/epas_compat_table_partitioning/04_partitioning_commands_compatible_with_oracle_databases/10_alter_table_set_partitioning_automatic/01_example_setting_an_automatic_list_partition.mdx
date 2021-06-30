@@ -1,0 +1,59 @@
+---
+title: "Example - Setting an AUTOMATIC List Partition"
+---
+
+<div id="example_setting_an_automatic_list_partition" class="registered_link"></div>
+
+The example that follows modifies a table `sales` to use automatic list partition instead of regular list partitioning. Use the following command to create a `sales` table:
+
+```text
+CREATE TABLE sales
+(
+  dept_no      number,
+  part_no      varchar2,
+  sales_state  varchar2(20),
+  date         date,
+  amount       number
+)
+PARTITION BY LIST(sales_state)
+(
+  PARTITION P_KAN VALUES('KANSAS'),
+  PARTITION P_TEX VALUES('TEXAS')
+);
+```
+
+To implement automatic list partitioning on the `sales` table, invoke the following command:
+
+```text
+ALTER TABLE sales SET AUTOMATIC;
+```
+
+Query the `ALL_TAB_PARTITIONS` view to see that an existing partition is successfully created.
+
+```text
+edb=# SELECT table_name, partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ table_name | partition_name | high_value
+------------+----------------+------------
+ SALES      | P_KAN          | 'KANSAS'
+ SALES      | P_TEX          | 'TEXAS'
+(2 rows)
+```
+
+Now, insert data into the `sales` table to create a new partition and add the new value.
+
+```text
+edb=# INSERT INTO sales VALUES (1, 'VIR', 'VIRGINIA');
+INSERT 0 1
+```
+
+Then, query the `ALL_TAB_PARTITIONS` view again after the insert. The automatic list partition is successfully created and data is inserted. A system-generated name of the partition is created that varies for each session.
+
+```text
+edb=# SELECT table_name, partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ table_name | partition_name | high_value
+------------+----------------+------------
+ SALES      | P_KAN          | 'KANSAS'
+ SALES      | P_TEX          | 'TEXAS'
+ SALES      | SYS106900103   | 'VIRGINIA'
+(3 rows)
+```

@@ -1,0 +1,63 @@
+---
+title: "Example - Adding a Subpartition to a RANGE/LIST Partitioned Table"
+---
+
+<div id="example_adding_a_subpartition_to_a_range_list_partitioned_table" class="registered_link"></div>
+
+The following example adds a `LIST` subpartition to the `RANGE` partitioned `sales` table. The `sales` table was created with the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+  SUBPARTITION BY LIST (country)
+  (
+    PARTITION first_half_2012 VALUES LESS THAN('01-JUL-2012')
+    (
+      SUBPARTITION europe VALUES ('ITALY', 'FRANCE'),
+      SUBPARTITION americas VALUES ('US', 'CANADA')
+    ),
+    PARTITION second_half_2012 VALUES LESS THAN('01-JAN-2013')
+    (
+      SUBPARTITION asia VALUES ('INDIA', 'PAKISTAN')
+    )
+);
+```
+
+After executing the above command, the `sales` table will have two partitions, named `first_half_2012` and `second_half_2012`. The `first_half_2012 partition` has two subpartitions, named `europe` and `americas`, and the `second_half_2012` partition has one partition, named `asia`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+  partition_name  | subpartition_name |     high_value
+------------------+-------------------+---------------------
+ SECOND_HALF_2012 | ASIA              | 'INDIA', 'PAKISTAN'
+ FIRST_HALF_2012  | AMERICAS          | 'US', 'CANADA'
+ FIRST_HALF_2012  | EUROPE            | 'ITALY', 'FRANCE'
+(3 rows)
+```
+
+The following command adds a subpartition to the `second_half_2012` partition, named `east_asia`.
+
+```text
+ALTER TABLE sales MODIFY PARTITION second_half_2012
+  ADD SUBPARTITION east_asia VALUES ('CHINA');
+```
+
+After invoking the command, the table includes a subpartition named `east_asia`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+  partition_name  | subpartition_name |     high_value
+------------------+-------------------+---------------------
+ SECOND_HALF_2012 | ASIA              | 'INDIA', 'PAKISTAN'
+ SECOND_HALF_2012 | EAST_ASIA         | 'CHINA'
+ FIRST_HALF_2012  | AMERICAS          | 'US', 'CANADA'
+ FIRST_HALF_2012  | EUROPE            | 'ITALY', 'FRANCE'
+(4 rows)
+```

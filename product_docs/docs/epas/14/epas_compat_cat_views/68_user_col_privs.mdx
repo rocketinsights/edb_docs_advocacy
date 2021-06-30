@@ -1,0 +1,20 @@
+---
+title: "USER_COL_PRIVS"
+---
+
+<div id="user_col_privs" class="registered_link"></div>
+
+The `USER_COL_PRIVS` view provides a listing of the object privileges granted on a column for which a current user is either an object owner, grantor, or grantee.
+
+| Name          | Type                     | Description                                                                                                                                                                                                                                                         |
+| ------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grantee`     | `CHARACTER VARYING(128)` | Name of the user with the privilege.                                                                                                                                                                                                                                |
+| `owner`       | `CHARACTER VARYING(128)` | Object owner.                                                                                                                                                                                                                                                       |
+| `schema_name` | `CHARACTER VARYING(128)` | Name of the schema in which the object resides.                                                                                                                                                                                                                     |
+| `table_name`  | `CHARACTER VARYING(128)` | Object name.                                                                                                                                                                                                                                                        |
+| `column_name` | `CHARACTER VARYING(128)` | Column name.                                                                                                                                                                                                                                                        |
+| `grantor`     | `CHARACTER VARYING(128)` | Name of the user who granted the privilege.                                                                                                                                                                                                                         |
+| `privilege`   | `CHARACTER VARYING(40)`  | Privilege on the column.                                                                                                                                                                                                                                            |
+| `grantable`   | `CHARACTER VARYING(3)`   | Indicates whether the privilege was granted with the grant option `YES` or `NO`. `YES` indicates that the `GRANTEE` (recipient of the privilege) can in turn grant the privilege to others. The value may be `YES` if the grantee has the administrator privileges. |
+| `common`      | `CHARACTER VARYING(3)`   | Included for compatibility only; always `NO`.                                                                                                                                                                                                                       |
+| `inherited`   | `CHARACTER VARYING(3)`   | Included for compatibility only; always `NO`.                                                                                                                                                                                                                       |

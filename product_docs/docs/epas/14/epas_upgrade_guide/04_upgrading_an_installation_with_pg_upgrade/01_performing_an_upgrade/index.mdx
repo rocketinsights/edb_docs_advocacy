@@ -1,0 +1,34 @@
+---
+title: "Performing an Upgrade"
+---
+
+To upgrade an earlier version of Advanced Server to the current version, you must:
+
+-   Install the current version of Advanced Server. The new installation must contain the same supporting server components as the old installation.
+-   Empty the target database or create a new target cluster with `initdb`.
+-   Place the `pg_hba.conf` file for both databases in `trust` authentication mode (to avoid authentication conflicts).
+-   Shut down the old and new Advanced Server services.
+-   Invoke the `pg_upgrade` utility.
+
+When `pg_upgrade` starts, it performs a compatibility check to ensure that all required executables are present and contain the expected version numbers. The verification process also checks the old and new `$PGDATA` directories to ensure that the expected files and subdirectories are in place. If the verification process succeeds, `pg_upgrade` starts the old `postmaster` and runs `pg_dumpall --schema-only` to capture the metadata contained in the old cluster. The script produced by `pg_dumpall` is used in a later step to recreate all user-defined objects in the new cluster.
+
+Note that the script produced by `pg_dumpall` recreates only user-defined objects and not system-defined objects. The new cluster will *already* contain the system-defined objects created by the latest version of Advanced Server.
+
+After extracting the metadata from the old cluster, `pg_upgrade` performs the bookkeeping tasks required to sync the new cluster with the existing data.
+
+`pg_upgrade` runs the `pg_dumpall` script against the new cluster to create (empty) database objects of the same shape and type as those found in the old cluster. Then, `pg_upgrade` links or copies each table and index from the old cluster to the new cluster.
+
+If you are upgrading to Advanced Server 14 and have installed the `edb_dblink_oci` or `edb_dblink_libpq` extension, you must drop the extension before performing an upgrade. To drop the extension, connect to the server with the psql or PEM client, and invoke the commands:
+
+```text
+DROP EXTENSION edb_dblink_oci;
+DROP EXTENSION edb_dblink_libpq;
+```
+
+When you have completed upgrading, you can use the `CREATE EXTENSION` command to add the current versions of the extensions to your installation.
+
+<div class="toctree" maxdepth="3">
+
+linking_versus_copying
+
+</div>

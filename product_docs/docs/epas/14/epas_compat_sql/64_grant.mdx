@@ -1,0 +1,251 @@
+---
+title: "GRANT"
+---
+
+<div id="grant" class="registered_link"></div>
+
+**Name**
+
+`GRANT` -- define access privileges.
+
+**Synopsis**
+
+```text
+GRANT { { SELECT | INSERT | UPDATE | DELETE | REFERENCES }
+  [,...] | ALL [ PRIVILEGES ] }
+  ON tablename
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT { { INSERT | UPDATE | REFERENCES } (column [, ...]) }
+  [, ...]
+  ON tablename
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT { SELECT | ALL [ PRIVILEGES ] }
+  ON sequencename
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT { EXECUTE | ALL [ PRIVILEGES ] }
+  ON FUNCTION progname
+    ( [ [ argmode ] [ argname ] argtype ] [, ...] )
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT { EXECUTE | ALL [ PRIVILEGES ] }
+  ON PROCEDURE progname
+    [ ( [ [ argmode ] [ argname ] argtype ] [, ...] ) ]
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT { EXECUTE | ALL [ PRIVILEGES ] }
+  ON PACKAGE packagename
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH GRANT OPTION ]
+
+GRANT role [, ...]
+  TO { username | groupname | PUBLIC } [, ...]
+  [ WITH ADMIN OPTION ]
+
+GRANT { CONNECT | RESOURCE | DBA } [, ...]
+  TO { username | groupname } [, ...]
+  [ WITH ADMIN OPTION ]
+
+GRANT CREATE [ PUBLIC ] DATABASE LINK
+  TO { username | groupname }
+
+GRANT DROP PUBLIC DATABASE LINK
+  TO { username | groupname }
+
+GRANT EXEMPT ACCESS POLICY
+  TO { username | groupname }
+```
+
+**Description**
+
+The `GRANT` command has three basic variants: one that grants privileges on a database object (table, view, sequence, or program), one that grants membership in a role, and one that grants system privileges. These variants are similar in many ways, but they are different enough to be described separately.
+
+In Advanced Server, the concept of users and groups has been unified into a single type of entity called a `role`. In this context, a `user` is a role that has the `LOGIN` attribute – the role may be used to create a session and connect to an application. A `group` is a role that does not have the `LOGIN` attribute – the role may not be used to create a session or connect to an application.
+
+A role may be a member of one or more other roles, so the traditional concept of users belonging to groups is still valid. However, with the generalization of users and groups, users may “belong” to users, groups may “belong” to groups, and groups may “belong” to users, forming a general multi-level hierarchy of roles. User names and group names share the same namespace therefore it is not necessary to distinguish whether a grantee is a user or a group in the `GRANT` command.
+
+## GRANT on Database Objects
+
+This variant of the `GRANT` command gives specific privileges on a database object to a role. These privileges are added to those already granted, if any.
+
+The key word `PUBLIC` indicates that the privileges are to be granted to all roles, including those that may be created later. `PUBLIC` may be thought of as an implicitly defined group that always includes all roles. Any particular role will have the sum of privileges granted directly to it, privileges granted to any role it is presently a member of, and privileges granted to `PUBLIC`.
+
+If the `WITH GRANT OPTION` is specified, the recipient of the privilege may in turn grant it to others. Without a grant option, the recipient cannot do that. Grant options cannot be granted to `PUBLIC`.
+
+There is no need to grant privileges to the owner of an object (usually the user that created it), as the owner has all privileges by default. (The owner could, however, choose to revoke some of his own privileges for safety.) The right to drop an object or to alter its definition in any way is not described by a grantable privilege; it is inherent in the owner, and cannot be granted or revoked. The owner implicitly has all grant options for the object as well.
+
+Depending on the type of object, the initial default privileges may include granting some privileges to `PUBLIC`. The default is no public access for tables and `EXECUTE` privilege for functions, procedures, and packages. The object owner may of course revoke these privileges. (For maximum security, issue the `REVOKE` in the same transaction that creates the object; then there is no window in which another user may use the object.)
+
+The possible privileges are:
+
+`SELECT`
+
+ Allows `SELECT` from any column of the specified table, view, or sequence. For sequences, this privilege also allows the use of the `currval` function.
+
+`INSERT`
+
+ Allows `INSERT` of a new row into the specified table.
+
+`UPDATE`
+
+ Allows `UPDATE` of a column of the specified table. `SELECT ... FOR UPDATE` also requires this privilege (besides the `SELECT` privilege).
+
+`DELETE`
+
+ Allows `DELETE` of a row from the specified table.
+
+`REFERENCES`
+
+ To create a foreign key constraint, it is necessary to have this privilege on both the referencing and referenced tables.
+
+`EXECUTE`
+
+ Allows the use of the specified package, procedure, or function. When applied to a package, allows the use of all of the package’s public procedures, public functions, public variables, records, cursors and other public objects and object types. This is the only type of privilege that is applicable to functions, procedures, and packages.
+
+ The Advanced Server syntax for granting the `EXECUTE` privilege is not fully compatible with Oracle databases. Advanced Server requires qualification of the program name by one of the keywords, `FUNCTION`, `PROCEDURE`, or `PACKAGE` whereas these keywords must be omitted in Oracle. For functions, Advanced Server requires all input (`IN`, `IN OUT`) argument data types after the function name (including an empty parenthesis if there are no function arguments). For procedures, all input argument data types must be specified if the procedure has one or more input arguments. In Oracle, function and procedure signatures must be omitted. This is due to the fact that all programs share the same namespace in Oracle, whereas functions, procedures, and packages have their own individual namespace in Advanced Server to allow program name overloading to a certain extent.
+
+`ALL PRIVILEGES`
+
+ Grant all of the available privileges at once.
+
+The privileges required by other commands are listed on the reference page of the respective command.
+
+<div id="grant_on_roles" class="registered_link"></div>
+
+## GRANT on Roles
+
+This variant of the `GRANT` command grants membership in a role to one or more other roles. Membership in a role is significant because it conveys the privileges granted to a role to each of its members.
+
+If the `WITH ADMIN OPTION` is specified, the member may in turn grant membership in the role to others, and revoke membership in the role as well. Without the admin option, ordinary users cannot do that.
+
+Database superusers can grant or revoke membership in any role to anyone. Roles having the `CREATEROLE` privilege can grant or revoke membership in any role that is not a superuser.
+
+There are three pre-defined roles that have the following meanings:
+
+`CONNECT`
+
+ Granting the `CONNECT` role is equivalent to giving the grantee the `LOGIN` privilege. The grantor must have the `CREATEROLE` privilege.
+
+`RESOURCE`
+
+ Granting the `RESOURCE` role is equivalent to granting the `CREATE` and `USAGE` privileges on a schema that has the same name as the grantee. This schema must exist before the grant is given. The grantor must have the privilege to grant `CREATE` or `USAGE` privileges on this schema to the grantee.
+
+`DBA`
+
+ Granting the `DBA` role is equivalent to making the grantee a superuser. The grantor must be a superuser.
+
+**Notes**
+
+The `REVOKE` command is used to revoke access privileges.
+
+When a non-owner of an object attempts to `GRANT` privileges on the object, the command will fail outright if the user has no privileges whatsoever on the object. As long as a privilege is available, the command will proceed, but it will grant only those privileges for which the user has grant options. The `GRANT ALL PRIVILEGES` forms will issue a warning message if no grant options are held, while the other forms will issue a warning if grant options for any of the privileges specifically named in the command are not held. (In principle these statements apply to the object owner as well, but since the owner is always treated as holding all grant options, the cases can never occur.)
+
+It should be noted that database superusers can access all objects regardless of object privilege settings. This is comparable to the rights of `root` in a Unix system. As with `root`, it’s unwise to operate as a superuser except when absolutely necessary.
+
+If a superuser chooses to issue a `GRANT` or `REVOKE` command, the command is performed as though it were issued by the owner of the affected object. In particular, privileges granted via such a command will appear to have been granted by the object owner. (For role membership, the membership appears to have been granted by the containing role itself.)
+
+`GRANT` and `REVOKE` can also be done by a role that is not the owner of the affected object, but is a member of the role that owns the object, or is a member of a role that holds privileges `WITH GRANT OPTION` on the object. In this case the privileges will be recorded as having been granted by the role that actually owns the object or holds the privileges `WITH GRANT OPTION`.
+
+For example, if table `t1` is owned by role `g1`, of which role `u1` is a member, then `u1` can grant privileges on `t1` to `u2`, but those privileges will appear to have been granted directly by `g1`. Any other member of role `g1` could revoke them later.
+
+If the role executing `GRANT` holds the required privileges indirectly via more than one role membership path, it is unspecified which containing role will be recorded as having done the grant. In such cases it is best practice to use `SET ROLE` to become the specific role you want to do the `GRANT` as.
+
+Currently, Advanced Server does not support granting or revoking privileges for individual columns of a table. One possible workaround is to create a view having just the desired columns and then grant privileges to that view.
+
+**Examples**
+
+Grant insert privilege to all users on table `emp`:
+
+```text
+GRANT INSERT ON emp TO PUBLIC;
+```
+
+Grant all available privileges to user `mary` on view `salesemp`:
+
+```text
+GRANT ALL PRIVILEGES ON salesemp TO mary;
+```
+
+Note that while the above will indeed grant all privileges if executed by a superuser or the owner of `emp`, when executed by someone else it will only grant those permissions for which the someone else has grant options.
+
+Grant membership in role `admins` to user `joe`:
+
+```text
+GRANT admins TO joe;
+```
+
+Grant `CONNECT` privilege to user `joe`:
+
+```text
+GRANT CONNECT TO joe;
+```
+
+**See Also**
+
+[REVOKE](67_revoke/#revoke), [SET ROLE](73_set_role/#set_role)
+
+## GRANT on System Privileges
+
+This variant of the `GRANT` command gives a role the ability to perform certain `system` operations within a database. System privileges relate to the ability to create or delete certain database objects that are not necessarily within the confines of one schema. Only database superusers can grant system privileges.
+
+**CREATE [PUBLIC] DATABASE LINK**
+
+The `CREATE [PUBLIC] DATABASE LINK` privilege allows the specified role to create a database link. Include the `PUBLIC` keyword to allow the role to create public database links; omit the `PUBLIC` keyword to allow the specified role to create private database links.
+
+**DROP PUBLIC DATABASE LINK**
+
+The `DROP PUBLIC DATABASE LINK` privilege allows a role to drop a public database link. System privileges are not required to drop a private database link. A private database link may be dropped by the link owner or a database superuser.
+
+**EXEMPT ACCESS POLICY**
+
+The `EXEMPT ACCESS POLICY` privilege allows a role to execute a SQL command without invoking any policy function that may be associated with the target database object. The role is exempt from all security policies in the database.
+
+The `EXEMPT ACCESS POLICY` privilege is not inheritable by membership to a role that has the `EXEMPT ACCESS POLICY` privilege. For example, the following sequence of `GRANT` commands does not result in user `joe` obtaining the `EXEMPT ACCESS POLICY` privilege even though `joe` is granted membership to the `enterprisedb` role, which has been granted the `EXEMPT ACCESS POLICY` privilege:
+
+```text
+GRANT EXEMPT ACCESS POLICY TO enterprisedb;
+GRANT enterprisedb TO joe;
+```
+
+The `rolpolicyexempt` column of the system catalog table `pg_authid` is set to `true` if a role has the `EXEMPT ACCESS POLICY` privilege.
+
+**Examples**
+
+Grant `CREATE PUBLIC DATABASE LINK` privilege to user `joe`:
+
+```text
+GRANT CREATE PUBLIC DATABASE LINK TO joe;
+```
+
+Grant `DROP PUBLIC DATABASE LINK` privilege to user `joe`:
+
+```text
+GRANT DROP PUBLIC DATABASE LINK TO joe;
+```
+
+Grant the `EXEMPT ACCESS POLICY` privilege to user `joe`:
+
+```text
+GRANT EXEMPT ACCESS POLICY TO joe;
+```
+
+**Using the ALTER ROLE Command to Assign System Privileges**
+
+The Advanced Server `ALTER ROLE` command also supports syntax that you can use to assign:
+
+-   the privilege required to create a public or private database link.
+-   the privilege required to drop a public database link.
+-   the `EXEMPT ACCESS POLICY` privilege.
+
+The `ALTER ROLE` syntax is functionally equivalent to the respective commands compatible with Oracle databases.
+
+**See Also**
+
+[REVOKE](67_revoke/#revoke), [ALTER ROLE](08_alter_role_identified_by/#alter_role_identified_by)

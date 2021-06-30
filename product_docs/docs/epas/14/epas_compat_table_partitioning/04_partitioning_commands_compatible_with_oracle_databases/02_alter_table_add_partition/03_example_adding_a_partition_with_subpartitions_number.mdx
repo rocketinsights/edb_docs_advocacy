@@ -1,0 +1,182 @@
+---
+title: "Example - Adding a Partition with SUBPARTITIONS num...IN PARTITION DESCRIPTION"
+---
+
+<div id="example_adding_a_partition_with_subpartitions_number" class="registered_link"></div>
+
+The following example adds a partition to a list-partitioned `sales` table, you can specify a `SUBPARTITIONS` clause to add a specified number of subpartitions. The `sales` table was created with the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 2
+(
+  PARTITION europe VALUES ('FRANCE', 'ITALY'),
+  PARTITION asia  VALUES ('INDIA', 'PAKISTAN')
+);
+```
+
+The table contains two partitions `europe` and `asia`, each containing two subpartitions. Because the subpartitions are not named, system-generated names are assigned to them.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | ASIA           | SYS0103
+ SALES      | ASIA           | SYS0104
+ SALES      | EUROPE         | SYS0101
+ SALES      | EUROPE         | SYS0102
+(4 rows)
+```
+
+The following command adds a new partition `americas` to the `sales` table and will create a number of subpartitions as specified in the partition description.
+
+```text
+ALTER TABLE sales ADD PARTITION americas
+  VALUES ('US', 'CANADA');
+```
+
+After invoking the command the table includes the partition `americas` and two newly added subpartitions.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | AMERICAS       | SYS0107
+ SALES      | AMERICAS       | SYS0108
+ SALES      | ASIA           | SYS0103
+ SALES      | ASIA           | SYS0104
+ SALES      | EUROPE         | SYS0101
+ SALES      | EUROPE         | SYS0102
+(6 rows)
+```
+
+## Example - Adding a Partition with SUBPARTITIONS num...
+
+The following example adds a partition a list-partitioned table `sales` consisting of three subpartitions. The `sales` table was created with the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 3
+(
+  PARTITION europe VALUES ('FRANCE', 'ITALY'),
+  PARTITION asia  VALUES ('INDIA', 'PAKISTAN')
+);
+```
+
+The table contains partitions `europe` and `asia`, each containing three subpartitions.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | ASIA           | SYS0104
+ SALES      | ASIA           | SYS0105
+ SALES      | ASIA           | SYS0106
+ SALES      | EUROPE         | SYS0101
+ SALES      | EUROPE         | SYS0102
+ SALES      | EUROPE         | SYS0103
+(6 rows)
+```
+
+The following command adds a new partition `americas` and five subpartitions as specified in the `ADD PARTITION` clause.
+
+```text
+ALTER TABLE sales ADD PARTITION americas
+  VALUES ('US', 'CANADA') SUBPARTITIONS 5;
+```
+
+After invoking the command `sales` table includes the partition `americas` and five newly added subpartitions.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' and partition_name =
+'AMERICAS' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | AMERICAS       | SYS0109
+ SALES      | AMERICAS       | SYS0110
+ SALES      | AMERICAS       | SYS0111
+ SALES      | AMERICAS       | SYS0112
+ SALES      | AMERICAS       | SYS0113
+(5 rows)
+```
+
+## Example - Adding a Partition with SUBPARTITIONS num... STORE IN
+
+The following example adds a partition to a list-partitioned table `sales` consisting of three subpartitions. The table was created using the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 3
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA')
+);
+```
+
+The table contains three partitions `(americas, asia`, and `europe)`, each containing three subpartitions with system-generated names.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | AMERICAS       | SYS0109
+ SALES      | AMERICAS       | SYS0107
+ SALES      | AMERICAS       | SYS0108
+ SALES      | ASIA           | SYS0105
+ SALES      | ASIA           | SYS0104
+ SALES      | ASIA           | SYS0106
+ SALES      | EUROPE         | SYS0101
+ SALES      | EUROPE         | SYS0103
+ SALES      | EUROPE         | SYS0102
+(9 rows)
+```
+
+The following command adds a new partition `east_asia` with five subpartitions as specified in the `ADD PARTITION` clause and stores them in the tablespace named `(ts1)`.
+
+```text
+ALTER TABLE sales ADD PARTITION east_asia
+  VALUES ('CHINA', 'KOREA') SUBPARTITIONS 5 STORE IN (ts1);
+```
+
+After invoking the command table includes the partition `east_asia` and five newly added subpartitions stored in tablespace `(ts1)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' and partition_name =
+'EAST_ASIA' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | EAST_ASIA      | SYS0113           | TS1
+ SALES      | EAST_ASIA      | SYS0114           | TS1
+ SALES      | EAST_ASIA      | SYS0115           | TS1
+ SALES      | EAST_ASIA      | SYS0116           | TS1
+ SALES      | EAST_ASIA      | SYS0117           | TS1
+(5 rows)
+```

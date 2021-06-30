@@ -1,0 +1,428 @@
+---
+title: "Example - PARTITION BY HASH...PARTITIONS num..."
+---
+
+<div id="example_partitions_number" class="registered_link"></div>
+
+The following example creates a hash-partitioned table `(sales)` using the `PARTITION BY HASH` clause. The partitioning column is `part_no`; the number of partitions to be created is specified.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) PARTITIONS 8;
+```
+
+The eight partitions are created and assigned a system-generated name. The partitions are stored in the default tablespace of the table.
+
+```text
+edb=# SELECT table_name, partition_name FROM ALL_TAB_PARTITIONS WHERE
+table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name
+------------+----------------
+ SALES      | SYS0101
+ SALES      | SYS0102
+ SALES      | SYS0103
+ SALES      | SYS0104
+ SALES      | SYS0105
+ SALES      | SYS0106
+ SALES      | SYS0107
+ SALES      | SYS0108
+(8 rows)
+```
+
+## Example - PARTITION BY HASH...PARTITIONS num...STORE IN
+
+The following example creates a hash-partitioned table named `(sales)`. The number of partitions to be created and the tablespaces in which the partition will reside are specified.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) PARTITIONS 5 STORE IN (ts1, ts2, ts3);
+```
+
+The `STORE IN` clause evenly distributes the partitions across specified tablespaces `(ts1, ts2, ts3)`.
+
+```text
+edb=# SELECT table_name, partition_name, tablespace_name FROM
+ALL_TAB_PARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | tablespace_name
+------------+----------------+-----------------
+ SALES      | SYS0101        | TS1
+ SALES      | SYS0102        | TS2
+ SALES      | SYS0103        | TS3
+ SALES      | SYS0104        | TS1
+ SALES      | SYS0105        | TS2
+(5 rows)
+```
+
+## Example - HASH/RANGE PARTITIONS num...
+
+The `HASH` partition clause allows you to define a partitioning strategy. You can extend the `PARTITION BY HASH` clause to include `SUBPARTITION BY` either `[ RANGE | LIST | HASH ]` to create subpartitions in an `HASH` partitioned table.
+
+The following example creates a table `(sales)` that is hash-partitioned by `part_no` and subpartitioned using range by `dept_no`. The number of partitions is specified when creating a table `(sales)`.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) SUBPARTITION BY RANGE (dept_no) PARTITIONS 5;
+```
+
+The five partitions are created with default subpartitions and assigned system-generated names.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | SYS0101        | SYS0102
+ SALES      | SYS0103        | SYS0104
+ SALES      | SYS0105        | SYS0106
+ SALES      | SYS0107        | SYS0108
+ SALES      | SYS0109        | SYS0110
+(5 rows)
+```
+
+## Example - LIST/HASH SUBPARTITIONS num...
+
+The following example shows a table `(sales)` that is list-partitioned by `country` and subpartitioned using hash partitioning by the `dept_no` column. The number of subpartitions is specified when creating the table.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (dept_no) SUBPARTITIONS 3
+(
+  PARTITION p1 VALUES('FRANCE', 'ITALY'),
+  PARTITION p2 VALUES('INDIA', 'PAKISTAN'),
+  PARTITION p3 VALUES('US', 'CANADA')
+);
+```
+
+The three partitions `p1, p2` and `p3` each contain three subpartitions with system-generated names.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | P1             | SYS0101
+ SALES      | P1             | SYS0102
+ SALES      | P1             | SYS0103
+ SALES      | P2             | SYS0104
+ SALES      | P2             | SYS0105
+ SALES      | P2             | SYS0106
+ SALES      | P3             | SYS0107
+ SALES      | P3             | SYS0108
+ SALES      | P3             | SYS0109
+(9 rows)
+```
+
+## Example - HASH/HASH PARTITIONS num... SUBPARTITIONS num...
+
+The following example creates the `(sales)` table, hash-partitioned by `part_no` and hash-subpartitioned by `dept_no`.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) SUBPARTITION BY HASH (dept_no) SUBPARTITIONS 3
+PARTITIONS 2;
+```
+
+The two partitions are created and each partition includes three subpartitions with the system-generated name assigned to them.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | SYS0101        | SYS0102
+ SALES      | SYS0101        | SYS0103
+ SALES      | SYS0101        | SYS0104
+ SALES      | SYS0105        | SYS0106
+ SALES      | SYS0105        | SYS0107
+ SALES      | SYS0105        | SYS0108
+(6 rows)
+```
+
+## Example - HASH/HASH SUBPARTITIONS num... STORE IN
+
+The following example creates a hash-partitioned table `(sales)`. The number of partitions and subpartitions to be created are specified along with the tablespaces in which the subpartitions will reside when creating a hash partitioned table.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) SUBPARTITION BY HASH (dept_no) SUBPARTITIONS 3
+PARTITIONS 2 STORE IN (ts1, ts2);
+```
+
+The two partitions are created and assigned a system-generated name. The partitions are stored in the default tablespace and subpartitions are stored in tablespaces `(ts1)` and `(ts2)`.
+
+```text
+edb=# SELECT table_name, partition_name, tablespace_name FROM
+ALL_TAB_PARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | tablespace_name
+------------+----------------+-----------------
+ SALES      | SYS0101        |
+ SALES      | SYS0105        |
+(2 rows)
+```
+
+The `STORE IN` clause assigns the hash subpartitions to the tablespaces and stores them in two named tablespaces `(ts1, ts2)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | SYS0101        | SYS0102           | TS1
+ SALES      | SYS0101        | SYS0103           | TS2
+ SALES      | SYS0101        | SYS0104           | TS1
+ SALES      | SYS0105        | SYS0106           | TS1
+ SALES      | SYS0105        | SYS0107           | TS2
+ SALES      | SYS0105        | SYS0108           | TS1
+(6 rows)
+```
+
+## Example - HASH/HASH PARTITIONS num ...STORE IN SUBPARTITIONS num... STORE IN
+
+The following example creates a hash-partitioned table `(sales)`. The number of partitions and subpartitions to be created are specified, along with the tablespaces in which the partitions and subpartitions will reside.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY HASH (part_no) SUBPARTITION BY HASH (dept_no) SUBPARTITIONS 3
+STORE IN (ts3) PARTITIONS 2 STORE IN (ts1, ts2);
+```
+
+The two partitions are created with a system-generated name and stored in the default tablespace.
+
+```text
+edb=# SELECT table_name, partition_name, tablespace_name FROM
+ALL_TAB_PARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | tablespace_name
+------------+----------------+-----------------
+ SALES      | SYS0101        |
+ SALES      | SYS0105        |
+(2 rows)
+```
+
+Each partition includes three subpartitions; the `STORE IN` clause stores the subpartitions in tablespaces `(ts1)` and `(ts2)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | SYS0101        | SYS0102           | TS1
+ SALES      | SYS0101        | SYS0103           | TS2
+ SALES      | SYS0101        | SYS0104           | TS1
+ SALES      | SYS0105        | SYS0106           | TS1
+ SALES      | SYS0105        | SYS0107           | TS2
+ SALES      | SYS0105        | SYS0108           | TS1
+(6 rows)
+```
+
+!!! Note
+    If the `STORE IN` clause is specified for partitions and subpartitions, then the subpartitions are stored in the tablespaces defined in the `PARTITIONS...STORE IN` clause and the `SUBPARTITIONS...STORE IN` clause is ignored.
+
+## Example - RANGE/HASH SUBPARTITIONS num...
+
+The following example creates a range-partitioned table `(sales)` that is first partitioned by the transaction date; two range partitions are created and then hash-subpartitioned using the value of the `country` column.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE (date) SUBPARTITION BY HASH (country) SUBPARTITIONS 2
+(
+  PARTITION p1 VALUES LESS THAN ('2012-Apr-01') (SUBPARTITION q1_europe),
+  PARTITION p2 VALUES LESS THAN ('2012-Jul-01')
+);
+```
+
+This statement creates a table with two partitions; the subpartition explicitly named `q1_europe` is created for partition `p1`. Because subpartitions are not named for partition `p2`, the subpartitions are created based on the subpartition number, and are assigned a system-generated name.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | P1             | Q1_EUROPE
+ SALES      | P2             | SYS0101
+ SALES      | P2             | SYS0102
+(3 rows)
+```
+
+## Example - RANGE/HASH SUBPARTITIONS num... IN PARTITION DESCRIPTION
+
+The following example creates a range-partitioned table `(sales)` that is first partitioned by the transaction date; two range partitions are created and then hash-subpartitioned using the value of the `country` column.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE (date) SUBPARTITION BY HASH (country) SUBPARTITIONS 2
+(
+  PARTITION p1 VALUES LESS THAN ('2012-Apr-01') SUBPARTITIONS 3,
+  PARTITION p2 VALUES LESS THAN ('2012-Jul-01')
+);
+```
+
+The partition `p1` explicitly defines the subpartition count in the partition description. By default, two subpartitions will be created for partition `p2`; since subpartitions are not named, system-generated names are assigned.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | P1             | SYS0101
+ SALES      | P1             | SYS0102
+ SALES      | P1             | SYS0103
+ SALES      | P2             | SYS0104
+ SALES      | P2             | SYS0105
+(5 rows)
+```
+
+## Example - LIST/HASH SUBPARTITIONS num STORE IN... IN PARTITION DESCRIPTION
+
+The following example creates a list-partitioned table `(sales)` with two list partitions. Partition `p1` consists of three subpartitions and partition `p2` consists of two subpartitions. Since the subpartitions are not named, system-generated names are assigned.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 3
+STORE IN (ts1)
+(
+  PARTITION p1 VALUES ('FRANCE', 'ITALY'),
+  PARTITION p2 VALUES ('INDIA', 'PAKISTAN') SUBPARTITIONS 2 STORE IN
+  (ts2)
+);
+```
+
+The partition `p2` explicitly defines the subpartition count in the partition description. Based on the definition, two subpartitions are created and stored in the tablespace named `(ts2)`. The subpartitions for partition `p1` will be stored in the tablespace named `(ts1)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | P1             | SYS0101           | TS1
+ SALES      | P1             | SYS0102           | TS1
+ SALES      | P1             | SYS0103           | TS1
+ SALES      | P2             | SYS0104           | TS2
+ SALES      | P2             | SYS0105           | TS2
+(5 rows)
+```
+
+## Example - LIST/HASH STORE IN...TABLESPACES
+
+The following example creates a list-partitioned table `(sales)` with partition `p1` consisting of three subpartitions stored explicitly in the tablespace `(ts2)`.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 3
+STORE IN (ts1)
+(
+  PARTITION p1 VALUES ('FRANCE', 'ITALY') TABLESPACE ts2
+);
+```
+
+The `SELECT` statement shows partition `p1`, consisting of three subpartitions stored in the tablespace `(ts2)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | P1             | SYS0101           | TS2
+ SALES      | P1             | SYS0102           | TS2
+ SALES      | P1             | SYS0103           | TS2
+(3 rows)
+```
+
+The following command adds a new partition `p2` to the `sales` table, five subpartitions will be created and distributed across the tablespace listed by the `STORE IN` clause.
+
+```text
+ALTER TABLE sales ADD PARTITION p2 VALUES ('US', 'CANADA') SUBPARTITIONS 5
+STORE IN (ts1);
+```
+
+A query of the `ALL_TAB_PARTITIONS` view shows the `sales` table with a partition named `p2`, with five subpartitions. The `STORE IN` clause distributes the subpartitions across a tablespace named `(ts1)`.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name, tablespace_name
+FROM ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' and partition_name =
+'P2' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name | tablespace_name
+------------+----------------+-------------------+-----------------
+ SALES      | P2             | SYS0105           | TS1
+ SALES      | P2             | SYS0106           | TS1
+ SALES      | P2             | SYS0107           | TS1
+ SALES      | P2             | SYS0108           | TS1
+ SALES      | P2             | SYS0109           | TS1
+(5 rows)
+```

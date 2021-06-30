@@ -1,0 +1,128 @@
+---
+title: "Using Partition Pruning"
+---
+
+<div id="using_partition_pruning" class="registered_link"></div>
+
+Advanced Server's query planner uses *partition* *pruning* to compute an efficient plan to locate a row (or rows) that matches the conditions specified in the `WHERE` clause of a `SELECT` statement. To successfully prune partitions from an execution plan, the `WHERE` clause must constrain the information that is compared to the partitioning key column specified when creating the partitioned table. When querying a:
+
+-   list-partitioned table, partition pruning is effective when the `WHERE` clause compares a literal value to the partitioning key using operators like equal (=) or `AND.`
+-   range-partitioned table, partition pruning is effective when the `WHERE` clause compares a literal value to a partitioning key using operators such as equal (=), less than (&lt;), or greater than (>).
+-   hash-partitioned table, partition pruning is effective when the `WHERE` clause compares a literal value to the partitioning key using an operator such as equal (=).
+
+The partition pruning mechanism uses two optimization techniques:
+
+-   Fast Pruning
+-   Constraint exclusion
+
+Partition pruning techniques limit the search for data to only those partitions in which the values for which you are searching might reside. Both pruning techniques remove partitions from a query's execution plan, increasing performance.
+
+The difference between the fast pruning and constraint exclusion is that fast pruning understands the relationship between the partitions in an Oracle-partitioned table, while constraint exclusion does not. For example, when a query searches for a specific value within a list-partitioned table, fast pruning can reason that only a specific partition may hold that value, while constraint exclusion must examine the constraints defined for *each* partition. Fast pruning occurs early in the planning process to reduce the number of partitions that the planner must consider, while constraint exclusion occurs late in the planning process.
+
+**Using Constraint Exclusion**
+
+The `constraint_exclusion` parameter controls constraint exclusion. The `constraint_exclusion` parameter may have a value of `on, off,` or `partition`. To enable constraint exclusion, the parameter must be set to *either* `partition` or `on`. By default, the parameter is set to `partition.`
+
+For more information about constraint exclusion, see:
+
+<https://www.postgresql.org/docs/current/static/ddl-partitioning.html>
+
+When constraint exclusion is enabled, the server examines the constraints defined for each partition to determine if that partition can satisfy a query.
+
+When you execute a `SELECT` statement that *does not* contain a `WHERE` clause, the query planner must recommend an execution plan that searches the entire table. When you execute a `SELECT` statement that *does* contain a `WHERE` clause, the query planner determines in which partition that row would be stored, and sends query fragments to that partition, pruning the partitions that could not contain that row from the execution plan. If you are not using partitioned tables, disabling constraint exclusion may improve performance.
+
+**Fast Pruning**
+
+Like constraint exclusion, fast pruning can only optimize queries that include a `WHERE` (or join) clause, and only when the qualifiers in the `WHERE` clause match a certain form. In both cases, the query planner will avoid searching for data within partitions that cannot possibly hold the data required by the query.
+
+Fast pruning is controlled by a boolean configuration parameter named `edb_enable_pruning.` If `edb_enable_pruning` is `ON`, Advanced Server will fast prune certain queries. If `edb_enable_pruning` is `OFF`, the server will disable fast pruning.
+
+!!! Note
+    Fast pruning cannot optimize queries against subpartitioned tables or optimize queries against range-partitioned tables that are partitioned on more than one column.
+
+For LIST-partitioned tables, Advanced Server can fast prune queries that contain a `WHERE` clause that constrains a partitioning column to a literal value. For example, given a LIST-partitioned table such as:
+
+```text
+CREATE TABLE sales_hist(..., country text, ...)
+PARTITION BY LIST(country)
+(
+    PARTITION americas VALUES('US', 'CA', 'MX'),
+    PARTITION europe VALUES('BE', 'NL', 'FR'),
+    PARTITION asia VALUES('JP', 'PK', 'CN'),
+    PARTITION others VALUES(DEFAULT)
+)
+```
+
+Fast pruning can reason about `WHERE` clauses such as:
+
+ `WHERE country = 'US'`
+
+ `WHERE country IS NULL;`
+
+Given the first `WHERE` clause, fast pruning would eliminate partitions `europe, asia,` and `others` because those partitions cannot hold rows that satisfy the qualifier: `WHERE country = 'US'.`
+
+Given the second `WHERE` clause, fast pruning would eliminate partitions `americas, europe`, and `asia` because those partitions cannot hold rows where `country IS NULL.`
+
+The operator specified in the `WHERE` clause must be an equal sign (=) or the equality operator appropriate for the data type of the partitioning column.
+
+For range-partitioned tables, Advanced Server can fast prune queries that contain a `WHERE` clause that constrains a partitioning column to a literal value, but the operator may be any of the following:
+
+ `>`
+
+ `>=`
+
+ `=`
+
+ `<=`
+
+ `<`
+
+Fast pruning will also reason about more complex expressions involving `AND` and `BETWEEN` operators, such as:
+
+```text
+WHERE size > 100 AND size <= 200
+WHERE size BETWEEN 100 AND 200
+```
+
+Fast pruning cannot prune based on expressions involving `OR` or `IN.` For example, when querying a RANGE-partitioned table, such as:
+
+```text
+CREATE TABLE boxes(id int, size int, color text)
+  PARTITION BY RANGE(size)
+(
+    PARTITION small VALUES LESS THAN(100),
+    PARTITION medium VALUES LESS THAN(200),
+    PARTITION large VALUES LESS THAN(300)
+)
+```
+
+Fast pruning can reason about `WHERE` clauses such as:
+
+ `WHERE size > 100     -- scan partitions 'medium' and 'large'`
+
+ `WHERE size >= 100    -- scan partitions 'medium' and 'large'`
+
+ `WHERE size = 100     -- scan partition 'medium'`
+
+ `WHERE size <= 100    -- scan partitions 'small' and 'medium'`
+
+ `WHERE size < 100     -- scan partition 'small'`
+
+ `WHERE size > 100 AND size < 199     -- scan partition 'medium'`
+
+ `WHERE size BETWEEN 100 AND 199      -- scan partition 'medium'`
+
+ `WHERE color = 'red' AND size = 100  -- scan 'medium'`
+
+ `WHERE color = 'red' AND (size > 100 AND size < 199) -- scan 'medium'`
+
+In each case, fast pruning requires that the qualifier must refer to a partitioning column and literal value (or `IS NULL/IS NOT NULL).`
+
+!!! Note
+    Fast pruning can also optimize `DELETE` and `UPDATE` statements containing `WHERE` clauses of the forms described above.
+
+<div class="toctree" maxdepth="3">
+
+example_partition_pruning
+
+</div>

@@ -1,0 +1,19 @@
+---
+title: "edb_audit_connect"
+---
+
+<div id="edb_audit_connect" class="registered_link"></div>
+
+**Parameter Type:** Enum
+
+**Default Value:** `failed`
+
+**Range:** `{none | failed | all}`
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Enables auditing of database connection attempts by users. To disable auditing of all connection attempts, set `edb_audit_connect` to `none`. To audit all failed connection attempts, set the value to `failed`. To audit all connection attempts, set the value to `all`.

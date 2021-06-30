@@ -1,0 +1,427 @@
+---
+title: "Installing EDB*Plus"
+---
+
+<div id="installing_edb_plus" class="registered_link"></div>
+
+You can use an RPM installer or a graphical installer to add EDB\*Plus to your Advanced Server installation.
+
+## Installation Prerequisites
+
+Before installing EDB\*Plus, you must first install Java (version 1.8 or later). On a Linux system, you can use the `yum` package manager to install Java. Open a terminal window, assume superuser privileges, and enter:
+
+-   On RHEL or CentOS 7:
+
+    ```text
+    # yum -y install java
+    ```
+
+-   On RHEL or CentOS 8:
+
+    ```text
+    # dnf -y install java
+    ```
+
+If you are using Windows, Java installers and instructions are available online at:
+
+ <http://www.java.com/en/download/manual.jsp>
+
+You must also have credentials that allow access to the EDB repository. For information about requesting credentials, visit:
+
+ <https://www.enterprisedb.com/user/login>
+
+After receiving your repository credentials:
+
+1.  Create the repository configuration file.
+2.  Modify the file, providing your user name and password.
+3.  Install EDB\*Plus.
+
+For detailed information about creating and using EDB repositories to install Advanced Server or its supporting components, see the *EDB Postgres Advanced Server Installation Guide* available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)
+
+## Installing EDB\*Plus on a CentOS Host
+
+You can use an RPM package to install EDB\*Plus on a CentOS host.
+
+-   To install the repository configuration file, assume superuser privileges, and invoke one of the following platform-specific commands:
+
+     On CentOS 7:
+
+    ```text
+    yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+    ```
+
+     On CentOS 8:
+
+    ```text
+    dnf -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+    ```
+
+-   Replace the `USERNAME:PASSWORD` variable in the following command with the username and password of a registered EDB user:
+
+    ```text
+    sed -i "s@<username>:<password>@USERNAME:PASSWORD@" /etc/yum.repos.d/edb.repo
+    ```
+
+-   Before installing EDB\*Plus, you must install the `epel-release` package:
+
+     On CentOS 7:
+
+    ```text
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    ```
+
+     On CentOS 8:
+
+    ```text
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    ```
+
+-   For CentOS 8, enable the PowerTools repository to satisfy package dependencies:
+
+    ```text
+    dnf config-manager --set-enabled PowerTools
+    ```
+
+-   The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`. After saving your changes to the configuration file, you can use the following command to install EDB\*Plus:
+
+      On CentOS 7:
+
+    ```text
+    yum -y install edb-asxx-edbplus
+    ```
+
+    On CentOS 8:
+
+    ```text
+    dnf -y install edb-asxx-edbplus
+    ```
+
+Where, `xx` is the Advanced Server version.
+
+When you install an RPM package that is signed by a source that is not recognized by your system, `yum` may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
+
+During the installation, `yum` may encounter a dependency that it cannot resolve. If it does, it will provide a list of the required dependencies that you must manually resolve.
+
+## Installing EDB\*Plus on a RHEL Host
+
+You can use an RPM package to install EDB\*Plus on a RHEL host.
+
+-   To install the repository configuration file, assume superuser privileges, and invoke one of the following platform-specific commands:
+
+     On RHEL 7:
+
+    ```text
+    yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+    ```
+
+     On RHEL 8:
+
+    ```text
+    dnf -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+    ```
+
+-   Replace the `USERNAME:PASSWORD` variable in the following command with the username and password of a registered EDB user:
+
+    ```text
+    sed -i "s@<username>:<password>@USERNAME:PASSWORD@" /etc/yum.repos.d/edb.repo
+    ```
+
+-   Before installing EDB\*Plus, you must install the `epel-release` package:
+
+     On RHEL 7:
+
+    ```text
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    ```
+
+     On RHEL 8:
+
+    ```text
+    dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+    ```
+
+-   Enable the repository:
+
+     On RHEL7, enable the `optional, extras`, and `HA` repositories to satisfy package dependencies:
+
+    ```text
+    subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"  --enable "rhel-ha-for-rhel-*-server-rpms"
+    ```
+
+     On RHEL 8, enable the `codeready-builder-for-rhel-8-*-rpms` repository to satisfy package dependencies:
+
+    ```text
+    ARCH=$( /bin/arch )
+
+    subscription-manager repos --enable "codeready-builder-for-rhel-8-${ARCH}-rpms"
+    ```
+
+-   The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`. After saving your changes to the configuration file, you can use the following command to install EDB\*Plus:
+
+    On RHEL 7:
+
+    ```text
+    yum -y install edb-asxx-edbplus
+    ```
+
+    On RHEL 8:
+
+    ```text
+    dnf -y install edb-asxx-edbplus
+    ```
+
+Where, `xx` is the Advanced Server version.
+
+When you install an RPM package that is signed by a source that is not recognized by your system, `yum` may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
+
+During the installation, `yum` may encounter a dependency that it cannot resolve. If it does, it will provide a list of the required dependencies that you must manually resolve.
+
+## Installing EDB\*Plus on a CentOS/RHEL 7 ppc64le Host
+
+You can use an RPM package to install EDB\*Plus on a CentOS or RHEL 7 ppc64le host.
+
+-   To install the IBM Advance Toolchain repository:
+
+    On CentOS or RHEL 7 ppc64le:
+
+    ```text
+    rpm --import https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHEL7/gpg-pubkey-6976a827-5164221b
+    ```
+
+    The repository configuration file is named `advance-toolchain.repo`. The file resides in `/etc/yum.repos.d`.
+
+-   After creating the `advance-toolchain.repo` file, the `enabled` parameter is set to `1` by default.
+
+    ```text
+    [advance-toolchain]
+    name=Advance Toolchain IBM FTP
+    baseurl=https://public.dhe.ibm.com/software/server/POWER/Linux/
+    toolchain/at/redhat/RHEL7
+    failovermethod=priority
+    enabled=1
+    gpgcheck=1
+    gpgkey=ftp://public.dhe.ibm.com/software/server/POWER/Linux/
+    toolchain/at/redhat/RHELX/gpg-pubkey-6976a827-5164221b
+    ```
+
+-   To install the EDB repository configuration file, assume superuser privileges and invoke thefollowing command:
+
+    On CentOS or RHEL 7 ppc64le:
+
+    ```text
+    yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
+    ```
+
+-   Replace the `USERNAME:PASSWORD` variable in the following command with the username and password of a registered EDB user:
+
+    ```text
+    sed -i "s@<username>:<password>@USERNAME:PASSWORD@" /etc/yum.repos.d/edb.repo
+    ```
+
+-   Before installing EDB\*Plus, you must install the `epel-release` package:
+
+    On CentOS or RHEL 7 ppc64le:
+
+    ```text
+    yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+    ```
+
+-   Enable the repository:
+
+    On RHEL7, enable the `optional, extras`, and `HA` repositories to satisfy package dependencies:
+
+    ```text
+    subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"  --enable "rhel-ha-for-rhel-*-server-rpms"
+    ```
+
+-   The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`. After saving your changes to the configuration file, you can use the following command to install EDB\*Plus:
+
+    ```text
+    yum -y install edb-asxx-edbplus
+    ```
+
+Where, `xx` is the Advanced Server version.
+
+When you install an RPM package that is signed by a source that is not recognized by your system, `yum` may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
+
+During the installation, `yum` may encounter a dependency that it cannot resolve. If it does, it will provide a list of the required dependencies that you must manually resolve.
+
+## Installing EDB\*Plus on a Debian or Ubuntu Host
+
+To install EDB\*Plus on a Debian or Ubuntu host, you must have credentials that allow access to the EDB repository. To request credentials for the repository, visit:
+
+ <https://www.enterprisedb.com/repository-access-request>
+
+The following steps will walk you through using the EDB apt repository to install a debian package. When using the commands, replace the `username` and `password` with the credentials provided by EDB.
+
+-   Assume superuser privileges:
+
+    ```text
+    sudo su -
+    ```
+
+-   Configure the EDB repository:
+
+     On Debian 9, Ubuntu 18, and Ubuntu 20:
+
+    ```text
+    sh -c 'echo "deb https://USERNAME:PASSWORD@apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+    ```
+
+     On Debian 10:
+
+     a.  Set up the EDB repository:
+
+    ```text
+    sh -c 'echo "deb [arch=amd64] https://apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+    ```
+
+     b.  Substitute your EDB credentials for the `username` and `password` placeholders in the following command:
+
+    ```text
+    sh -c 'echo "machine apt.enterprisedb.com login <USERNAME> password <PASSWORD>" > /etc/apt/auth.conf.d/edb.conf'
+    ```
+
+-   Add support to your system for secure APT repositories:
+
+    ```text
+    apt-get -y install apt-transport-https
+    ```
+
+-   Add the EDB signing key:
+
+    ```text
+    wget -q -O - https://apt.enterprisedb.com/edb-deb.gpg.key  | sudo apt-key add -
+    ```
+
+-   Update the repository metadata:
+
+    ```text
+    apt-get update
+    ```
+
+-   Install Debian package:
+
+    ```text
+    apt-get -y install edb-asxx-edbplus
+    ```
+
+Where, `xx` is the Advanced Server version.
+
+## Configuring an RPM Installation
+
+After performing an RPM installation of EDB\*Plus, you must set the values of environment variables that allow EDB\*Plus to locate your Java installation. Use the following commands to set variable values:
+
+```text
+export JAVA_HOME=<path_to_java>
+export PATH=<path_to_java>/bin:$PATH
+```
+
+By default, the `pg_hba.conf` file for the RPM installer enforces `IDENT` authentication. Before invoking EDB\*Plus, you must either modify the `pg_hba.conf` file, changing the authentication method to a form other than `IDENT` (and restarting the server), or perform the following steps to ensure that an `IDENT` server is accessible:
+
+You must confirm that an `identd` server is installed and running. You can use the `yum` package manager to install an `identd` server by invoking the command:
+
+-   On RHEL or CentOS 7:
+
+    ```text
+    yum -y install xinetd authd
+    ```
+
+-   On RHEL or CentOS 8:
+
+    ```text
+    dnf -y install xinetd authd
+    ```
+
+The command should create a file named `/etc/xinetd.d/auth` that contains:
+
+```text
+service auth
+{
+     disable = yes
+     socket_type = stream
+wait =no
+user = ident
+cps = 4096 10
+instances = UNLIMITED
+server = /usr/sbin/in.authd server_args = -t60 --xerror –os
+}
+```
+
+!!! Note
+    If the file includes a `-E` argument at the end of the server arguments, please erase `-E`.
+
+Then, to start the `identd` server, invoke the following commands:
+
+```text
+systemctl enable xinetd
+systemctl start xinetd
+```
+
+Open the `pg_ident.conf` file and create a user mapping:
+
+```text
+# map_name    system_username     postgres_username
+  edbas         enterprisedb        enterprisedb
+```
+
+Where:
+
+-   The name specified in the `map_name` column is a user-defined name that will identify the mapping in the `pg_hba.conf` file.
+-   The name specified in the `system_username` column is `enterprisedb`.
+-   The name specified in the `postgres_username` column is `enterprisedb`.
+
+Then, open the `pg_hba.conf` file and modify the `IDENT` entries:
+
+-   If you are using an IPv4 local connection, modify the file entry to read:
+
+     `host all all 127.0.0.0/0 ident map=edbas`
+
+-   If you are using an IPv6 local connection, modify the file entry to read:
+
+     `host all all ::1/128 ident map=edbas`
+
+You must restart the Advanced Server service before invoking EDB\*Plus. For detailed information about controlling the Advanced Server service, see the *EDB Postgres Advanced Server Installation Guide*, available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)
+
+## Using the Graphical Installer
+
+Graphical installers for EDB\*Plus are available via StackBuilder Plus; you can access StackBuilder Plus through your Windows or Linux start menu. After opening StackBuilder Plus and selecting the installation for which you wish to install EDB\*Plus, expand the component selection screen tree control to select and download the EDB\*Plus installer.
+
+![The EDBPlus Welcome window*](images/edb_plus_welcome.png)
+
+<div style="text-align: center"> Fig. 1: The EDB*Plus Welcome window </div>
+
+The EDB\*Plus installer welcomes you to the setup wizard, as shown in the figure below.
+
+![The Installation Directory window](images/installation_directory.png)
+
+<div style="text-align: center"> Fig. 2: The Installation Directory window </div>
+
+Use the `Installation Directory` field to specify the directory in which you wish to install the EDB\*Plus software. Then, click `Next` to continue.
+
+![The Advanced Server Installation Details window](images/advanced_server_installation_details.png)
+
+<div style="text-align: center"> Fig. 3: The Advanced Server Installation Details window </div>
+
+Use fields on the `EDB Postgres Advanced Server Installation Details` window to identify the location of the Advanced Server host:
+
+-   Use the `Host` field to identify the system on which Advanced Server resides.
+-   Use the `Port` field to identify the listener port that Advanced Server monitors for client connections.
+
+Then, click `Next` to continue.
+
+![The Ready to Install window](images/ready_to_install.png)
+
+<div style="text-align: center"> Fig. 4: The Ready to Install window </div>
+
+The `Ready to Install` window notifies you when the installer has all of the information needed to install EDB\*Plus on your system. Click `Next` to install EDB\*Plus.
+
+![The installation is complete](images/installation_complete.png)
+
+<div style="text-align: center"> Fig. 5: The installation is complete </div>
+
+The installer notifies you when the setup wizard has completed the EDB\*Plus installation. Click `Finish` to exit the installer.

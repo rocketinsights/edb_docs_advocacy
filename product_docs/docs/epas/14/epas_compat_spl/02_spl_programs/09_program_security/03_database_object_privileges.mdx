@@ -1,0 +1,7 @@
+---
+title: "Database Object Privileges"
+---
+
+<div id="database_object_privileges" class="registered_link"></div>
+
+Once an SPL program begins execution, any attempt to access a database object from within the program results in a check to ensure the current user has the authorization to perform the intended action against the referenced object. Privileges on database objects are bestowed and removed using the `GRANT` and `REVOKE` commands, respectively. If the current user attempts unauthorized access on a database object, then the program will throw an exception. See [Exception Handling](../../05_control_structures/07_exception_handling/#exception_handling) for information about exception handling.

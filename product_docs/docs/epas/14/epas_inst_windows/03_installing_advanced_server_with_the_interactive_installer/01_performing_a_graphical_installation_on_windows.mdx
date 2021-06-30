@@ -1,0 +1,249 @@
+---
+title: "Performing a Graphical Installation on Windows"
+---
+
+<div id="performing_a_graphical_installation_on_windows" class="registered_link"></div>
+
+A graphical installation is a quick and easy way to install Advanced Server 14 on a Windows system. Use the wizard's dialogs to specify information about your system and system usage; when you have completed the dialogs, the installer performs an installation based on the selections made during the setup process.
+
+To invoke the wizard, you must have administrator privileges. Assume administrator privileges, and double-click the `edb-as14-server-14.x.x-x-windows-x64` executable file.
+
+!!! Note
+    To install Advanced Server on some versions of Windows, you may be required to right click on the file icon and select `Run as Administrator` from the context menu to invoke the installer with `Administrator` privileges.
+
+![The Advanced Server installer Welcome window](../images/advanced_server_installer_welcome.png)
+
+<div style="text-align: center"> Fig. 1: The Advanced Server installer Welcome window </div>
+
+Click `Next` to continue.
+
+The EnterpriseDB `License Agreement` opens.
+
+![The EnterpriseDB License Agreement](../images/enterprisedb_license_agreement.png)
+
+<div style="text-align: center"> Fig. 2: The EnterpriseDB License Agreement </div>
+
+Carefully review the license agreement before highlighting the appropriate radio button; click `Next` to continue.
+
+The `Installation Directory` window opens.
+
+![The Installation Directory window](../images/installation_directory.png)
+
+<div style="text-align: center"> Fig. 3: The Installation Directory window </div>
+
+By default, the Advanced Server installation directory is:
+
+```text
+C:\Program Files\edb\as14
+```
+
+You can accept the default installation location, and click `Next` to continue, or optionally click the `File Browser` icon to open the `Browse For Folder` dialog to choose an alternate installation directory.
+
+!!! Note
+    The `data` directory of a production database should not be stored on an NFS file system.
+
+![The Select Components window](../images/select_components.png)
+
+<div style="text-align: center"> Fig. 4: The Select Components window </div>
+
+The `Select Components` window contains a list of optional components that you can install with the Advanced Server `Setup` wizard. You can omit a module from the Advanced Server installation by deselecting the box next to the components name.
+
+The `Setup` wizard can install the following components while installing Advanced Server 14:
+
+**EDB Postgres Advanced Server**
+
+Select the `EDB Postgres Advanced Server` option to install Advanced Server 14.
+
+**pgAdmin 4**
+
+Select the `pgAdmin 4` option to install the pgAdmin 4 client. pgAdmin 4 provides a powerful graphical interface for database management and monitoring.
+
+**StackBuilder Plus**
+
+The `StackBuilder Plus` utility is a graphical tool that can update installed products, or download and add supporting modules (and the resulting dependencies) after your Advanced Server setup and installation completes. See [Using StackBuilder Plus](03_using_stackbuilder_plus/#using_stackbuilder_plus) for more information about StackBuilder Plus.
+
+**Command Line Tools**
+
+The `Command Line Tools` option installs command line tools and supporting client libraries including:
+
+-   libpq
+-   psql
+-   EDB\*Loader
+-   ecpgPlus
+-   pg_basebackup, pg_dump, and pg_restore
+-   pg_bench
+-   and more.
+
+!!! Note
+    The `Command Line Tools` are required if you are installing Advanced Server or pgAdmin 4.
+
+After selecting the components you wish to install, click `Next` to open the `Additional Directories` window.
+
+![The Additional Directories window](../images/additional_directories.png)
+
+<div style="text-align: center"> Fig. 5: The Additional Directories window </div>
+
+By default, the Advanced Server `data` files are saved to:
+
+```text
+C:\Program Files\edb\as14\data
+```
+
+The default location of the Advanced Server `Write-Ahead Log (WAL) Directory` is:
+
+```text
+C:\Program Files\edb\as14\data\pg_wal
+```
+
+Advanced Server uses write-ahead logs to promote transaction safety and speed transaction processing; when you make a change to a table, the change is stored in shared memory and a record of the change is written to the write-ahead log. When you perform a `COMMIT`, Advanced Server writes contents of the write-ahead log to disk.
+
+Accept the default file locations, or use the `File Browser` icon to select an alternate location; click `Next` to continue to the `Advanced Server Dialect` window.
+
+![The Advanced Server Dialect window](../images/advanced_server_dialect.png)
+
+<div style="text-align: center"> Fig. 6: The Advanced Server Dialect window </div>
+
+Use the drop-down listbox on the `Advanced Server Dialect` window to choose a server dialect. The server dialect specifies the compatibility features supported by Advanced Server.
+
+By default, Advanced Server installs in `Compatible with Oracle` mode; you can choose between `Compatible with Oracle` and `Compatible with PostgreSQL` installation modes.
+
+**Compatible with Oracle**
+
+If you select `Compatible with Oracle`, the installation will include the following features:
+
+-   Data dictionary views that is compatible with Oracle databases.
+-   Oracle data type conversions.
+-   Date values displayed in a format compatible with Oracle syntax.
+-   Support for Oracle-styled concatenation rules (if you concatenate a string value with a `NULL` value, the returned value is the value of the string).
+-   Schemas (`dbo` and `sys`) compatible with Oracle databases added to the `SEARCH_PATH`.
+-   Support for the following Oracle built-in packages:
+
+| Package          | Functionality compatible with Oracle Databases                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dbms_alert`     | Provides the capability to register for, send, and receive alerts.                                                                                                           |
+| `dbms_job`       | Provides the capability for the creation, scheduling, and managing of jobs.                                                                                                  |
+| `dbms_lob`       | Provides the capability to manage on large objects.                                                                                                                          |
+| `dbms_output`    | Provides the capability to send messages to a message buffer, or get messages from the message buffer.                                                                       |
+| `dbms_pipe`      | Provides the capability to send messages through a pipe within or between sessions connected to the same database cluster.                                                   |
+| `dbms_rls`       | Enables the implementation of Virtual Private Database on certain Advanced Server database objects.                                                                          |
+| `dbms_sql`       | Provides an application interface to the EDB dynamic SQL functionality.                                                                                                      |
+| `dbms_utility`   | Provides various utility programs.                                                                                                                                           |
+| `dbms_aqadm`     | Provides supporting procedures for Advanced Queueing functionality.                                                                                                          |
+| `dbms_aq`        | Provides message queueing and processing for Advanced Server.                                                                                                                |
+| `dbms_profiler`  | Collects and stores performance information about the PL/pgSQL and SPL statements that are executed during a performance profiling session.                                  |
+| `dbms_random`    | Provides a number of methods to generate random values.                                                                                                                      |
+| `dbms_redact`    | Enables the redacting or masking of data that is returned by a query.                                                                                                        |
+| `dbms_lock`      | Provides support for the `DBMS_LOCK.SLEEP` procedure.                                                                                                                        |
+| `dbms_scheduler` | Provides a way to create and manage jobs, programs, and job schedules.                                                                                                       |
+| `dbms_crypto`    | Provides functions and procedures to encrypt or decrypt RAW, BLOB or CLOB data. You can also use `DBMS_CRYPTO` functions to generate cryptographically strong random values. |
+| `dbms_mview`     | Provides a way to manage and refresh materialized views and their dependencies.                                                                                              |
+| `dbms_session`   | Provides support for the `DBMS_SESSION.SET_ROLE` procedure.                                                                                                                  |
+| `utl_encode`     | Provides a way to encode and decode data.                                                                                                                                    |
+| `utl_http`       | Provides a way to use the HTTP or HTTPS protocol to retrieve information found at an URL.                                                                                    |
+| `utl_file`       | Provides the capability to read from, and write to files on the operating system’s file system.                                                                              |
+| `utl_smtp`       | Provides the capability to send e-mails over the Simple Mail Transfer Protocol (SMTP).                                                                                       |
+| `utl_mail`       | Provides the capability to manage e-mail.                                                                                                                                    |
+| `utl_url`        | Provides a way to escape illegal and reserved characters within an URL.                                                                                                      |
+| `utl_raw`        | Provides a way to manipulate or retrieve the length of raw data types.                                                                                                       |
+
+This is not a comprehensive list of the compatibility features for Oracle included when Advanced Server is installed in `Compatible with Oracle` mode; for more information, see the *Database Compatibility for Oracle Developers Built-in Package Guide* available from the EDB website at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/epas_compat_bip_guide/)
+
+If you choose to install in `Compatible with Oracle` mode, the Advanced Server superuser name is `enterprisedb`.
+
+**Compatible with PostgreSQL**
+
+If you select `Compatible with PostgreSQL`, Advanced Server will exhibit compatibility with PostgreSQL version 14. If you choose to install in `Compatible with PostgreSQL` mode, the default Advanced Server superuser name is `postgres`.
+
+For detailed information about PostgreSQL functionality, visit the official PostgreSQL website at:
+
+<http://www.postgresql.org>
+
+After specifying a configuration mode, click `Next` to continue to the `Password` window.
+
+![The Password window](../images/password_window.png)
+
+<div style="text-align: center"> Fig. 7: The Password window </div>
+
+Advanced Server uses the password specified on the `Password` window for the database superuser. The specified password must conform to any security policies existing on the Advanced Server host.
+
+After you enter a password in the `Password` field, confirm the password in the `Retype Password` field, and click `Next` to continue.
+
+The `Additional Configuration` window opens.
+
+![The Additional Configuration window](../images/additional_configuration.png)
+
+<div style="text-align: center"> Fig. 8: The Additional Configuration window </div>
+
+Use the fields on the `Additional Configuration` window to specify installation details:
+
+-   Use the `Port` field to specify the port number that Advanced Server should listen to for connection requests from client applications. The default is `5444`.
+-   If the `Locale` field is set to `[Default locale]`, Advanced Server uses the system locale as the working locale. Use the drop-down listbox next to `Locale` to specify an alternate locale for Advanced Server.
+-   By default, the `Setup` wizard installs corresponding sample data for the server dialect specified by the compatibility mode `(Oracle` or `PostgreSQL)`. Clear the check box next to `Install sample tables and procedures` if you do not wish to have sample data installed.
+
+After verifying the information on the `Additional Configuration` window, click `Next` to open the `Dynatune Dynamic Tuning: Server Utilization` window.
+
+The graphical `Setup` wizard facilitates performance tuning via the Dynatune Dynamic Tuning feature. Dynatune functionality allows Advanced Server to make optimal usage of the system resources available on the host machine on which it is installed.
+
+![The Dynatune Dynamic Tuning: Server Utilization window](../images/dynatune_dynamic_tuning_server_utilization.png)
+
+<div style="text-align: center"> Fig. 9: The Dynatune Dynamic Tuning: Server Utilization window </div>
+
+The `edb_dynatune` configuration parameter determines how Advanced Server allocates system resources. Use the radio buttons on the `Server Utilization` window to set the initial value of the `edb_dynatune` configuration parameter:
+
+-   Select `Development` to set the value of `edb_dynatune` to `33`. A low value dedicates the least amount of the host machine’s resources to the database server. This is a good choice for a development machine.
+-   Select `General Purpose` to set the value of `edb_dynatune` to `66`. A mid-range value dedicates a moderate amount of system resources to the database server. This would be a good setting for an application server with a fixed number of applications running on the same host as Advanced Server.
+-   Select `Dedicated` to set the value of `edb_dynatune` to `100`. A high value dedicates most of the system resources to the database server. This is a good choice for a dedicated server host.
+
+After the installation is complete, you can adjust the value of `edb_dynatune` by editing the `postgresql.conf` file, located in the `data` directory of your Advanced Server installation. After editing the `postgresql.conf` file, you must restart the server for your changes to take effect.
+
+Select the appropriate setting for your system, and click `Next` to continue to the `Dynatune Dynamic Tuning: Workload Profile` window.
+
+![The Dynatune Dynamic Tuning: Workload Profile window](../images/dynatune_dynamic_tuning_workload_profile.png)
+
+<div style="text-align: center"> Fig. 10: The Dynatune Dynamic Tuning: Workload Profile window </div>
+
+Use the radio buttons on the `Workload Profile` window to specify the initial value of the `edb_dynatune_profile` configuration parameter. The `edb_dynatune_profile` parameter controls performance-tuning aspects based on the type of work that the server performs.
+
+-   Select `Transaction Processing (OLTP systems)` to specify an `edb_dynatune_profile` value of `oltp`. Recommended when Advanced Server is supporting heavy online transaction processing.
+-   Select `General Purpose (OLTP and reporting workloads)` to specify an `edb_dynatune_profile` value of `mixed`. Recommended for servers that provide a mix of transaction processing and data reporting.
+-   Select `Reporting (Complex queries or OLAP workloads)` to specify an `edb_dynatune_profile` value of `reporting`. Recommended for database servers used for heavy data reporting.
+
+After the installation is complete, you can adjust the value of `edb_dynatune_profile` by editing the `postgresql.conf` file, located in the `data` directory of your Advanced Server installation. After editing the `postgresql.conf` file, you must restart the server for your changes to take effect.
+
+For more information about `edb_dynatune` and other performance-related topics, see the *EDB Postgres Advanced Server Guide* available from the EDB website at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)
+
+Click `Next` to continue.
+
+By default, Advanced Server is configured to start the service when the system boots. The `Pre Installation Summary` opens.
+
+![The Pre Installation Summary](../images/pre_installation_summary.png)
+
+<div style="text-align: center"> Fig. 11: The Pre Installation Summary </div>
+
+The `Pre Installation Summary` provides an overview of the options specified during the `Setup` process. Review the options before clicking `Next`; click `Back` to navigate back through the dialogs and update any options.
+
+The `Ready to Install` window confirms that the installer has the information it needs about your configuration preferences to install Advanced Server. Click `Next` to continue.
+
+![The Ready to Install window](../images/ready_to_install.png)
+
+<div style="text-align: center"> Fig. 12: The Ready to Install window </div>
+
+![Installing Advanced Server](../images/installing_advanced_server.png)
+
+<div style="text-align: center"> Fig. 13: Installing Advanced Server </div>
+
+As each supporting module is unpacked and installed, the module’s installation is confirmed with a progress bar.
+
+Before the `Setup` wizard completes the Advanced Server installation, it offers to `Launch StackBuilder Plus at exit?`
+
+![The Setup wizard offers to Launch StackBuilder Plus at exit](../images/setup_wizard.png)
+
+<div style="text-align: center"> Fig. 14: The Setup wizard offers to Launch StackBuilder Plus at exit </div>
+
+You can clear the `StackBuilder Plus` check box and click `Finish` to complete the Advanced Server installation, or accept the default and proceed to StackBuilder Plus.
+
+EDB Postgres StackBuilder Plus is included with the installation of Advanced Server and its core supporting components. StackBuilder Plus is a graphical tool that can update installed products, or download and add supporting modules (and the resulting dependencies) after your Advanced Server setup and installation completes. See [Using StackBuilder Plus](03_using_stackbuilder_plus/#using_stackbuilder_plus) for more information about StackBuilder Plus.

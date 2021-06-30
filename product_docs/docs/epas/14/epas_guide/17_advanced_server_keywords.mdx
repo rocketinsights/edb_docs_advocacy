@@ -1,0 +1,86 @@
+---
+title: "Advanced Server Exceptions"
+---
+
+<div id="advanced_server_exceptions" class="registered_link"></div>
+
+The following table lists the pre-defined exceptions, the SQLstate values, associated redwood error code, and description of the exceptions.
+
+| **Exception Name**            | **SQLState** | **Redwood Error Code** | **Description**                                                                                                                                                |
+| ----------------------------- | ------------ | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `value_error`                 | 22000        | -6502                  | The exception occurs when the conversion of a character string to a number fails.                                                                              |
+| `invalid_number`              | 22000        | -6502                  | The exception is raised in PL statement, when the conversion of a character string to number fails.                                                            |
+| `datetime_value_out_of_range` | 22008        | -1863                  | The exception occurs while writing a field in date format, which is outside the valid range.                                                                   |
+| `divide_by_zero`              | 22012        | -1476                  | The exception occurs when a program attempts to divide a number by zero.                                                                                       |
+| `zero_divide`                 | 22012        | -1476                  | The exception occurs when a program attempts to divide a number by zero.                                                                                       |
+| `dup_val_on_index`            | 23505        | -1                     | The exception occurs when a program attempts to store duplicate values in a column that is constrained by a unique index.                                      |
+| `invalid_cursor`              | 34000        | -1001                  | The exception occurs when a program attempts a cursor operation on an invalid cursor, such as closing an unopened cursor.                                      |
+| `cursor_already_open`         | 42P03        | -6511                  | The exception occurs when a program attempts to open an already open cursor.                                                                                   |
+| `collection_is_null`          | P1403        | -6531                  | The exception occurs when a program attempts to assign values to the elements of nested table or varray that are uninitialized.                                |
+| `subscript_beyond_count`      | P1404        | -6533                  | The exception occurs when a program attempts to reference a nested table or varray using an index number larger than the number of elements in the collection. |
+| `subscript_outside_limit`     | P1405        | -6532                  | The exception occurs when a program attempts to reference a nested table or varray element using an index number that is outside the range.                    |
+
+**Redwood Built-in Package Exceptions**
+
+| **DBMS_CRYPTO Package**   |             |        |                                                                                                            |
+| ------------------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| `ciphersuiteinvalid`      | 00009       | -28827 | The exception occurs when the cipher suite is not defined.                                                 |
+| `ciphersuitenull`         | 00009       | -28829 | The exception occurs when no value is specified for the cipher suite or contains a `NULL` value.           |
+| `keybadsize`              | 00009       | 0      | The exception occurs when the specified key size is bad.                                                   |
+| `keynull`                 | 00009       | -28239 | The exception occurs when the key is not specified.                                                        |
+| **UTL_FILE Package**      |             |        |                                                                                                            |
+| `invalid_filehandle`      | P0001 00009 | -29282 | The exception occurs when file handle is invalid.                                                          |
+| `invalid_maxlinesize`     | P0001 00009 | -29287 | The exception occurs when the max line size is invalid or the max line size value is not within the range. |
+| `invalid_mode`            | P0001 00009 | -29281 | The exception occurs when the `open_mode` parameter in `FOPEN` is invalid.                                 |
+| `invalid_operation`       | P0001 00009 | -29283 | The exception occurs when the file could not be opened or used upon request.                               |
+| `invalid_path`            | P0001 00009 | -29280 | The exception occurs when the file location or filename is invalid.                                        |
+| `read_error`              | P0001 00009 | -29284 | The exception occurs when the operating system error occurred during the read operation.                   |
+| `write_error`             | P0001 00009 | -29285 | The exception occurs when the operating system error occurred during the write operation.                  |
+| **UTL_HTTP Package**      |             |        |                                                                                                            |
+| `end_of_body`             | P0001 00009 | -29266 | The exception occurs when the end of HTTP response body is reached.                                        |
+| **UTL_URL Package**       |             |        |                                                                                                            |
+| `bad_fixed_width_charset` | 00009       | -29274 | The exception occurs when the fixed-width multibyte character is not allowed as a URL character set.       |
+| `bad_url`                 | P0001 00009 | -29262 | The exception occurs when the URL includes badly formed escape code sequences.                             |
+
+<div id="advanced_server_keywords" class="registered_link"></div>
+
+## Advanced Server Keywords
+
+A keyword is a word that is recognized by the Advanced Server parser as having a special meaning or association. You can use the `pg_get_keywords()` function to retrieve an up-to-date list of the Advanced Server keywords:
+
+```text
+acctg=#
+acctg=# SELECT * FROM pg_get_keywords();
+        word         | catcode |          catdesc
+---------------------+---------+---------------------------------
+ abort               | U       | unreserved
+ absolute            | U       | unreserved
+ access              | U       | unreserved
+...
+```
+
+`pg_get_keywords` returns a table containing the keywords recognized by Advanced Server:
+
+-   The `word` column displays the keyword.
+-   The `catcode` column displays a category code.
+-   The `catdesc` column displays a brief description of the category to which the keyword belongs.
+
+Note that any character can be used in an identifier if the name is enclosed in double quotes. You can selectively query the `pg_get_keywords()` function to retrieve an up-to-date list of the Advanced Server keywords that belong to a specific category:
+
+```text
+SELECT * FROM pg_get_keywords() WHERE catcode = 'code';
+```
+
+Where `code` is:
+
+`R` - The word is reserved. Reserved keywords may never be used as an identifier, they are reserved for use by the server.
+
+`U` - The word is unreserved. Unreserved words are used internally in some contexts, but may be used as a name for a database object.
+
+`T` - The word is used internally, but may be used as a name for a function or type.
+
+`C` - The word is used internally, and may not be used as a name for a function or type.
+
+For more information about Advanced Server identifiers and keywords, see to the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-syntax-lexical.html>

@@ -1,0 +1,21 @@
+---
+title: "GET_STORAGE_LIMIT"
+---
+
+The `GET_STORAGE_LIMIT` function returns the limit on the largest allowable large object.
+
+```text
+<size> INTEGER GET_STORAGE_LIMIT(<lob_loc> BLOB)
+
+<size> INTEGER GET_STORAGE_LIMIT(<lob_loc> CLOB)
+```
+
+**Parameters**
+
+`size`
+
+ Maximum allowable size of a large object in this database.
+
+`lob_loc`
+
+ This parameter is ignored, but is included for compatibility.

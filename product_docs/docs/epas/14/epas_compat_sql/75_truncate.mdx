@@ -1,0 +1,45 @@
+---
+title: "TRUNCATE"
+---
+
+<div id="truncate" class="registered_link"></div>
+
+**Name**
+
+`TRUNCATE` -- empty a table.
+
+**Synopsis**
+
+```text
+TRUNCATE TABLE <name> [DROP STORAGE]
+```
+
+**Description**
+
+`TRUNCATE` quickly removes all rows from a table. It has the same effect as an unqualified `DELETE` but since it does not actually scan the table, it is faster. This is most useful on large tables.
+
+The `DROP STORAGE` clause is accepted for compatibility, but is ignored.
+
+**Parameters**
+
+`name`
+
+ The name (optionally schema-qualified) of the table to be truncated.
+
+**Notes**
+
+`TRUNCATE` cannot be used if there are foreign-key references to the table from other tables. Checking validity in such cases would require table scans, and the whole point is not to do one.
+
+`TRUNCATE` will not run any user-defined `ON DELETE` triggers that might exist for the table.
+
+**Examples**
+
+The following command truncates a table named `accounts`:
+
+```text
+TRUNCATE TABLE accounts;
+```
+
+**See Also**
+
+[DROP VIEW](62_drop_view/#drop_view), [DELETE](44_delete/#delete)

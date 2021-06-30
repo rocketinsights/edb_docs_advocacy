@@ -1,0 +1,84 @@
+---
+title: "Example - CREATING UNIQUE INDEX on PARTITION TABLE"
+---
+
+<div id="example_partition_by_range_subpartition_by_list" class="registered_link"></div>
+
+For unique-index partitioned tables, you can use the range, list, or hash partitioning method. To create a unique `ROWID` for the partitioned table, you must set the parameter `default_with_rowids = true`.
+
+The following example creates a partitioned table `(sales)` using the `PARTITION BY LIST` clause. The `sales` table stores information in three partitions (`europe, asia`, and `americas`).
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA') 
+) 
+WITH(ROWIDS=TRUE);
+```
+
+The table is partitioned by the value specified in the `country` column.
+
+```text
+edb=# SELECT partition_name, high_value from ALL_TAB_PARTITIONS;
+ partition_name |     high_value      
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+(3 rows)
+```
+
+Now insert values into the `sales` table. 
+
+```text
+INSERT INTO sales VALUES (10, '9519a', 'FRANCE', '18-Aug-2012', '650000');
+INSERT INTO sales VALUES (10, '9519b', 'ITALY', '20-Aug-2012', '700000');
+```
+
+The following query shows that a unique index is created for the `sales` table.
+
+```text
+edb=# SELECT oid, relname, relhasindex from pg_class where relname='sales';
+  oid  | relname | relhasindex 
+-------+---------+-------------
+ 16557 | sales   | f
+(1 row)
+```
+
+Querying the contents of the `sales_europe` confirms that the unique index is created for the table.
+
+```text
+edb=# SELECT oid, relname, relhasindex from pg_class where relname='sales_europe';
+  oid  |   relname    | relhasindex 
+-------+--------------+-------------
+ 16561 | sales_europe | t
+(1 row)
+
+edb=# SELECT * from pg_index where indrelid='16561';
+ indexrelid | indrelid | indnatts | indnkeyatts | indisunique | indisprimary | indisexclusion | indimmediate | indisclustered | indisvalid | indcheckxmin | indisready | indislive | indisreplident |
+ indkey | indcollation | indclass | indoption | indexprs | indpred 
+------------+----------+----------+-------------+-------------+--------------+----------------+--------------+----------------+------------+--------------+------------+-----------+----------------+
+--------+--------------+----------+-----------+----------+---------
+      16565 |    16561 |        1 |           1 | t           | f            | f              | t            | f              | t          | f            | t          | t         | f              |
+ 1      | 0            | 3124     | 0         |          | 
+(1 row)
+```
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,31 @@
+---
+title: "Upgrading an Installation With pg_upgrade"
+---
+
+<div id="upgrading_an_installation_with_pg_upgrade" class="registered_link"></div>
+
+While minor upgrades between versions are fairly simple and require only the installation of new executables, past major version upgrades has been both expensive and time consuming. `pg_upgrade` facilitates migration between any version of Advanced Server (version 9.0 or later), and any subsequent release of Advanced Server that is supported on the same platform.
+
+Without `pg_upgrade`, to migrate from an earlier version of Advanced Server to Advanced Server 14, you must export all of your data using `pg_dump`, install the new release, run `initdb` to create a new cluster, and then import your old data.
+
+*pg_upgrade can reduce both the amount of time required and the disk space required for many major-version upgrades.*
+
+The `pg_upgrade` utility performs an in-place transfer of existing data between Advanced Server and any subsequent version.
+
+Several factors determine if an in-place upgrade is practical:
+
+-   The on-disk representation of user-defined tables must not change between the original version and the upgraded version.
+-   The on-disk representation of data types must not change between the original version and the upgraded version.
+-   To upgrade between major versions of Advanced Server with `pg_upgrade`, both versions must share a common binary representation for each data type. Therefore, you cannot use `pg_upgrade` to migrate from a 32-bit to a 64-bit Linux platform.
+
+Before performing a version upgrade, `pg_upgrade` will verify that the two clusters (the old cluster and the new cluster) are compatible.
+
+If the upgrade involves a change in the on-disk representation of database objects or data, or involves a change in the binary representation of data types, `pg_upgrade` will be unable to perform the upgrade; to upgrade, you will have to `pg_dump` the old data and then import that data into the new cluster.
+
+The `pg_upgrade` executable is distributed with Advanced Server 14, and is installed as part of the `Database Server` component; no additional installation or configuration steps are required.
+
+<div class="toctree" maxdepth="3">
+
+performing_an_upgrade invoking_pg_upgrade upgrading_to_advanced_server upgrading_a_pgAgent_installation pg_upgrade_troubleshooting reverting_to_the_old_cluster
+
+</div>

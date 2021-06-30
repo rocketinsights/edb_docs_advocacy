@@ -1,0 +1,29 @@
+---
+title: "NEXT_DATE"
+---
+
+The `NEXT_DATE` procedure sets the date/time of when the job is to be run next.
+
+```text
+NEXT_DATE(<job> BINARY_INTEGER, <next_date> DATE)
+```
+
+**Parameters**
+
+`job`
+
+ Identifier of the job whose next run date is to be set.
+
+`next_date`
+
+ Date/time when the job is to be run next.
+
+**Examples**
+
+Change the job to run next on December 14, 2007:
+
+```text
+BEGIN
+    DBMS_JOB.NEXT_DATE(104, TO_DATE('14-DEC-07','DD-MON-YY'));
+END;
+```

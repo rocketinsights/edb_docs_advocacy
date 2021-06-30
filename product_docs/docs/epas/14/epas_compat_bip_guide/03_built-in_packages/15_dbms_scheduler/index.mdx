@@ -1,0 +1,45 @@
+---
+title: "DBMS_SCHEDULER"
+---
+
+The `DBMS_SCHEDULER` package provides a way to create and manage Oracle-styled jobs, programs and job schedules. The `DBMS_SCHEDULER` package implements the following functions and procedures:
+
+| Function/Procedure                                                                                                                                | Return Type | Description                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `CREATE_JOB(job_name, job_type, job_action, number_of_arguments, start_date, repeat_interval, end_date, job_class, enabled, auto_drop, comments)` | n/a         | Use the first form of the `CREATE_JOB` procedure to create a job, specifying program and schedule details by means of parameters. |
+| `CREATE_JOB(job_name, program_name, schedule_name, job_class, enabled, auto_drop, comments)`                                                      | n/a         | Use the second form of `CREATE_JOB` to create a job that uses a named program and named schedule.                                 |
+| `CREATE_PROGRAM(program_name, program_type, program_action, number_of_arguments, enabled, comments)`                                              | n/a         | Use `CREATE_PROGRAM` to create a program.                                                                                         |
+| `CREATE_SCHEDULE(schedule_name, start_date, repeat_interval, end_date, comments)`                                                                 | n/a         | Use the `CREATE_SCHEDULE` procedure to create a schedule.                                                                         |
+| `DEFINE_PROGRAM_ARGUMENT(program_name, argument_position, argument_name, argument_type, default_value, out_argument)`                             | n/a         | Use the first form of the `DEFINE_PROGRAM_ARGUMENT` procedure to define a program argument that has a default value.              |
+| `DEFINE_PROGRAM_ARGUMENT(program_name, argument_position, argument_name, argument_type, out_argument)`                                            | n/a         | Use the first form of the `DEFINE_PROGRAM_ARGUMENT` procedure to define a program argument that does not have a default value.    |
+| `DISABLE(name, force, commit_semantics)`                                                                                                          | n/a         | Use the `DISABLE` procedure to disable a job or program.                                                                          |
+| `DROP_JOB(job_name, force, defer, commit_semantics)`                                                                                              | n/a         | Use the `DROP_JOB` procedure to drop a job.                                                                                       |
+| `DROP_PROGRAM(program_name, force)`                                                                                                               | n/a         | Use the `DROP_PROGRAM` procedure to drop a program.                                                                               |
+| `DROP_PROGRAM_ARGUMENT(program_name, argument_position)`                                                                                          | n/a         | Use the first form of `DROP_PROGRAM_ARGUMENT` to drop a program argument by specifying the argument position.                     |
+| `DROP_PROGRAM_ARGUMENT(program_name, argument_name)`                                                                                              | n/a         | Use the second form of `DROP_PROGRAM_ARGUMENT` to drop a program argument by specifying the argument name.                        |
+| `DROP_SCHEDULE(schedule_name, force)`                                                                                                             | n/a         | Use the `DROP SCHEDULE` procedure to drop a schedule.                                                                             |
+| `ENABLE(name, commit_semantics)`                                                                                                                  | n/a         | Use the `ENABLE` command to enable a program or job.                                                                              |
+| `EVALUATE_CALENDAR_STRING(calendar_string, start_date, return_date_after, next_run_date)`                                                         | n/a         | Use `EVALUATE_CALENDAR_STRING` to review the execution date described by a user-defined calendar schedule.                        |
+| `RUN_JOB(job_name, use_current_session, manually)`                                                                                                | n/a         | Use the `RUN_JOB` procedure to execute a job immediately.                                                                         |
+| `SET_JOB_ARGUMENT_VALUE(job_name, argument_position, argument_value)`                                                                             | n/a         | Use the first form of `SET_JOB_ARGUMENT` value to set the value of a job argument described by the argument's position.           |
+| `SET_JOB_ARGUMENT_VALUE(job_name, argument_name, argument_value)`                                                                                 | n/a         | Use the second form of `SET_JOB_ARGUMENT` value to set the value of a job argument described by the argument's name.              |
+
+Advanced Server's implementation of `DBMS_SCHEDULER` is a partial implementation when compared to Oracle's version. Only those functions and procedures listed in the table above are supported.
+
+The `DBMS_SCHEDULER` package is dependent on the pgAgent service; you must have a pgAgent service installed and running on your server before using `DBMS_SCHEDULER`.
+
+Before using `DBMS_SCHEDULER`, a database superuser must create the catalog tables in which the `DBMS_SCHEDULER` programs, schedules and jobs are stored. Use the `psql` client to connect to the database, and invoke the command:
+
+```text
+CREATE EXTENSION dbms_scheduler;
+```
+
+By default, the `dbms_scheduler` extension resides in the `contrib/dbms_scheduler_ext` subdirectory (under the Advanced Server installation).
+
+Note that after creating the `DBMS_SCHEDULER` tables, only a superuser will be able to perform a dump or reload of the database.
+
+<div class="toctree" maxdepth="6">
+
+using_calendar_syntax_to_specify_a_repeating_interval create_job create_program create_schedule define_program_argument dbms_scheduler_disable drop_job drop_program drop_program_argument drop_schedule dbms_scheduler_enable evaluate_calendar_string run_job set_job_argument_value
+
+</div>

@@ -1,0 +1,137 @@
+---
+title: "Managing an Advanced Server Installation"
+---
+
+<div id="managing_an_advanced_server_installation" class="registered_link"></div>
+
+Unless otherwise noted, the commands and paths noted in the following section assume that you have performed an installation using the native packages.
+
+## Starting and Stopping Advanced Server and Supporting Components
+
+A service is a program that runs in the background and requires no user interaction (in fact, a service provides no user interface); a service can be configured to start at boot time, or manually on demand. Services are best controlled using the platform-specific operating system service control utility. Many of the Advanced Server supporting components are services.
+
+The following table lists the names of the services that control Advanced Server and services that control Advanced Server supporting components:
+
+| Advanced Server Component Name | Linux Service Name       | Debian Service Name                     |
+| ------------------------------ | ------------------------ | --------------------------------------- |
+| Advanced Server                | edb-as-14                | edb-as@14-main                          |
+| pgAgent                        | edb-pgagent-14           | edb-as14-pgagent                        |
+| PgBouncer                      | edb-pgbouncer-1.14       | edb-pgbouncer114                        |
+| pgPool-II                      | edb-pgpool-4.1           | edb-pgpool41                            |
+| Slony                          | edb-slony-replication-14 | edb-as14-slony-replication              |
+| EFM                            | edb-efm-4.0              | edb-efm-4.0                             |
+
+You can use the Linux command line to control Advanced Server's database server and the services of Advanced Server's supporting components. The commands that control the Advanced Server service on a Linux platform are host specific.
+
+### Controlling a Service on CentOS or RHEL 7.x | 8.x
+
+If your installation of Advanced Server resides on version 7.x | 8.x of RHEL and CentOS, you must use the `systemctl` command to control the Advanced Server service and supporting components.
+
+The `systemctl` command must be in your search path and must be invoked with superuser privileges. To use the command, open a command line, and enter:
+
+```text
+systemctl <action> <service_name>
+```
+
+Where:
+
+`service_name` specifies the name of the service.
+
+`action` specifies the action taken by the service command. Specify:
+
+-   `start` to start the service.
+-   `stop` to stop the service.
+-   `restart` to stop and then start the service.
+-   `status` to discover the current status of the service.
+
+### Controlling a Service on Debian 9.x | 10.x or Ubuntu 18.04 | 20.04
+
+If your installation of Advanced Server resides on version 9.x of Debian or 18.04 | 20.04 of Ubuntu, assume superuser privileges and invoke the following commands (using bundled scripts) to manage the service. Use the following commands to:
+
+-   Discover the current status of a service:
+
+    ```text
+    /usr/edb/as14/bin/epas_ctlcluster 14 main status
+    ```
+
+-   Stop a service:
+
+    ```text
+    /usr/edb/as14/bin/epas_ctlcluster 14 main stop
+    ```
+
+-   Restart a service:
+
+    ```text
+    /usr/edb/as14/bin/epas_ctlcluster 14 main restart
+    ```
+
+-   Reload a service:
+
+    ```text
+    /usr/edb/as14/bin/epas_ctlcluster 14 main reload
+    ```
+
+-   Control the component services:
+
+    ```text
+    systemctl restart edb-as@14-main
+    ```
+
+### Using pg_ctl to Control Advanced Server
+
+You can use the `pg_ctl` utility to control an Advanced Server service from the command line on any platform. `pg_ctl` allows you to start, stop, or restart the Advanced Server database server, reload the configuration parameters, or display the status of a running server. To invoke the utility, assume the identity of the cluster owner, navigate into the home directory of Advanced Server, and issue the command:
+
+```text
+./bin/pg_ctl -D <data_directory> <action>
+```
+
+`data_directory` is the location of the data controlled by the Advanced Server cluster.
+
+`action` specifies the action taken by the `pg_ctl` utility. Specify:
+
+-   `start` to start the service.
+-   `stop` to stop the service.
+-   `restart` to stop and then start the service.
+-   `reload` sends the server a `SIGHUP` signal, reloading configuration parameters
+-   `status` to discover the current status of the service.
+
+For more information about using the `pg_ctl` utility, or the command line options available, see the official PostgreSQL Core Documentation available at:
+
+<https://www.postgresql.org/docs/current/static/app-pg-ctl.html>
+
+**Choosing Between pg_ctl and the service Command**
+
+You can use the `pg_ctl` utility to manage the status of an Advanced Server cluster, but it is important to note that `pg_ctl` does not alert the operating system service controller to changes in the status of a server, so it is beneficial to use the `service` command whenever possible.
+
+### Configuring Component Services to AutoStart at System Reboot
+
+After installing, configuring, and starting the services of Advanced Server supporting components on a Linux system, you must manually configure your system to autostart the service when your system reboots. To configure a service to autostart on a Linux system, open a command line, assume superuser privileges, and enter the following command.
+
+On a Redhat-compatible Linux system, enter:
+
+```text
+/sbin/chkconfig <service_name> on
+```
+
+Where `service_name` specifies the name of the service.
+
+## Connecting to Advanced Server with edb-psql
+
+`edb-psql` is a command line client application that allows you to execute SQL commands and view the results. To open the `edb-psql` client, the client must be in your search path. The executable resides in the `bin` directory, under your Advanced Server installation.
+
+Use the following command and options to start the `edb-psql` client:
+
+```text
+psql -d edb -U enterprisedb
+```
+
+Where:
+
+`-d` specifies the database to which `edb-psql` will connect.
+
+`-U` specifies the identity of the database user that will be used for the session.
+
+`edb-psql` is a symbolic link to PostgreSQL community `psql`. For more information about using the command line client, see the PostgreSQL Core Documentation at:
+
+<https://www.postgresql.org/docs/current/static/app-psql.html>

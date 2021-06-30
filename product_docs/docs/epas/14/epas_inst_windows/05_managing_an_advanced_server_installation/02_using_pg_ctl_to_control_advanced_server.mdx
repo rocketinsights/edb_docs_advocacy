@@ -1,0 +1,29 @@
+---
+title: "Using pg_ctl to Control Advanced Server"
+---
+
+<div id="using_pg_ctl_to_control_advanced_server" class="registered_link"></div>
+
+You can use the `pg_ctl` utility to control an Advanced Server service from the command line on any platform. `pg_ctl` allows you to start, stop, or restart the Advanced Server database server, reload the configuration parameters, or display the status of a running server. To invoke the utility, assume the identity of the cluster owner, navigate into the home directory of Advanced Server, and issue the command:
+
+```text
+./bin/pg_ctl -D data_directory action
+```
+
+`data_directory`
+
+`data_directory` is the location of the data controlled by the Advanced Server cluster.
+
+`action`
+
+`action` specifies the action taken by the `pg_ctl` utility. Specify:
+
+-   `start` to start the service.
+-   `stop` to stop the service.
+-   `restart` to stop and then start the service.
+-   `reload` sends the server a `SIGHUP` signal, reloading configuration parameters
+-   `status` to discover the current status of the service.
+
+For more information about using the `pg_ctl` utility, or the command line options available, see the official PostgreSQL Core Documentation available at:
+
+<https://www.postgresql.org/docs/current/static/app-pg-ctl.html>

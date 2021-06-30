@@ -1,0 +1,84 @@
+---
+title: "Example - PARTITION BY RANGE, SUBPARTITION BY LIST"
+---
+
+<div id="example_partition_by_range_subpartition_by_list" class="registered_link"></div>
+
+The following example creates a partitioned table `(sales)` that is first partitioned by the transaction date; the range partitions (`q1_2012, q2_2012, q3_2012` and `q4_2012`) are then list-subpartitioned using the value of the `country` column.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+  SUBPARTITION BY LIST(country)
+  (
+    PARTITION q1_2012
+      VALUES LESS THAN('2012-Apr-01')
+      (
+        SUBPARTITION q1_europe VALUES ('FRANCE', 'ITALY'),
+        SUBPARTITION q1_asia VALUES ('INDIA', 'PAKISTAN'),
+        SUBPARTITION q1_americas VALUES ('US', 'CANADA')
+      ),
+  PARTITION q2_2012
+    VALUES LESS THAN('2012-Jul-01')
+      (
+        SUBPARTITION q2_europe VALUES ('FRANCE', 'ITALY'),
+        SUBPARTITION q2_asia VALUES ('INDIA', 'PAKISTAN'),
+        SUBPARTITION q2_americas VALUES ('US', 'CANADA')
+      ),
+  PARTITION q3_2012
+    VALUES LESS THAN('2012-Oct-01')
+      (
+        SUBPARTITION q3_europe VALUES ('FRANCE', 'ITALY'),
+        SUBPARTITION q3_asia VALUES ('INDIA', 'PAKISTAN'),
+        SUBPARTITION q3_americas VALUES ('US', 'CANADA')
+      ),
+  PARTITION q4_2012
+    VALUES LESS THAN('2013-Jan-01')
+      (
+        SUBPARTITION q4_europe VALUES ('FRANCE', 'ITALY'),
+        SUBPARTITION q4_asia VALUES ('INDIA', 'PAKISTAN'),
+        SUBPARTITION q4_americas VALUES ('US', 'CANADA')
+      )
+);
+```
+
+This statement creates a table with four partitions; each partition has three subpartitions.
+
+```text
+edb=# SELECT subpartition_name, high_value, partition_name FROM ALL_TAB_SUBPARTITIONS;
+ subpartition_name |     high_value      | partition_name
+-------------------+---------------------+----------------
+ Q1_EUROPE         | 'FRANCE', 'ITALY'   | Q1_2012
+ Q1_ASIA           | 'INDIA', 'PAKISTAN' | Q1_2012
+ Q1_AMERICAS       | 'US', 'CANADA'      | Q1_2012
+ Q2_EUROPE         | 'FRANCE', 'ITALY'   | Q2_2012
+ Q2_ASIA           | 'INDIA', 'PAKISTAN' | Q2_2012
+ Q2_AMERICAS       | 'US', 'CANADA'      | Q2_2012
+ Q3_EUROPE         | 'FRANCE', 'ITALY'   | Q3_2012
+ Q3_ASIA           | 'INDIA', 'PAKISTAN' | Q3_2012
+ Q3_AMERICAS       | 'US', 'CANADA'      | Q3_2012
+ Q4_EUROPE         | 'FRANCE', 'ITALY'   | Q4_2012
+ Q4_ASIA           | 'INDIA', 'PAKISTAN' | Q4_2012
+ Q4_AMERICAS       | 'US', 'CANADA'      | Q4_2012
+(12 rows)
+```
+
+When a row is added to this table, the value in the `date` column is compared to the values specified in the range partitioning rules, and the server selects the partition in which the row should reside. The value in the `country` column is then compared to the values specified in the list subpartitioning rules; when the server locates a match for the value, the row is stored in the corresponding subpartition.
+
+Any row added to the table will be stored in a subpartition, so the partitions will contain no data.
+
+The server would evaluate the following statement against the partitioning and subpartitioning rules and store the row in the `q3_europe` partition.
+
+`INSERT INTO sales VALUES (10, '9519a', 'FRANCE', '18-Aug-2012', '650000');`
+
+
+
+
+

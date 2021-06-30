@@ -1,0 +1,85 @@
+---
+title: "Example - Adding a Subpartition to a LIST/RANGE Partitioned Table"
+---
+
+<div id="example_adding_a_subpartition_to_a_list_range_partitioned_table" class="registered_link"></div>
+
+The following example adds a `RANGE` subpartition to the list-partitioned `sales` table. The `sales` table was created with the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+  SUBPARTITION BY RANGE(date)
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY')
+    (
+      SUBPARTITION europe_2011
+        VALUES LESS THAN('2012-Jan-01'),
+      SUBPARTITION europe_2012
+        VALUES LESS THAN('2013-Jan-01')
+    ),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN')
+    (
+      SUBPARTITION asia_2011
+        VALUES LESS THAN('2012-Jan-01'),
+      SUBPARTITION asia_2012
+        VALUES LESS THAN('2013-Jan-01')
+    ),
+  PARTITION americas VALUES('US', 'CANADA')
+    (
+      SUBPARTITION americas_2011
+        VALUES LESS THAN('2012-Jan-01'),
+      SUBPARTITION americas_2012
+        VALUES LESS THAN('2013-Jan-01')
+    )
+);
+```
+
+The `sales` table has three partitions, named `europe, asia`, and `americas`. Each partition has two range-defined subpartitions.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+ partition_name | subpartition_name |      high_value
+----------------+-------------------+----------------------
+ EUROPE         | EUROPE_2011       | '01-JAN-12 00:00:00'
+ EUROPE         | EUROPE_2012       | '01-JAN-13 00:00:00'
+ ASIA           | ASIA_2011         | '01-JAN-12 00:00:00'
+ ASIA           | ASIA_2012         | '01-JAN-13 00:00:00'
+ AMERICAS       | AMERICAS_2011     | '01-JAN-12 00:00:00'
+ AMERICAS       | AMERICAS_2012     | '01-JAN-13 00:00:00'
+(6 rows)
+```
+
+The following command adds a subpartition named `europe_2013`.
+
+```text
+ALTER TABLE sales MODIFY PARTITION europe
+  ADD SUBPARTITION europe_2013
+  VALUES LESS THAN('2015-Jan-01');
+```
+
+After invoking the command, the table includes a subpartition named `europe_2013`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value FROM ALL_TAB_SUBPARTITIONS;
+ partition_name | subpartition_name |      high_value
+----------------+-------------------+----------------------
+ EUROPE         | EUROPE_2011       | '01-JAN-12 00:00:00'
+ EUROPE         | EUROPE_2012       | '01-JAN-13 00:00:00'
+ EUROPE         | EUROPE_2013       | '01-JAN-15 00:00:00'
+ ASIA           | ASIA_2011         | '01-JAN-12 00:00:00'
+ ASIA           | ASIA_2012         | '01-JAN-13 00:00:00'
+ AMERICAS       | AMERICAS_2011     | '01-JAN-12 00:00:00'
+ AMERICAS       | AMERICAS_2012     | '01-JAN-13 00:00:00'
+(7 rows)
+```
+
+!!! Note
+    When adding a new range subpartition, the subpartitioning rules must specify a range that falls *after* any existing subpartitions.

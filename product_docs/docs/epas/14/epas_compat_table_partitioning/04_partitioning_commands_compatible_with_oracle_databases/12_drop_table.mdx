@@ -1,0 +1,43 @@
+---
+title: "DROP TABLE"
+---
+
+<div id="drop_table" class="registered_link"></div>
+
+Use the PostgreSQL `DROP TABLE` command to remove a partitioned table definition, it's partitions and subpartitions, and delete the table contents. The syntax is:
+
+```text
+DROP TABLE <table_name>
+```
+
+**Parameters**
+
+`table_name`
+
+ The name (optionally schema-qualified) of the partitioned table.
+
+**Description**
+
+The `DROP TABLE` command removes an entire table, and the data that resides in that table. When you delete a table, any partitions or subpartitions (of that table) are deleted as well.
+
+To use the `DROP TABLE` command, you must be the owner of the partitioning root, a member of a group that owns the table, the schema owner, or a database superuser.
+
+**Example**
+
+To delete a table, connect to the controller node (the host of the partitioning root), and invoke the `DROP TABLE` command. For example, to delete the `sales` table, invoke the following command:
+
+```text
+DROP TABLE sales;
+```
+
+The server will confirm that the table has been dropped.
+
+```text
+edb=# drop table sales;
+DROP TABLE
+edb=#
+```
+
+For more information about the `DROP TABLE` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-droptable.html>

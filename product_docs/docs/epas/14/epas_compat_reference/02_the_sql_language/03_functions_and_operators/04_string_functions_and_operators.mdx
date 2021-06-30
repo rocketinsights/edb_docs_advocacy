@@ -1,0 +1,185 @@
+---
+title: "String Functions and Operators"
+---
+
+<div id="string_functions_and_operators" class="registered_link"></div>
+
+This section describes functions and operators for examining and manipulating string values. Strings in this context include values of the types `CHAR`, `VARCHAR2`, and `CLOB`. Unless otherwise noted, all of the functions listed below work on all of these types, but be wary of potential effects of automatic padding when using the `CHAR` type. Generally, the functions described here also work on data of non-string types by converting that data to a string representation first.
+
+| Function                                                           | Return Type | Description                                                                                                                                                                                                                  | Example                                                               | Result         |
+| ------------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------- |
+| string \|\| string                                                 | `CLOB`      | String concatenation                                                                                                                                                                                                         | 'Enterprise' \|\| 'DB'                                                | `EnterpriseDB` |
+| `CONCAT(string, string)`                                           | `CLOB`      | String concatenation                                                                                                                                                                                                         | 'a' \|\| 'b'                                                          | `ab`           |
+| `HEXTORAW(varchar2)`                                               | `RAW`       | Converts a `VARCHAR2` value to a `RAW value`                                                                                                                                                                                 | `HEXTORAW('303132')`                                                  | `'012'`        |
+| `RAWTOHEX(raw)`                                                    | `VARCHAR2`  | Converts a `RAW` value to a `HEXADECIMAL` value                                                                                                                                                                              | `RAWTOHEX('012')`                                                     | `'303132'`     |
+| `INSTR(string, set, [ start [, occurrence ] ])`                    | `INTEGER`   | Finds the location of a set of characters in a string, starting at position `start` in the string, `string`, and looking for the first, second, third and so on occurrences of the set. Returns `0` if the set is not found. | `INSTR('PETER PIPER PICKED a PECK of PICKLED PEPPERS','PI',1,3)`      | `30`           |
+| `INSTRB(string, set)`                                              | `INTEGER`   | Returns the position of the `set` within the `string`. Returns `0` if `set` is not found.                                                                                                                                    | `INSTRB('PETER PIPER PICKED a PECK of PICKLED PEPPERS', 'PICK')`      | `13`           |
+| `INSTRB(string, set, start)`                                       | `INTEGER`   | Returns the position of the `set` within the `string`, beginning at `start`. Returns `0` if `set` is not found.                                                                                                              | `INSTRB('PETER PIPER PICKED a PECK of PICKLED PEPPERS','PICK', 14)`   | `30`           |
+| `INSTRB(string, set, start, occurrence)`                           | `INTEGER`   | Returns the position of the specified `occurrence` of `set` within the `string`, beginning at `start`. Returns `0` if `set` is not found.                                                                                    | `INSTRB('PETER PIPER PICKED a PECK of PICKLED PEPPERS','PICK', 1, 2)` | `30`           |
+| `LOWER(string)`                                                    | `CLOB`      | Convert `string` to lower case                                                                                                                                                                                               | `LOWER('TOM')`                                                        | `tom`          |
+| `SUBSTR(string, start [, count ])`                                 | `CLOB`      | Extract substring starting from `start` and going for `count` characters. If `count` is not specified, the string is clipped from the start till the end.                                                                    | `SUBSTR('This is a test',6,2)`                                        | `is`           |
+| `SUBSTRB(string, start [, count ])`                                | `CLOB`      | Same as `SUBSTR` except `start` and `count` are in number of bytes.                                                                                                                                                          | `SUBSTRB('abc',3)` (assuming a double-byte character set)             | `c`            |
+| `SUBSTR2(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTR`.                                                                                                                                                                                                          | `SUBSTR2('This is a test',6,2)`                                       | `is`           |
+| `SUBSTR2(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTRB`.                                                                                                                                                                                                         | `SUBSTR2('abc',3)` (assuming a double-byte character set)             | `c`            |
+| `SUBSTR4(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTR`.                                                                                                                                                                                                          | `SUBSTR4('This is a test',6,2)`                                       | `is`           |
+| `SUBSTR4(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTRB`.                                                                                                                                                                                                         | `SUBSTR4('abc',3)` (assuming a double-byte character set)             | `c`            |
+| `SUBSTRC(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTR`.                                                                                                                                                                                                          | `SUBSTRC('This is a test',6,2)`                                       | `is`           |
+| `SUBSTRC(string, start [, count ])`                                | `CLOB`      | Alias for `SUBSTRB`.                                                                                                                                                                                                         | `SUBSTRC('abc',3)` (assuming a double-byte character set)             | `c`            |
+| TRIM(\[ LEADING \| TRAILING \| BOTH ] \[ characters ] FROM string) | `CLOB`      | Remove the longest string containing only the characters (a space by default) from the start/end/both ends of the string.                                                                                                    | `TRIM(BOTH 'x' FROM 'xTomxx')`                                        | `Tom`          |
+| `LTRIM(string [, set])`                                            | `CLOB`      | Removes all the characters specified in `set` from the left of a given `string`. If `set` is not specified, a blank space is used as default.                                                                                | `LTRIM('abcdefghi', 'abc')`                                           | `defghi`       |
+| `RTRIM(string [, set])`                                            | `CLOB`      | Removes all the characters specified in `set` from the right of a given `string`. If `set` is not specified, a blank space is used as default.                                                                               | `RTRIM('abcdefghi', 'ghi')`                                           | `abcdef`       |
+| `UPPER(string)`                                                    | `CLOB`      | Convert `string` to upper case                                                                                                                                                                                               | `UPPER('tom')`                                                        | `TOM`          |
+
+Additional string manipulation functions are available and are listed in the following table. Some of them are used internally to implement the SQL-standard string functions listed in the above table.
+
+| Function                                                         | Return Type                                             | Description                                                                                                                                                                                                                               | Example                                               | Result      |
+| ---------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------- |
+| `ASCII(string)`                                                  | `INTEGER`                                               | ASCII code of the first byte of the argument                                                                                                                                                                                              | `ASCII('x')`                                          | `120`       |
+| `CHR(INTEGER)`                                                   | `CLOB`                                                  | Character with the given ASCII code                                                                                                                                                                                                       | `CHR(65)`                                             | `A`         |
+| DECODE(expr, expr1a, expr1b [, expr2a, expr2b ]... [, default ]) | Same as argument types of `expr1b, expr2b,..., default` | Finds first match of `expr` with `expr1a, expr2a`, etc. When match found, returns corresponding parameter pair, `expr1b, expr2b`, etc. If no match found, returns `default`. If no match found and `default` not specified, returns null. | `DECODE(3, 1,'One', 2,'Two', 3,'Three', 'Not found')` | `Three`     |
+| `INITCAP(string)`                                                | `CLOB`                                                  | Convert the first letter of each word to uppercase and the rest to lowercase. Words are sequences of alphanumeric characters separated by non-alphanumeric characters.                                                                    | `INITCAP('hi THOMAS')`                                | `Hi Thomas` |
+| `LENGTH`                                                         | `INTEGER`                                               | Returns the number of characters in a string value.                                                                                                                                                                                       | `LENGTH('Côte d''Azur')`                              | `11`        |
+| `LENGTHC`                                                        | `INTEGER`                                               | This function is identical in functionality to `LENGTH`; the function name is supported for compatibility.                                                                                                                                | `LENGTHC('Côte d''Azur')`                             | `11`        |
+| `LENGTH2`                                                        | `INTEGER`                                               | This function is identical in functionality to `LENGTH`; the function name is supported for compatibility.                                                                                                                                | `LENGTH2('Côte d''Azur')`                             | `11`        |
+| `LENGTH4`                                                        | `INTEGER`                                               | This function is identical in functionality to `LENGTH`; the function name is supported for compatibility.                                                                                                                                | `LENGTH4('Côte d''Azur')`                             | `11`        |
+| `LENGTHB`                                                        | `INTEGER`                                               | Returns the number of bytes required to hold the given value.                                                                                                                                                                             | `LENGTHB('Côte d''Azur')`                             | `12`        |
+| `LPAD(string, length INTEGER [, fill ])`                         | `CLOB`                                                  | Fill up `string` to size, `length` by prepending the characters, `fill` (a space by default). If `string` is already longer than `length` then it is truncated (on the right).                                                            | `LPAD('hi', 5, 'xy')`                                 | `xyxhi`     |
+| `REPLACE(string, search_string [, replace_string ]`              | `CLOB`                                                  | Replaces one value in a string with another. If you do not specify a value for `replace_string`, the `search_string` value when found, is removed.                                                                                        | `REPLACE( 'GEORGE', 'GE', 'EG')`                      | `EGOREG`    |
+| `RPAD(string, length INTEGER [, fill ])`                         | `CLOB`                                                  | Fill up `string` to size, `length` by appending the characters, `fill` (a space by default). If `string` is already longer than `length` then it is truncated.                                                                            | `RPAD('hi', 5, 'xy')`                                 | `hixyx`     |
+| `TRANSLATE(string, from, to)`                                    | `CLOB`                                                  | Any character in `string` that matches a character in the `from` set is replaced by the corresponding character in the `to` set.                                                                                                          | `TRANSLATE('12345', '14', 'ax')`                      | `a23x5`     |
+
+## Truncation of String Text Resulting from Concatenation with NULL
+
+!!! Note
+    This section describes a functionality that is not compatible with Oracle databases, which may lead to some inconsistency when converting data from Oracle to Advanced Server.
+
+For Advanced Server, when a column value is `NULL`, the concatenation of the column with a text string may result in either of the following:
+
+-   Return of the text string
+-   Disappearance of the text string (that is, a null result)
+
+The result is dependent upon the data type of the `NULL` column and the way in which the concatenation is done.
+
+If one uses the string concatenation operator `‘||’`, then the types that have implicit coercion to text as listed in Table Data Types with Implicit Coercion to Text will not truncate the string if one of the input parameters is `NULL`, whereas for other types it will truncate the string unless the explicit type cast is used (that is, `::text`). Also, to see the consistent behavior in the presence of nulls, one can use the `CONCAT` function.
+
+The following query lists the data types that have implicit coercion to text:
+
+```text
+SELECT castsource::regtype, casttarget::regtype, castfunc::regproc,
+    CASE castcontext
+        WHEN 'e' THEN 'explicit'
+        WHEN 'a' THEN 'implicit in assignment'
+        WHEN 'i' THEN 'implicit in expressions'
+    END as castcontext,
+    CASE castmethod
+        WHEN 'f' THEN 'function'
+        WHEN 'i' THEN 'input/output function'
+        WHEN 'b' THEN 'binary-coercible'
+    END as castmethod
+FROM pg_cast
+    WHERE casttarget::regtype::text = 'text'
+      AND castcontext='i';
+```
+
+The result of the query is listed in the following table:
+
+| castsource                    | casttarget | castfunc          | castcontext               | castmethod              |
+| ----------------------------- | ---------- | ----------------- | ------------------------- | ----------------------- |
+| `character`                   | `text`     | `pg_catalog.text` | `implicit in expressions` | `function`              |
+| `character varying`           | `text`     | `-`               | `implicit in expressions` | `binary-coercible`      |
+| `"char"`                      | `text`     | `pg_catalog.text` | `implicit in expressions` | `function`              |
+| `name`                        | `text`     | `pg_catalog.text` | `implicit in expressions` | `function`              |
+| `pg_node_tree`                | `text`     | `-`               | `implicit in expressions` | `binary-coercible`      |
+| `pg_ndistinct`                | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `pg_dependencies`             | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `integer`                     | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `smallint`                    | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `oid`                         | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `date`                        | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `double precision`            | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `real`                        | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `time with time zone`         | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `time without time zone`      | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `timestamp with time zone`    | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `interval`                    | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `bigint`                      | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `numeric`                     | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `timestamp without time zone` | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `record`                      | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+| `boolean`                     | `text`     | `pg_catalog.text` | `implicit in expressions` | `function`              |
+| `bytea`                       | `text`     | `-`               | `implicit in expressions` | `input/output function` |
+
+For information on the column output, see the `pg_cast` system catalog in the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/catalog-pg-cast.html>
+
+So for example, data type `UUID` is not in this list and therefore does not have the implicit coercion to text. As a result, certain concatenation attempts with a `NULL UUID` column results in a truncated text result.
+
+The following table is created for this example with a single row with all `NULL` column values.
+
+```text
+CREATE TABLE null_concat_types (
+    boolean_type    BOOLEAN,
+    uuid_type       UUID,
+    char_type       CHARACTER
+);
+
+INSERT INTO null_concat_types VALUES (NULL, NULL, NULL);
+```
+
+Columns `boolean_type` and `char_type` have the implicit coercion to text while column `uuid_type` does not.
+
+Thus, string concatenation with the concatenation operator `‘||‘` against columns `boolean_type` or `char_type` results in the following:
+
+```text
+SELECT 'x=' || boolean_type || 'y' FROM null_concat_types;
+
+ ?column?
+----------
+ x=y
+(1 row)
+
+SELECT 'x=' || char_type || 'y' FROM null_concat_types;
+
+ ?column?
+----------
+ x=y
+(1 row)
+```
+
+But concatenation with column `uuid_type` results in the loss of the `x=` string:
+
+```text
+SELECT 'x=' || uuid_type || 'y' FROM null_concat_types;
+
+ ?column?
+----------
+ y
+(1 row)
+```
+
+However, using explicit casting with `::text` prevents the loss of the `x=` string:
+
+```text
+SELECT 'x=' || uuid_type::text || 'y' FROM null_concat_types;
+
+ ?column?
+----------
+ x=y
+(1 row)
+```
+
+Using the `CONCAT` function also preserves the `x=` string:
+
+```text
+SELECT CONCAT('x=',uuid_type) || 'y' FROM null_concat_types;
+
+ ?column?
+----------
+ x=y
+(1 row)
+```
+
+Thus, depending upon the data type of a `NULL` column, explicit casting or the `CONCAT` function should be used to avoid loss of some text string.
+
+

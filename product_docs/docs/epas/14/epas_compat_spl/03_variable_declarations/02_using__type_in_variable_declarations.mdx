@@ -1,0 +1,114 @@
+---
+title: "Using %TYPE in Variable Declarations"
+---
+
+<div id="[using]()%_type_in_variable_declarations" class="registered_link"></div>
+
+Often, variables will be declared in SPL programs that will be used to hold values from tables in the database. In order to ensure compatibility between the table columns and the SPL variables, the data types of the two should be the same.
+
+However, as quite often happens, a change might be made to the table definition. If the data type of the column is changed, the corresponding change may be required to the variable in the SPL program.
+
+Instead of coding the specific column data type into the variable declaration the column attribute, `%TYPE`, can be used instead. A qualified column name in dot notation or the name of a previously declared variable must be specified as a prefix to `%TYPE`. The data type of the column or variable prefixed to `%TYPE` is assigned to the variable being declared. If the data type of the given column or variable changes, the new data type will be associated with the variable without the need to modify the declaration code.
+
+!!! Note
+    The `%TYPE` attribute can be used with formal parameter declarations as well.
+
+```text
+<name> { { <table> | <view> }<.column> | <variable> }%TYPE;
+```
+
+`name` is the identifier assigned to the variable or formal parameter that is being declared. `column` is the name of a column in `table` or `view.variable` is the name of a variable that was declared prior to the variable identified by `name`.
+
+!!! Note
+    The variable does not inherit any of the column’s other attributes such as might be specified on the column with the `NOT NULL` clause or the `DEFAULT` clause.
+
+In the following example a procedure queries the `emp` table using an employee number, displays the employee’s data, finds the average salary of all employees in the department to which the employee belongs, and then compares the chosen employee’s salary with the department average.
+
+```text
+CREATE OR REPLACE PROCEDURE emp_sal_query (
+    p_empno         IN NUMBER
+)
+IS
+    v_ename         VARCHAR2(10);
+    v_job           VARCHAR2(9);
+    v_hiredate      DATE;
+    v_sal           NUMBER(7,2);
+    v_deptno        NUMBER(2);
+    v_avgsal        NUMBER(7,2);
+BEGIN
+    SELECT ename, job, hiredate, sal, deptno
+        INTO v_ename, v_job, v_hiredate, v_sal, v_deptno
+        FROM emp WHERE empno = p_empno;
+    DBMS_OUTPUT.PUT_LINE('Employee # : ' || p_empno);
+    DBMS_OUTPUT.PUT_LINE('Name       : ' || v_ename);
+    DBMS_OUTPUT.PUT_LINE('Job        : ' || v_job);
+    DBMS_OUTPUT.PUT_LINE('Hire Date  : ' || v_hiredate);
+    DBMS_OUTPUT.PUT_LINE('Salary     : ' || v_sal);
+    DBMS_OUTPUT.PUT_LINE('Dept #     : ' || v_deptno);
+
+    SELECT AVG(sal) INTO v_avgsal
+        FROM emp WHERE deptno = v_deptno;
+    IF v_sal > v_avgsal THEN
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary is more than the '
+            || 'department average of ' || v_avgsal);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary does not exceed the '
+            || 'department average of ' || v_avgsal);
+    END IF;
+END;
+```
+
+Instead of the above, the procedure could be written as follows without explicitly coding the `emp` table data types into the declaration section of the procedure.
+
+```text
+CREATE OR REPLACE PROCEDURE emp_sal_query (
+    p_empno         IN emp.empno%TYPE
+)
+IS
+    v_ename         emp.ename%TYPE;
+    v_job           emp.job%TYPE;
+    v_hiredate      emp.hiredate%TYPE;
+    v_sal           emp.sal%TYPE;
+    v_deptno        emp.deptno%TYPE;
+    v_avgsal        v_sal%TYPE;
+BEGIN
+    SELECT ename, job, hiredate, sal, deptno
+        INTO v_ename, v_job, v_hiredate, v_sal, v_deptno
+        FROM emp WHERE empno = p_empno;
+    DBMS_OUTPUT.PUT_LINE('Employee # : ' || p_empno);
+    DBMS_OUTPUT.PUT_LINE('Name       : ' || v_ename);
+    DBMS_OUTPUT.PUT_LINE('Job        : ' || v_job);
+    DBMS_OUTPUT.PUT_LINE('Hire Date  : ' || v_hiredate);
+    DBMS_OUTPUT.PUT_LINE('Salary     : ' || v_sal);
+    DBMS_OUTPUT.PUT_LINE('Dept #     : ' || v_deptno);
+
+    SELECT AVG(sal) INTO v_avgsal
+        FROM emp WHERE deptno = v_deptno;
+    IF v_sal > v_avgsal THEN
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary is more than the '
+            || 'department average of ' || v_avgsal);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Employee''s salary does not exceed the '
+            || 'department average of ' || v_avgsal);
+    END IF;
+END;
+```
+
+!!! Note
+    `p_empno` shows an example of a formal parameter defined using `%TYPE`.
+
+`v_avgsal` illustrates the usage of `%TYPE` referring to another variable instead of a table column.
+
+The following is sample output from executing this procedure.
+
+```text
+EXEC emp_sal_query(7698);
+
+Employee # : 7698
+Name       : BLAKE
+Job        : MANAGER
+Hire Date  : 01-MAY-81 00:00:00
+Salary     : 2850.00
+Dept #     : 30
+Employee's salary is more than the department average of 1566.67
+```

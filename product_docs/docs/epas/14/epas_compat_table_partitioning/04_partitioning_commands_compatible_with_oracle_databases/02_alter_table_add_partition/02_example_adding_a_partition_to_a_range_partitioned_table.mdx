@@ -1,0 +1,63 @@
+---
+title: "Example - Adding a Partition to a RANGE Partitioned Table"
+---
+
+<div id="example_adding_a_partition_to_a_range_partitioned_table" class="registered_link"></div>
+
+The example that follows adds a partition to a range-partitioned table named `sales`:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+(
+  PARTITION q1_2012
+    VALUES LESS THAN('2012-Apr-01'),
+  PARTITION q2_2012
+    VALUES LESS THAN('2012-Jul-01'),
+  PARTITION q3_2012
+    VALUES LESS THAN('2012-Oct-01'),
+  PARTITION q4_2012
+    VALUES LESS THAN('2013-Jan-01')
+);
+```
+
+The table contains four partitions (`q1_2012, q2_2012, q3_2012`, and `q4_2012`).
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |      high_value
+----------------+----------------------
+ Q1_2012        | '01-APR-12 00:00:00'
+ Q2_2012        | '01-JUL-12 00:00:00'
+ Q3_2012        | '01-OCT-12 00:00:00'
+ Q4_2012        | '01-JAN-13 00:00:00'
+(4 rows)
+```
+
+The following command adds a partition named `q1_2013` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q1_2013
+  VALUES LESS THAN('01-APR-2013');
+```
+
+After invoking the command, the table includes the `q1_2013` partition.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |      high_value
+----------------+----------------------
+ Q1_2012        | '01-APR-12 00:00:00'
+ Q2_2012        | '01-JUL-12 00:00:00'
+ Q3_2012        | '01-OCT-12 00:00:00'
+ Q4_2012        | '01-JAN-13 00:00:00'
+ Q1_2013        | '01-APR-13 00:00:00'
+(5 rows)
+```

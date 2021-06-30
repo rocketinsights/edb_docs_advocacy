@@ -1,0 +1,62 @@
+---
+title: "COMMENT"
+---
+
+<div id="comment" class="registered_link"></div>
+
+**Name**
+
+`COMMENT` -- define or change the comment of an object.
+
+**Synopsis**
+
+```text
+COMMENT ON
+{
+  TABLE <table_name> |
+  COLUMN <table_name.column_name>
+} IS '<text>'
+```
+
+**Description**
+
+`COMMENT` stores a comment about a database object. To modify a comment, issue a new `COMMENT` command for the same object. Only one comment string is stored for each object. To remove a comment, specify the empty string (two consecutive single quotes with no intervening space) for `text`. Comments are automatically dropped when the object is dropped.
+
+**Parameters**
+
+`table_name`
+
+ The name of the table to be commented. The table name may be schema-qualified.
+
+`table_name.column_name`
+
+ The name of a column within `table_name` to be commented. The table name may be schema-qualified.
+
+`text`
+
+ The new comment.
+
+**Notes**
+
+There is presently no security mechanism for comments: any user connected to a database can see all the comments for objects in that database (although only superusers can change comments for objects that they don’t own). `Do not put security-critical information in a comment`.
+
+**Examples**
+
+Attach a comment to the table `emp`:
+
+```text
+COMMENT ON TABLE emp IS 'Current employee information';
+```
+
+Attach a comment to the `empno` column of the `emp` table:
+
+```text
+COMMENT ON COLUMN emp.empno IS 'Employee identification number';
+```
+
+Remove these comments:
+
+```text
+COMMENT ON TABLE emp IS '';
+COMMENT ON COLUMN emp.empno IS '';
+```

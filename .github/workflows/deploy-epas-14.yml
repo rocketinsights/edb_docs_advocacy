@@ -1,0 +1,58 @@
+name: Deploy EPAS 14 to Netlify
+on:
+  push:
+    branches:
+      - sd/content/epas/14/upcoming-release
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: sd/content/epas/14/upcoming-release
+        fetch-depth: 0 # fetch whole repo so git-restore-mtime can work
+    - name: Update submodules
+      run: git submodule update --init --remote
+    - name: Adjust file watchers limit
+      run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '14.x'
+    - name: Install yarn
+      run: sudo npm -g install yarn
+    - name: Yarn install
+      run: yarn install --immutable
+      env:
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+
+    - name: Checking Gatsby cache
+      id: gatsby-cache-build
+      uses: actions/cache@v2
+      with:
+        path: |
+          public
+          .cache
+        key: ${{ runner.os }}-gatsby-build-epas-14-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-gatsby-build-epas-14-
+
+    - name: Fix mtimes
+      run: yarn fix-mtimes --force
+    - name: Gatsby build
+      run: yarn build
+      env:
+        APP_ENV: staging
+        NODE_ENV: ${{ secrets.NODE_ENV }}
+        NODE_OPTIONS: --max-old-space-size=4096
+        ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
+        ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+        ALGOLIA_INDEX_NAME: edb-staging
+
+    - name: Netlify deploy
+      run: |
+        sudo yarn global add netlify-cli
+        netlify deploy --dir=public --prod
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: 35da07e0-838a-44d5-a828-8ff24ab1bc79

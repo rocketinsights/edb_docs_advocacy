@@ -1,0 +1,203 @@
+---
+title: "Parallelism Hints"
+---
+
+<div id="parallelism_hints" class="registered_link"></div>
+
+The `PARALLEL` optimizer hint is used to force parallel scanning.
+
+The `NO_PARALLEL` optimizer hint prevents usage of a parallel scan.
+
+**Synopsis**
+
+```text
+PARALLEL (<table> [ <parallel_degree> | DEFAULT ])
+
+NO_PARALLEL (<table>)
+```
+
+**Description**
+
+*Parallel scanning* is the usage of multiple background workers to simultaneously perform a scan of a table (that is, in parallel) for a given query. This process provides performance improvement over other methods such as the sequential scan.
+
+**Parameters**
+
+`table`
+
+The table to which the parallel hint is to be applied.
+
+`parallel_degree | DEFAULT`
+
+`parallel_degree` is a positive integer that specifies the desired number of workers to use for a parallel scan. If specified, the lesser of `parallel_degree` and configuration parameter `max_parallel_workers_per_gather` is used as the planned number of workers. For information on the `max_parallel_workers_per_gather` parameter, see `Asynchronous Behavior` located under `Resource Consumption` in the PostgreSQL core documentation available at:
+
+<https://www.postgresql.org/docs/current/static/runtime-config-resource.html>
+
+If `DEFAULT` is specified, then the maximum possible parallel degree is used.
+
+If both `parallel_degree` and `DEFAULT` are omitted, then the query optimizer determines the parallel degree. In this case, if `table` has been set with the `parallel_workers` storage parameter, then this value is used as the parallel degree, otherwise the optimizer uses the maximum possible parallel degree as if `DEFAULT` was specified. For information on the `parallel_workers` storage parameter, see the `Storage Parameters` located under `CREATE TABLE` in the PostgreSQL core documentation available at:
+
+  <https://www.postgresql.org/docs/current/static/sql-createtable.html>
+
+Regardless of the circumstance, the parallel degree never exceeds the setting of configuration parameter `max_parallel_workers_per_gather`.
+
+**Examples**
+
+The following configuration parameter settings are in effect:
+
+```text
+SHOW max_worker_processes;
+
+ max_worker_processes
+----------------------
+ 8
+(1 row)
+
+SHOW max_parallel_workers_per_gather;
+
+ max_parallel_workers_per_gather
+---------------------------------
+ 2
+(1 row)
+```
+
+The following example shows the default scan on table `pgbench_accounts`. Note that a sequential scan is shown in the query plan.
+
+```text
+SET trace_hints TO on;
+
+EXPLAIN SELECT * FROM pgbench_accounts;
+
+                             QUERY PLAN
+---------------------------------------------------------------------------
+ Seq Scan on pgbench_accounts  (cost=0.00..53746.15 rows=2014215 width=97)
+(1 row)
+```
+
+The following example uses the `PARALLEL` hint. In the query plan, the Gather node, which launches the background workers, indicates that two workers are planned to be used.
+
+!!! Note
+    If `trace_hints` is set to `on`, the `INFO: [HINTS]` lines appear stating that `PARALLEL` has been accepted for `pgbench_accounts` as well as other hint information. For the remaining examples, these lines will not be displayed as they generally show the same output (that is, `trace_hints` has been reset to `off`).
+
+```text
+EXPLAIN SELECT /*+ PARALLEL(pgbench_accounts) */ * FROM pgbench_accounts;
+
+INFO:  [HINTS] SeqScan of [pgbench_accounts] rejected due to PARALLEL hint.
+INFO:  [HINTS] PARALLEL on [pgbench_accounts] accepted.
+INFO:  [HINTS] Index Scan of [pgbench_accounts].[pgbench_accounts_pkey]
+rejected due to PARALLEL hint.
+                                    QUERY PLAN
+-----------------------------------------------------------------------------
+------------
+ Gather  (cost=1000.00..244418.06 rows=2014215 width=97)
+   Workers Planned: 2
+   ->  Parallel Seq Scan on pgbench_accounts  (cost=0.00..41996.56 rows=839256 width=97)
+(3 rows)
+```
+
+Now, the `max_parallel_workers_per_gather` setting is increased:
+
+```text
+SET max_parallel_workers_per_gather TO 6;
+
+SHOW max_parallel_workers_per_gather;
+
+ max_parallel_workers_per_gather
+---------------------------------
+ 6
+(1 row)
+```
+
+The same query on `pgbench_accounts` is issued again with no parallel degree specification in the `PARALLEL` hint. Note that the number of planned workers has increased to `4` as determined by the optimizer.
+
+```text
+EXPLAIN SELECT /*+ PARALLEL(pgbench_accounts) */ * FROM pgbench_accounts;
+
+                                    QUERY PLAN
+-----------------------------------------------------------------------------
+------------
+ Gather  (cost=1000.00..241061.04 rows=2014215 width=97)
+   Workers Planned: 4
+   ->  Parallel Seq Scan on pgbench_accounts  (cost=0.00..38639.54 rows=503554 width=97)
+(3 rows)
+```
+
+Now, a value of `6` is specified for the parallel degree parameter of the `PARALLEL` hint. The planned number of workers is now returned as this specified value:
+
+```text
+EXPLAIN SELECT /*+ PARALLEL(pgbench_accounts 6) */ * FROM pgbench_accounts;
+
+                                    QUERY PLAN
+-----------------------------------------------------------------------------
+------------
+ Gather  (cost=1000.00..239382.52 rows=2014215 width=97)
+   Workers Planned: 6
+   ->  Parallel Seq Scan on pgbench_accounts  (cost=0.00..36961.03 rows=335702 width=97)
+(3 rows)
+```
+
+The same query is now issued with the `DEFAULT` setting for the parallel degree. The results indicate that the maximum allowable number of workers is planned.
+
+```text
+EXPLAIN SELECT /*+ PARALLEL(pgbench_accounts DEFAULT) */ * FROM
+pgbench_accounts;
+
+                                    QUERY PLAN
+-----------------------------------------------------------------------------
+------------
+ Gather  (cost=1000.00..239382.52 rows=2014215 width=97)
+   Workers Planned: 6
+   ->  Parallel Seq Scan on pgbench_accounts  (cost=0.00..36961.03 rows=335702 width=97)
+(3 rows)
+```
+
+Table `pgbench_accounts` is now altered so that the `parallel_workers` storage parameter is set to `3`.
+
+!!! Note
+    This format of the `ALTER TABLE` command to set the `parallel_workers` parameter is not compatible with Oracle databases.
+
+The `parallel_workers` setting is shown by the PSQL `\d+` command.
+
+```text
+ALTER TABLE pgbench_accounts SET (parallel_workers=3);
+
+\d+ pgbench_accounts
+                    Table "public.pgbench_accounts"
+ Column  |     Type      | Modifiers | Storage  | Stats target | Description
+---------+---------------+-----------+----------+--------------+------------
+-
+ aid     | integer       | not null  | plain    |              |
+ bid     | integer       |           | plain    |              |
+ abalance| integer       |           | plain    |              |
+ filler  | character(84) |           | extended |              |
+Indexes:
+    "pgbench_accounts_pkey" PRIMARY KEY, btree (aid)
+Options: fillfactor=100, parallel_workers=3
+```
+
+Now, when the `PARALLEL` hint is given with no parallel degree, the resulting number of planned workers is the value from the `parallel_workers` parameter:
+
+```text
+EXPLAIN SELECT /*+ PARALLEL(pgbench_accounts) */ * FROM pgbench_accounts;
+
+                                    QUERY PLAN
+-----------------------------------------------------------------------------
+------------
+ Gather  (cost=1000.00..242522.97 rows=2014215 width=97)
+   Workers Planned: 3
+   ->  Parallel Seq Scan on pgbench_accounts  (cost=0.00..40101.47 rows=649747 width=97)
+(3 rows)
+```
+
+Specifying a parallel degree value or `DEFAULT` in the `PARALLEL` hint overrides the `parallel_workers` setting.
+
+The following example shows the `NO_PARALLEL` hint. Note that with `trace_hints` set to `on`, the `INFO: [HINTS]` message states that the parallel scan was rejected due to the `NO_PARALLEL` hint.
+
+```text
+EXPLAIN SELECT /*+ NO_PARALLEL(pgbench_accounts) */ * FROM pgbench_accounts;
+INFO:  [HINTS] Parallel SeqScan of [pgbench_accounts] rejected due to
+NO_PARALLEL hint.
+                             QUERY PLAN
+---------------------------------------------------------------------------
+ Seq Scan on pgbench_accounts  (cost=0.00..53746.15 rows=2014215 width=97)
+(1 row)
+```

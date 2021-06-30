@@ -1,0 +1,350 @@
+---
+title: "Invoking Subprograms"
+---
+
+<div id="invoking_subprograms" class="registered_link"></div>
+
+A subprogram is invoked in the same manner as a standalone procedure or function by specifying its name and any actual parameters.
+
+The subprogram may be invoked with none, one, or more qualifiers, which are the names of the parent subprograms or labeled anonymous blocks forming the ancestor hierarchy from where the subprogram has been declared.
+
+The invocation is specified as a dot-separated list of qualifiers ending with the subprogram name and any of its arguments as shown by the following:
+
+```text
+[[<qualifier_1.>][...]<qualifier_n.>]<subprog> [(<arguments>)]
+```
+
+If specified, `qualifier_n` is the subprogram in which `subprog` has been declared in its declaration section. The preceding list of qualifiers must reside in a continuous path up the hierarchy from `qualifier_n` to `qualifier_1. qualifier_1` may be any ancestor subprogram in the path as well as any of the following:
+
+-   Standalone procedure name containing the subprogram
+-   Standalone function name containing subprogram
+-   Package name containing the subprogram
+-   Object type name containing the subprogram within an object type method
+-   An anonymous block label included prior to the `DECLARE` keyword if a declaration section exists, or prior to the `BEGIN` keyword if there is no declaration section.
+
+!!! Note
+    `qualifier_1` may not be a schema name, otherwise an error is thrown upon invocation of the subprogram. This Advanced Server restriction is not compatible with Oracle databases, which allow use of the schema name as a qualifier.
+
+`arguments` is the list of actual parameters to be passed to the subprocedure or subfunction.
+
+Upon invocation, the search for the subprogram occurs as follows:
+
+-   The invoked subprogram name of its type (that is, subprocedure or subfunction) along with any qualifiers in the specified order, (referred to as the invocation list) is used to find a matching set of blocks residing in the same hierarchical order. The search begins in the block hierarchy where the lowest level is the block from where the subprogram is invoked. The declaration of the subprogram must be in the SPL code prior to the code line where it is invoked when the code is observed from top to bottom. (An exception to this requirement can be accomplished using a forward declaration. See [Using Forward Declarations](05_using_forward_declarations/#using_forward_declarations) for information on forward declarations.)
+-   If the invocation list does not match the hierarchy of blocks starting from the block where the subprogram is invoked, a comparison is made by matching the invocation list starting with the parent of the previous starting block. In other words, the comparison progresses up the hierarchy.
+-   If there are sibling blocks of the ancestors, the invocation list comparison also includes the hierarchy of the sibling blocks, but always comparing in an upward level, never comparing the descendants of the sibling blocks.
+-   This comparison process continues up the hierarchies until the first complete match is found in which case the located subprogram is invoked. Note that the formal parameter list of the matched subprogram must comply with the actual parameter list specified for the invoked subprogram, otherwise an error occurs upon invocation of the subprogram.
+-   If no match is found after searching up to the standalone program, then an error is thrown upon invocation of the subprogram.
+
+!!! Note
+    The Advanced Server search algorithm for subprogram invocation is not quite compatible with Oracle databases. For Oracle, the search looks for the first match of the first qualifier (that is `qualifier_1`). When such a match is found, all remaining qualifiers, the subprogram name, subprogram type, and arguments of the invocation must match the hierarchy content where the matching first qualifier is found, otherwise an error is thrown. For Advanced Server, a match is not found unless all qualifiers, the subprogram name, and the subprogram type of the invocation match the hierarchy content. If such an exact match is not initially found, Advanced Server continues the search progressing up the hierarchy.
+
+The location of subprograms relative to the block from where the invocation is made can be accessed as follows:
+
+-   Subprograms declared in the local block can be invoked from the executable section or the exception section of the same block.
+-   Subprograms declared in the parent or other ancestor blocks can be invoked from the child block of the parent or other ancestors.
+-   Subprograms declared in sibling blocks can be called from a sibling block or from any descendent block of the sibling.
+
+However, the following location of subprograms cannot be accessed relative to the block from where the invocation is made:
+
+-   Subprograms declared in blocks that are descendants of the block from where the invocation is attempted.
+-   Subprograms declared in blocks that are descendants of a sibling block from where the invocation is attempted.
+
+The following examples illustrate the various conditions previously described.
+
+**Invoking Locally Declared Subprograms**
+
+The following example contains a single hierarchy of blocks contained within standalone procedure `level_0`. Within the executable section of procedure `level_1a`, the means of invoking the local procedure `level_2a` are shown, both with and without qualifiers.
+
+Also note that access to the descendant of local procedure `level_2a`, which is procedure `level_3a`, is not permitted, with or without qualifiers. These calls are commented out in the example.
+
+```text
+CREATE OR REPLACE PROCEDURE level_0
+IS
+    PROCEDURE level_1a
+    IS
+        PROCEDURE level_2a
+        IS
+            PROCEDURE level_3a
+            IS
+            BEGIN
+                DBMS_OUTPUT.PUT_LINE('........ BLOCK level_3a');
+                DBMS_OUTPUT.PUT_LINE('........ END BLOCK level_3a');
+            END level_3a;
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('...... BLOCK level_2a');
+            DBMS_OUTPUT.PUT_LINE('...... END BLOCK level_2a');
+        END level_2a;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1a');
+        level_2a;                              -- Local block called
+        level_1a.level_2a;                     -- Qualified local block called
+        level_0.level_1a.level_2a;             -- Double qualified local block called
+--        level_3a;                            -- Error - Descendant of local block
+--        level_2a.level_3a;                   -- Error - Descendant of local block
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1a');
+    END level_1a;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('BLOCK level_0');
+    level_1a;
+    DBMS_OUTPUT.PUT_LINE('END BLOCK level_0');
+END level_0;
+```
+
+When the standalone procedure is invoked, the output is the following, which indicates that procedure `level_2a` is successfully invoked from the calls in the executable section of procedure `level_1a`.
+
+```text
+BEGIN
+    level_0;
+END;
+
+BLOCK level_0
+.. BLOCK level_1a
+...... BLOCK level_2a
+...... END BLOCK level_2a
+...... BLOCK level_2a
+...... END BLOCK level_2a
+...... BLOCK level_2a
+...... END BLOCK level_2a
+.. END BLOCK level_1a
+END BLOCK level_0
+```
+
+If you were to attempt to run procedure `level_0` with any of the calls to the descendent block uncommented, then an error occurs.
+
+**Invoking Subprograms Declared in Ancestor Blocks**
+
+The following example shows how subprograms can be invoked that are declared in parent and other ancestor blocks relative to the block where the invocation is made.
+
+In this example, the executable section of procedure `level_3a` invokes procedure `level_2a`, which is its parent block. (Note that `v_cnt` is used to avoid an infinite loop.)
+
+```text
+CREATE OR REPLACE PROCEDURE level_0
+IS
+  v_cnt           NUMBER(2) := 0;
+  PROCEDURE level_1a
+  IS
+      PROCEDURE level_2a
+      IS
+          PROCEDURE level_3a
+          IS
+          BEGIN
+              DBMS_OUTPUT.PUT_LINE('........ BLOCK level_3a');
+              v_cnt := v_cnt + 1;
+              IF v_cnt < 2 THEN
+                  level_2a;                  -- Parent block called
+              END IF;
+              DBMS_OUTPUT.PUT_LINE('........ END BLOCK level_3a');
+          END level_3a;
+      BEGIN
+          DBMS_OUTPUT.PUT_LINE('...... BLOCK level_2a');
+          level_3a;                          -- Local block called
+          DBMS_OUTPUT.PUT_LINE('...... END BLOCK level_2a');
+      END level_2a;
+  BEGIN
+      DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1a');
+      level_2a;                              -- Local block called
+      DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1a');
+  END level_1a;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('BLOCK level_0');
+    level_1a;
+    DBMS_OUTPUT.PUT_LINE('END BLOCK level_0');
+END level_0;
+```
+
+The following is the resulting output:
+
+```text
+BEGIN
+    level_0;
+END;
+
+BLOCK level_0
+.. BLOCK level_1a
+...... BLOCK level_2a
+........ BLOCK level_3a
+...... BLOCK level_2a
+........ BLOCK level_3a
+........ END BLOCK level_3a
+...... END BLOCK level_2a
+........ END BLOCK level_3a
+...... END BLOCK level_2a
+.. END BLOCK level_1a
+END BLOCK level_0
+```
+
+In a similar example, the executable section of procedure `level_3a` invokes procedure `level_1a`, which is further up the ancestor hierarchy. (Note that `v_cnt` is used to avoid an infinite loop.)
+
+```text
+CREATE OR REPLACE PROCEDURE level_0
+IS
+    v_cnt           NUMBER(2) := 0;
+    PROCEDURE level_1a
+    IS
+        PROCEDURE level_2a
+        IS
+            PROCEDURE level_3a
+            IS
+            BEGIN
+                DBMS_OUTPUT.PUT_LINE('........ BLOCK level_3a');
+                v_cnt := v_cnt + 1;
+                IF v_cnt < 2 THEN
+                    level_1a;                  -- Ancestor block called
+                END IF;
+                DBMS_OUTPUT.PUT_LINE('........ END BLOCK level_3a');
+            END level_3a;
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('...... BLOCK level_2a');
+            level_3a;                          -- Local block called
+            DBMS_OUTPUT.PUT_LINE('...... END BLOCK level_2a');
+        END level_2a;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1a');
+        level_2a;                              -- Local block called
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1a');
+    END level_1a;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('BLOCK level_0');
+    level_1a;
+    DBMS_OUTPUT.PUT_LINE('END BLOCK level_0');
+END level_0;
+```
+
+The following is the resulting output:
+
+```text
+BEGIN
+    level_0;
+END;
+
+BLOCK level_0
+.. BLOCK level_1a
+...... BLOCK level_2a
+........ BLOCK level_3a
+.. BLOCK level_1a
+...... BLOCK level_2a
+........ BLOCK level_3a
+........ END BLOCK level_3a
+...... END BLOCK level_2a
+.. END BLOCK level_1a
+........ END BLOCK level_3a
+...... END BLOCK level_2a
+.. END BLOCK level_1a
+END BLOCK level_0
+```
+
+**Invoking Subprograms Declared in Sibling Blocks**
+
+The following examples show how subprograms can be invoked that are declared in a sibling block relative to the local, parent, or other ancestor blocks from where the invocation of the subprogram is made.
+
+In this example, the executable section of procedure `level_1b` invokes procedure `level_1a`, which is its sibling block. Both are local to standalone procedure `level_0`.
+
+Note that invocation of `level_2a` or equivalently, `level_1a.level_2a` from within procedure `level_1b` is commented out as this call would result in an error. Invoking a descendent subprogram `(level_2a)` of sibling block `(level_1a)` is not permitted.
+
+```text
+CREATE OR REPLACE PROCEDURE level_0
+IS
+    v_cnt     NUMBER(2) := 0;
+    PROCEDURE level_1a
+    IS
+        PROCEDURE level_2a
+        IS
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('...... BLOCK level_2a');
+            DBMS_OUTPUT.PUT_LINE('...... END BLOCK level_2a');
+        END level_2a;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1a');
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1a');
+    END level_1a;
+    PROCEDURE level_1b
+    IS
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1b');
+        level_1a;                              -- Sibling block called
+--      level_2a;                              -- Error – Descendant of sibling block
+--      level_1a.level_2a;                     -- Error - Descendant of sibling block
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1b');
+    END level_1b;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('BLOCK level_0');
+    level_1b;
+    DBMS_OUTPUT.PUT_LINE('END BLOCK level_0');
+END level_0;
+```
+
+The following is the resulting output:
+
+```text
+BEGIN
+    level_0;
+END;
+
+BLOCK level_0
+.. BLOCK level_1b
+.. BLOCK level_1a
+.. END BLOCK level_1a
+.. END BLOCK level_1b
+END BLOCK level_0
+```
+
+In the following example, procedure `level_1a`, which is the sibling of procedure `level_1b`, which is an ancestor of procedure `level_3b` is successfully invoked.
+
+```text
+CREATE OR REPLACE PROCEDURE level_0
+IS
+    PROCEDURE level_1a
+    IS
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1a');
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1a');
+    END level_1a;
+    PROCEDURE level_1b
+    IS
+        PROCEDURE level_2b
+        IS
+            PROCEDURE level_3b
+            IS
+            BEGIN
+                DBMS_OUTPUT.PUT_LINE('........ BLOCK level_3b');
+                level_1a;                      -- Ancestor's sibling block called
+                level_0.level_1a;              -- Qualified ancestor's sibling block
+                DBMS_OUTPUT.PUT_LINE('........ END BLOCK level_3b');
+            END level_3b;
+        BEGIN
+            DBMS_OUTPUT.PUT_LINE('...... BLOCK level_2b');
+            level_3b;                          -- Local block called
+            DBMS_OUTPUT.PUT_LINE('...... END BLOCK level_2b');
+        END level_2b;
+    BEGIN
+        DBMS_OUTPUT.PUT_LINE('.. BLOCK level_1b');
+        level_2b;                              -- Local block called
+        DBMS_OUTPUT.PUT_LINE('.. END BLOCK level_1b');
+    END level_1b;
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('BLOCK level_0');
+    level_1b;
+    DBMS_OUTPUT.PUT_LINE('END BLOCK level_0');
+END level_0;
+```
+
+The following is the resulting output:
+
+```text
+BEGIN
+    level_0;
+END;
+
+BLOCK level_0
+.. BLOCK level_1b
+...... BLOCK level_2b
+........ BLOCK level_3b
+.. BLOCK level_1a
+.. END BLOCK level_1a
+.. BLOCK level_1a
+.. END BLOCK level_1a
+........ END BLOCK level_3b
+...... END BLOCK level_2b
+.. END BLOCK level_1b
+END BLOCK level_0
+```

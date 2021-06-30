@@ -1,0 +1,69 @@
+---
+title: "DBMS_AQ"
+---
+
+EDB Postgres Advanced Server Advanced Queueing provides message queueing and message processing for the Advanced Server database. User-defined messages are stored in a queue; a collection of queues is stored in a queue table. Procedures in the `DBMS_AQADM` package create and manage message queues and queue tables. Use the `DBMS_AQ` package to add messages to a queue or remove messages from a queue, or register or unregister a PL/SQL callback procedure.
+
+Advanced Server also provides extended (non-compatible) functionality for the `DBMS_AQ` package with SQL commands, see the *Database Compatibility for Oracle Developers SQL Guide* for detailed information about the following SQL commands:
+
+-   `ALTER QUEUE`
+-   `ALTER QUEUE TABLE`
+-   `CREATE QUEUE`
+-   `CREATE QUEUE TABLE`
+-   `DROP QUEUE`
+-   `DROP QUEUE TABLE`
+
+The `DBMS_AQ` package provides procedures that allow you to enqueue a message, dequeue a message, and manage callback procedures. The supported procedures are:
+
+| Function/Procedure | Return Type | Description                                                        |
+| ------------------ | ----------- | ------------------------------------------------------------------ |
+| `ENQUEUE`          | n/a         | Post a message to a queue.                                         |
+| `DEQUEUE`          | n/a         | Retrieve a message from a queue if or when a message is available. |
+| `REGISTER`         | n/a         | Register a callback procedure.                                     |
+| `UNREGISTER`       | n/a         | Unregister a callback procedure.                                   |
+
+Advanced Server's implementation of `DBMS_AQ` is a partial implementation when compared to Oracle's version. Only those procedures listed in the table above are supported.
+
+Advanced Server supports use of the constants listed below:
+
+| Constant                          | Description                                                                       | For Parameters                                               |
+| --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `DBMS_AQ.BROWSE (0)`              | Read the message without locking.                                                 | `dequeue_options_t.dequeue_mode`                             |
+| `DBMS_AQ.LOCKED (1)`              | This constant is defined, but will return an error if used.                       | `dequeue_options_t.dequeue_mode`                             |
+| `DBMS_AQ.REMOVE (2)`              | Delete the message after reading; the default.                                    | `dequeue_options_t.dequeue_mode`                             |
+| `DBMS_AQ.REMOVE_NODATA (3)`       | This constant is defined, but will return an error if used.                       | `dequeue_options_t.dequeue_mode`                             |
+| `DBMS_AQ.FIRST_MESSAGE (0)`       | Return the first available message that matches the search terms.                 | `dequeue_options_t.navigation`                               |
+| `DBMS_AQ.NEXT_MESSAGE (1)`        | Return the next available message that matches the search terms.                  | `dequeue_options_t.navigation`                               |
+| `DBMS_AQ.NEXT_TRANSACTION (2)`    | This constant is defined, but will return an error if used.                       | `dequeue_options_t.navigation`                               |
+| `DBMS_AQ.FOREVER (-1)`            | Wait forever if a message that matches the search term is not found, the default. | `dequeue_options_t.wait`                                     |
+| `DBMS_AQ.NO_WAIT (0)`             | Do not wait if a message that matches the search term is not found.               | `dequeue_options_t.wait`                                     |
+| `DBMS_AQ.ON_COMMIT (0)`           | The dequeue is part of the current transaction.                                   | `enqueue_options_t.visibility, dequeue_options_t.visibility` |
+| `DBMS_AQ.IMMEDIATE (1)`           | This constant is defined, but will return an error if used.                       | `enqueue_options_t.visibility, dequeue_options_t.visibility` |
+| `DBMS_AQ.PERSISTENT (0)`          | The message should be stored in a table.                                          | `enqueue_options_t.delivery_mode`                            |
+| `DBMS_AQ.BUFFERED (1)`            | This constant is defined, but will return an error if used.                       | `enqueue_options_t.delivery_mode`                            |
+| `DBMS_AQ.READY (0)`               | Specifies that the message is ready to process.                                   | `message_properties_t.state`                                 |
+| `DBMS_AQ.WAITING (1)`             | Specifies that the message is waiting to be processed.                            | `message_properties_t.state`                                 |
+| `DBMS_AQ.PROCESSED (2)`           | Specifies that the message has been processed.                                    | `message_properties_t.state`                                 |
+| `DBMS_AQ.EXPIRED (3)`             | Specifies that the message is in the exception queue.                             | `message_properties_t.state`                                 |
+| `DBMS_AQ.NO_DELAY (0)`            | This constant is defined, but will return an error if used                        | `message_properties_t.delay`                                 |
+| `DBMS_AQ.NEVER (NULL)`            | This constant is defined, but will return an error if used                        | `message_properties_t.expiration`                            |
+| `DBMS_AQ.NAMESPACE_AQ (0)`        | Accept notifications from `DBMS_AQ` queues.                                       | `sys.aq$_reg_info.namespace`                                 |
+| `DBMS_AQ.NAMESPACE_ANONYMOUS (1)` | This constant is defined, but will return an error if used                        | `sys.aq$_reg_info.namespace`                                 |
+
+The `DBMS_AQ` configuration parameters listed in the following table can be defined in the `postgresql.conf` file. After the configuration parameters are defined, you can invoke the `DBMS_AQ` package to use and manage messages held in queues and queue tables.
+
+| Parameter                     | Description                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ |
+| `dbms_aq.max_workers`         | The maximum number of workers to run.                                                            |
+| `dbms_aq.max_idle_time`       | The idle time a worker must wait before exiting.                                                 |
+| `dbms_aq.min_work_time`       | The minimum time a worker can run before exiting.                                                |
+| `dbms_aq.launch_delay`        | The minimum time between creating workers.                                                       |
+| `dbms_aq.batch_size`          | The maximum number of messages to process in a single transaction. The default batch size is 10. |
+| `dbms_aq.max_databases`       | The size of `DBMS_AQ`’s hash table of databases. The default value is 1024.                      |
+| `dbms_aq.max_pending_retries` | The size of `DBMS_AQ`’s hash table of pending retries. The default value is 1024.                |
+
+<div class="toctree" maxdepth="5">
+
+enqueue dequeue register unregister
+
+</div>

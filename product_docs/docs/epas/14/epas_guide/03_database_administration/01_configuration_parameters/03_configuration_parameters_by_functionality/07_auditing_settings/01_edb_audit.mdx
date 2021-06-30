@@ -1,0 +1,19 @@
+---
+title: "edb_audit"
+---
+
+<div id="edb_audit" class="registered_link"></div>
+
+**Parameter Type:** Enum
+
+**Default Value:** `none`
+
+**Range:** `{none | csv | xml}`
+
+**Minimum Scope of Effect:** Cluster
+
+**When Value Changes Take Effect:** Reload
+
+**Required Authorization to Activate:** EPAS service account
+
+Enables or disables database auditing. The values `xml` or `csv` will enable database auditing. These values represent the file format in which auditing information will be captured. `none` will disable database auditing and is also the default.

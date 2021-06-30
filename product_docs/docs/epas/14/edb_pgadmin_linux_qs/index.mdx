@@ -1,0 +1,96 @@
+---
+title: "EDB pgAdmin4 Quickstart Linux Guide"
+---
+
+pgAdmin 4 is the leading Open Source management tool for Postgres databases. EDB pgAdmin 4 is distributed by EDB along with EDB Postgres Advanced Server databases. It is designed to meet the needs of both novice and experienced Postgres users alike, providing a powerful graphical interface that simplifies the creation, maintenance and use of database objects.
+
+You can install `EDB pgAdmin 4` for your Advanced Server databases using yum package manager for RHEL/CentOS 7.x or 8.x platforms.
+
+**Installing EDB pgAdmin 4 on a Linux Host**
+
+You can use the following steps to use the yum package manager to install EDB pgAdmin4:
+
+**Create a Repository Configuration File**
+
+To create a repository configuration file, you must have the credentials that allow access to the EDB repository. For information about requesting credentials, visit:
+
+<https://info.enterprisedb.com/rs/069-ALB-339/images/Repository%20Access%2004-09-2019.pdf>.
+
+To create the repository configuration file, assume superuser privileges and invoke the following command:
+
+```text
+yum -y install https://yum.enterprisedb.com/edb-repo-rpms/edb-repo-latest.noarch.rpm
+```
+
+The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d.` After creating the `edb.repo` file, use the following command to replace the `USERNAME` and `PASSWORD` placeholders in the baseurl specification with the username and password of a registered EDB user:
+
+```text
+sed -i "s@<username>:<password>@USERNAME:PASSWORD@" /etc/yum.repos.d/edb.repo
+```
+
+!!! Note
+    If you have `edb.repo` already configured then you can skip this step and go to the next step.
+
+**Install EPEL Repository**
+
+For CentOS 7.x use the following command:
+
+```text
+yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+```
+
+!!! Note
+    To install EPEL repository on CentOS/RHEL 7.x and 8.x see the platform specific steps at [EDB Website](https://repos.enterprisedb.com/).
+
+**Install EDB pgAdmin 4**
+
+After creating the repository configuration file and adding a username and password to the `edb.repo` file, you can install `edb-pgadmin4`. To install `edb-pgadmin4`, assume superuser privileges and invoke the following command:
+
+```text
+yum install edb-pgadmin4*
+```
+
+!!! Note
+     This command will install following packages:
+
+     `edb-pgadmin4`
+
+     `edb-pgadmin4-desktop-common`
+
+     `edb-pgadmin4-desktop-gnome`
+
+     `edb-pgadmin4-docs`
+
+     `edb-pgadmin4-web`
+
+**Starting pgAdmin 4 in Desktop Mode**
+
+You can use the following command to start pgAdmin 4 in desktop mode:
+
+```text
+/usr/edb/pgadmin4/bin/pgAdmin4
+```
+
+You can also use the link on the `Applications` menu to start pgAdmin 4 in desktop mode:
+
+![Accessing pgAdmin 4 from Applications Menu.](images/pgadmin4_from_applications_menu.png)
+
+<div id="registering_and_connecting_advanced_server_on_edb_pgadmin_4" class="registered_link"></div>
+
+**Registering and Connecting to Advanced Server with pgAdmin 4**
+
+Before managing an Advanced Server cluster, you must register the server. To register the server, use the fields on the `Server` dialog to specify the connection properties. To open the `Server` dialog, right-click on the `Servers` node of the tree control, and select `Server` from the `Create` menu.
+
+![Create Server dialog](images/server_general.png)
+
+For detailed information about registering your server, visit:
+
+<https://www.pgadmin.org/docs/pgadmin4/latest/server_dialog.html>.
+
+Then, to connect to your Advanced Server instance, right click on the server name and select `Connect Server`; provide your password when the `Connect to Server` dialog opens:
+
+![Connecting to EPAS Server through EDB pgAdmin 4.](images/connect_to_epas_server.png)
+
+Once you are connected to the server, you can see the `Dashboard` tab as shown below:
+
+![EPAS Server - Dashboard](images/edb_pgadmin4_first_look.png)

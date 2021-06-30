@@ -1,0 +1,25 @@
+---
+title: "Deleting a Procedure"
+---
+
+<div id="deleting_a_procedure" class="registered_link"></div>
+
+A procedure can be deleted from the database using the `DROP PROCEDURE` command.
+
+```text
+DROP PROCEDURE [ IF EXISTS ] <name> [ (<parameters>) ]
+    [ CASCADE | RESTRICT ];
+```
+
+Where `name` is the name of the procedure to be dropped.
+
+!!! Note
+    -   The specification of the parameter list is required in Advanced Server under certain circumstances such as if this is an overloaded procedure. Oracle requires that the parameter list always be omitted.
+
+    -   Usage of `IF EXISTS, CASCADE`, or `RESTRICT` is not compatible with Oracle databases. See the `DROP PROCEDURE` command in the *Database Compatibility for Oracle Developers Reference Guide* for information on these options.
+
+The previously created procedure is dropped in this example:
+
+```text
+DROP PROCEDURE simple_procedure;
+```

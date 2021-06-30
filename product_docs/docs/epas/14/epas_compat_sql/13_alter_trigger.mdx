@@ -1,0 +1,107 @@
+---
+title: "ALTER TRIGGER"
+---
+
+<div id="alter_trigger" class="registered_link"></div>
+
+**Name**
+
+`ALTER TRIGGER` -- change the definition of a trigger.
+
+**Synopsis**
+
+Advanced Server supports three variations of the `ALTER TRIGGER` command. Use the first variation to change the name of a given trigger without changing the trigger definition.
+
+```text
+ALTER TRIGGER <name> ON <table_name> RENAME TO <new_name>
+```
+
+Use the second variation of the `ALTER TRIGGER` command if the trigger is dependent on an extension; if the extension is dropped the trigger will automatically be dropped as well.
+
+```text
+ALTER TRIGGER <name> ON <table_name> DEPENDS ON EXTENSION <extension_name>
+```
+
+Use the third variation of the `ALTER TRIGGER` command to change the ownership of a trigger's object.
+
+```text
+ALTER TRIGGER <name> ON <table_name> AUTHORIZATION <rolespec>
+```
+
+For information about using non-compatible implementations of the `ALTER TRIGGER` command that are supported by Advanced Server, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/sql-altertrigger.html>
+
+**Description**
+
+`ALTER TRIGGER` changes the properties of existing trigger. You must own the table on which the trigger acts to be allowed to change its properties.
+
+To alter an owner of the trigger's implicit object you can use the `ALTER TRIGGER ...ON AUTHORIZATION` command. You must have the privilege to execute `ALTER TRIGGER ...ON AUTHORIZATION` command to assign the trigger's implicit object ownership to a user after authorization.
+
+**Parameters**
+
+`name`
+
+ The name of the trigger to be altered.
+
+`table_name`
+
+ The name of a table on which trigger acts.
+
+`rolespec`
+
+ The `rolespec` determines an owner of trigger objects.
+
+**Examples**
+
+The following example includes user `bob` and `carol` as superusers. The user `bob` owns a table `emp` and user `carol` owns a trigger named `emp_sal_trig`, which is created on table `emp`:
+
+```text
+SELECT relname, relowner::regrole FROM pg_class WHERE relname = 'emp';
+ relname | relowner
+---------+----------
+ emp     | bob
+(1 row)
+```
+
+```text
+SELECT proname, proowner::regrole FROM pg_proc WHERE oid = (SELECT tgfoid
+FROM pg_trigger WHERE tgname = 'emp_sal_trig') ORDER BY oid;
+ proname           | proowner
+-------------------+----------
+ emp_sal_trig_emp  | carol
+(1 row)
+```
+
+To alter the ownership of table `emp` from user `bob` to a new owner `edb`:
+
+```text
+ALTER TABLE emp OWNER TO edb;
+ALTER TABLE
+
+SELECT relname, relowner::regrole FROM pg_class WHERE relname = 'emp';
+ relname | relowner
+---------+----------
+ emp     | edb
+(1 row)
+```
+
+The table ownership is changed from user `bob` to an owner `edb` but the trigger ownership of `emp_sal_trig` is not altered and owned by user `carol`. Now alter the trigger `emp_sal_trig` on table `emp` and grant authorization to an owner `edb`:
+
+```text
+ALTER TRIGGER emp_sal_trig ON emp AUTHORIZATION edb;
+ALTER TRIGGER
+
+SELECT proname, proowner::regrole FROM pg_proc WHERE oid = (SELECT tgfoid
+FROM pg_trigger WHERE tgname = 'emp_sal_trig') ORDER BY oid;
+ proname          | proowner
+------------------+----------
+ emp_sal_trig_emp | edb
+(1 row)
+```
+
+The trigger ownership `emp_sal_trig` on table `emp` is altered and granted to an owner `edb`.
+
+**See Also**
+
+[CREATE TRIGGER](38_create_trigger/#create_trigger), [DROP TRIGGER](59_drop_trigger/#drop_trigger)

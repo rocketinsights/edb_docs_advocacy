@@ -1,0 +1,65 @@
+---
+title: "Installing Advanced Server with the Interactive Installer"
+---
+
+<div id="installing_advanced_server_with_the_interactive_installer" class="registered_link"></div>
+
+You can use the Advanced Server interactive installer to install Advanced Server on Windows. The interactive installer is available from the EDB website at:
+
+<https://www.enterprisedb.com/advanced-downloads>
+
+You can invoke the graphical installer in different installation modes to perform an Advanced Server installation:
+
+-   For information about using the graphical installer, see [Performing a Graphical Installation on Windows](01_performing_a_graphical_installation_on_windows/#performing_a_graphical_installation_on_windows).
+-   For information about performing an unattended installation, see [Performing an Unattended Installation](02_invoking_the_graphical_installer_from_the_command_line/01_performing_an_unattended_installation/#performing_an_unattended_installation).
+-   For information about performing an installation with limited privileges, see [Performing an Installation with Limited Privileges](02_invoking_the_graphical_installer_from_the_command_line/02_performing_an_installation_with_limited_privileges/#performing_an_installation_with_limited_privileges).
+-   For information about the command line options you can include when invoking the installer, see [Reference - Command Line Options](02_invoking_the_graphical_installer_from_the_command_line/03_reference_command_line_options/#reference_command_line_options).
+
+During the installation, the graphical installer copies a number of temporary files to the location specified by the `TEMP` environment variable. You can optionally specify an alternate location for the temporary files by modifying the `TEMP` environment variable.
+
+If invoking the installer from the command line, you can set the value of the variable on the command line. Use the command:
+
+```text
+SET TEMP=temp_file_location
+```
+
+Where `temp_file_location` specifies the alternate location for the temporary files and must match the permissions with the `TEMP` environment variable.
+
+!!! Note
+    If you are invoking the installer to perform a system upgrade, the installer will preserve the configuration options specified during the previous installation.
+
+**Setting Cluster Preferences during a Graphical Installation**
+
+During an installation, the graphical installer invokes the PostgreSQL `initdb` utility to initialize a cluster. If you are using the graphical installer, you can use the `INITDBOPTS` environment variable to specify your `initdb` preferences. Before invoking the graphical installer, set the value of `INITDBOPTS` at the command line, specifying one or more cluster options. For example:
+
+```text
+SET INITDBOPTS= -k -E=UTF-8
+```
+
+If you specify values in `INITDBOPTS` that are also provided by the installer (such as the `–D` option, which specifies the installation directory), the value specified in the graphical installer will supersede the value if specified in `INITDBOPTS`.
+
+For more information about using `initdb` cluster configuration options, see the PostgreSQL Core Documentation available at:
+
+<https://www.postgresql.org/docs/current/static/app-initdb.html>
+
+In addition to the cluster configuration options documented in the PostgreSQL core documentation, Advanced Server supports the following `initdb` options:
+
+`--no-redwood-compat`
+
+Include the `--no-redwood-compat` keywords to instruct the server to create the cluster in PostgreSQL mode. When the cluster is created in PostgreSQL mode, the name of the database superuser will be `postgres`, the name of the default database will be `postgres`, and Advanced Server’s features compatible with Oracle databases will not be available to the cluster.
+
+`--redwood-like`
+
+Include the `--redwood-like` keywords to instruct the server to use an escape character (an empty string ('')) following the `LIKE` (or PostgreSQL compatible `ILIKE`) operator in a SQL statement that is compatible with Oracle syntax.
+
+`--icu-short-form`
+
+Include the `--icu-short-form` keywords to create a cluster that uses a default ICU (International Components for Unicode) collation for all databases in the cluster. For more information about Unicode collations, please refer to the *EDB Postgres Advanced Server Guide* available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/)
+
+<div class="toctree" maxdepth="3">
+
+performing_a_graphical_installation_on_windows invoking_the_graphical_installer_from_the_command_line using_stackbuilder_plus installation_troubleshooting
+
+</div>

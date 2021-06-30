@@ -1,0 +1,190 @@
+---
+title: "Identifier Functions"
+---
+
+<div id="identifier_functions" class="registered_link"></div>
+
+The following section describes identifier functions that provide information about the instance and session.
+
+## SYS_GUID
+
+The `SYS_GUID` function generates and returns a globally unique identifier; the identifier takes the form of 16 bytes of `RAW` data. The `SYS_GUID` function is based on the `uuid-ossp` module to generate universally unique identifiers. The signature is:
+
+```text
+SYS_GUID()
+```
+
+**Example**
+
+The following example adds a column to the table `EMP`, inserts a unique identifier, and returns a `16-byte RAW` value:
+
+```text
+edb=# CREATE TABLE EMP(C1 RAW (16) DEFAULT SYS_GUID() PRIMARY KEY, C2 INT);
+CREATE TABLE
+edb=# INSERT INTO EMP(C2) VALUES (1);
+INSERT 0 1
+edb=# SELECT * FROM EMP;
+                 c1                 | c2
+------------------------------------+----
+ \xb944970d3a1b42a7a2119265c49cbb7f |  1
+(1 row)
+```
+
+## USERENV
+
+The `USERENV` function retrieves information about the current session. The signature is:
+
+```text
+USERENV(<parameter>)
+```
+
+The `parameter` specifies a value to return from the current session. The possible `parameter` values are:
+
+| Parameter   | Description                                                                                                                               |                                                                         
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- | 
+| `ISDBA`     | Returns `TRUE` if the current user has DBA privileges, otherwise `FALSE`.                                                                 |                                                                                                         
+| `LANGUAGE`  | The language, territory, and character set of the current session in the following format: `language_territory.characterset` <br /><br /> |                                                                           
+| `LANG`      | The ISO abbreviation for the language name, a short name for the existing `LANGUAGE` parameter.                                           |              
+| `SID`       | The current session identifier.                                                                                                           | 
+| `TERMINAL`  | The current session's operating system terminal identifier.                                                                               |
+
+**Examples**
+
+The following example returns the `ISDBA` parameter of the current session.
+
+```text
+edb=# SELECT USERENV('ISDBA') FROM DUAL;     
+ userenv 
+---------
+ TRUE
+(1 row)
+```
+
+The following example returns the `LANG` parameter of the current session.
+
+```text
+edb=# SELECT USERENV('LANG') FROM DUAL;      
+ userenv 
+---------
+ en
+(1 row)
+```
+
+The following example returns the `LANGUAGE` parameter of the current session.
+
+```text
+edb=# SELECT USERENV('LANGUAGE') FROM DUAL;  
+      userenv      
+-------------------
+ English_USA.UTF-8
+(1 row)
+```
+
+The following example returns the `TERMINAL` identifier.
+
+```text
+edb=# SELECT USERENV('TERMINAL') FROM DUAL; 
+ userenv 
+---------
+ [local]
+(1 row)
+```
+
+The following example returns the `SID` number of the current session.
+
+```text
+edb=# SELECT USERENV('SID') FROM DUAL;  
+ userenv 
+---------
+ 56867
+(1 row)
+```
+
+## SYS_CONTEXT
+
+The `SYS_CONTEXT` function returns the value of a `parameter` associated with the context `namespace` in the current session. The signature is:
+
+```text
+SYS_CONTEXT(<namespace>, <parameter>)
+```
+
+OR
+
+```text
+SYS_CONTEXT(<userenv>, <parameter>)
+```
+
+**Parameters**
+
+`namespace`
+
+ `namespace` can be any named context; `USERENV` is a built-in context that shows information about the current session. 
+
+`parameter`
+
+ The `parameter` is a defined attribute of a namespace. The following table lists predefined attributes of the `USERENV` namespace:
+
+ | Parameter   | Description                                                                                                                               |                                                                         
+ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- | 
+ | `ISDBA`     | Returns `TRUE` if the current user has DBA privileges, otherwise `FALSE`.                                                                 |                                                                                                         
+ | `LANGUAGE`  | The language, territory, and character set of the current session in the following format: `language_territory.characterset` <br /><br /> |                                                                           
+ | `LANG`      | The ISO abbreviation for the language name, a short name for the existing `LANGUAGE` parameter.                                           |              
+ | `SID`       | The current session identifier.                                                                                                           | 
+ | `TERMINAL`  | The current session's operating system terminal identifier.         
+
+**Examples**
+
+In the following examples, the built-in `USERENV` namespace is used with the `SYS_CONTEXT` function.
+
+The following example returns the `ISDBA` parameter of the current session.
+
+```text
+edb=# SELECT SYS_CONTEXT('USERENV','ISDBA') AS ISDBA FROM DUAL;
+ isdba 
+-------
+ TRUE
+(1 row)
+```
+
+The following example returns the `LANG` parameter of the current session.
+
+```text
+edb=# SELECT SYS_CONTEXT('USERENV','LANG') AS LANG FROM DUAL;
+ lang 
+------
+ en
+(1 row)
+```
+
+The following example returns the `LANGUAGE` parameter of the current session.
+
+```text
+edb=# SELECT SYS_CONTEXT('USERENV','LANGUAGE') AS LANGUAGE FROM DUAL;
+     language      
+-------------------
+ English_USA.UTF-8
+(1 row)
+```
+
+The following example returns the `TERMINAL` identifier.
+
+```text
+edb=# SELECT SYS_CONTEXT('USERENV','TERMINAL') AS TERMINAL FROM DUAL;
+ terminal 
+----------
+ [local]
+(1 row)
+```
+
+The following example returns the `SID` number of the current session.
+
+```text
+edb=# SELECT SYS_CONTEXT('USERENV','SID') AS SID FROM DUAL;
+  sid  
+-------
+ 56867
+(1 row)
+```
+
+
+

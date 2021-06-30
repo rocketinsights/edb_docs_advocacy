@@ -1,0 +1,14 @@
+---
+title: "Limitations"
+---
+
+The following limitations apply to EDB Postgres Advanced Server:
+
+-   The `data` directory of a production database should not be stored on an NFS file system.
+-   The `pg_upgrade` utility cannot upgrade a partitioned table if a foreign key refers to the partitioned table.
+-   If you are upgrading from the version 9.4 server or a lower version of Advanced Server, and you use partitioned tables that include a `SUBPARTITION BY` clause, you must use `pg_dump` and `pg_restore` to upgrade an existing Advanced Server installation to a later version of Advanced Server. To upgrade, you must:
+    1.  Use `pg_dump` to preserve the content of the subpartitioned table.
+    2.  Drop the table from the Advanced Server 9.4 database or a lower version of Advanced Server database.
+    3.  Use `pg_upgrade` to upgrade the rest of the Advanced Server database to a more recent version.
+    4.  Use `pg_restore` to restore the subpartitioned table to the latest upgraded Advanced Server database.
+-   If you perform an upgrade of the Advanced Server installation, you must rebuild any hash-partitioned table on the upgraded server.

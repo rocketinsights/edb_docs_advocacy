@@ -1,0 +1,56 @@
+---
+title: "Example - AUTOMATIC LIST PARTITION"
+---
+
+<div id="example_automatic_list_partition" class="registered_link"></div>
+
+The following example shows a `(sales)` table that uses an `AUTOMATIC` clause to create an automatic list partitioned table on the `sales_state` column. The database creates a new partition and adds data to a table.
+
+```text
+CREATE TABLE sales
+(
+  dept_no      number,
+  part_no      varchar2,
+  sales_state  varchar2(20),
+  date         date,
+  amount       number
+)
+PARTITION BY LIST(sales_state) AUTOMATIC
+(
+  PARTITION P_CAL VALUES('CALIFORNIA'),
+  PARTITION P_FLO VALUES('FLORIDA')
+);
+```
+
+Query the `ALL_TAB_PARTITIONS` view to see an existing partition that is successfully created.
+
+```text
+edb=# SELECT table_name, partition_name, high_value from ALL_TAB_PARTITIONS;
+ table_name | partition_name |  high_value
+------------+----------------+--------------
+ SALES      | P_CAL          | 'CALIFORNIA'
+ SALES      | P_FLO          | 'FLORIDA'
+(2 rows)
+```
+
+Now, insert data into a `sales` table that cannot fit into an existing partition. For the regular list partitioned table, you will encounter an error but automatic list partitioning creates and inserts the data into a new partition.
+
+```text
+edb=# INSERT INTO sales VALUES (1, 'IND', 'INDIANA');
+INSERT 0 1
+edb=# INSERT INTO sales VALUES (2, 'OHI', 'OHIO');
+INSERT 0 1
+```
+
+Then, query the `ALL_TAB_PARTITIONS` view again after the insert. The partition is automatically created and data is inserted to hold a new value. A system-generated name of the partition is created that varies for each session.
+
+```text
+edb=# SELECT table_name, partition_name, high_value from ALL_TAB_PARTITIONS;
+ table_name | partition_name |  high_value
+------------+----------------+--------------
+ SALES      | P_CAL          | 'CALIFORNIA'
+ SALES      | P_FLO          | 'FLORIDA'
+ SALES      | SYS106900103   | 'INDIANA'
+ SALES      | SYS106900104   | 'OHIO'
+(4 rows)
+```

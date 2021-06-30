@@ -1,0 +1,64 @@
+---
+title: "Compound Triggers"
+---
+
+<div id="compound_triggers" class="registered_link"></div>
+
+Advanced Server has added compatible syntax to support compound triggers. A compound trigger combines all the triggering timings under one trigger body that can be invoked at one or more *timing points*. A timing point is a point in time related to a triggering statement (an `INSERT, UPDATE, DELETE` or `TRUNCATE` statement that modifies data). The supported timing points are:
+
+-   `BEFORE STATEMENT`: Before the triggering statement executes.
+-   `BEFORE EACH ROW`: Before each row that the triggering statement affects.
+-   `AFTER EACH ROW`: After each row that the triggering statement affects.
+-   `AFTER STATEMENT`: After the triggering statement executes.
+-   `INSTEAD OF EACH ROW`: Trigger fires once for every row affected by the triggering statement.
+
+A compound trigger may include any combination of timing points defined in a single trigger.
+
+The optional declaration section in a compound trigger allows you to declare trigger-level variables and subprograms. The content of the declaration is accessible to all timing points referenced by the trigger definition. The variables and subprograms created by the declaration persist only for the duration of the triggering statement.
+
+A compound trigger contains a declaration, followed by a PL block for each timing point:
+
+```text
+CREATE OR REPLACE TRIGGER compound_trigger_name
+FOR INSERT OR UPDATE OR DELETE ON table_name
+COMPOUND TRIGGER
+   -- Global Declaration Section (optional)
+   -- Variables declared here can be used inside any timing-point blocks.
+
+     BEFORE STATEMENT IS
+     BEGIN
+       NULL;
+     END BEFORE STATEMENT;
+
+     BEFORE EACH ROW IS
+     BEGIN
+       NULL;
+     END BEFORE EACH ROW;
+
+     AFTER EACH ROW IS
+     BEGIN
+       NULL;
+     END AFTER EACH ROW;
+
+
+     AFTER STATEMENT IS
+     BEGIN
+       NULL;
+     END AFTER STATEMENT;
+END compound_trigger_name;
+/
+Trigger created.
+```
+
+!!! Note
+    It is not mandatory to have all the four timing blocks; you can create a compound trigger for any of the required timing-points.
+
+A Compound Trigger has the following restrictions:
+
+-   A compound trigger body is comprised of a compound trigger block.
+-   A compound trigger can be defined on a table or a view.
+-   Exceptions are non-transferable to other timing-point section and must be handled separately in that section only by each compound trigger block.
+-   If a `GOTO` statement is specified in a timing-point section, then the target of the `GOTO` statement must also be specified in the same timing-point section.
+-   `:OLD` and `:NEW` variable identifiers cannot exist in the declarative section, the `BEFORE STATEMENT` section, or the `AFTER STATEMENT` section.
+-   `:NEW` values can only be modified by the `BEFORE EACH ROW` block.
+-   The sequence of compound trigger timing-point execution is specific, but if a simple trigger exists within the same timing-point then the simple trigger is fired first, followed by the firing of compound triggers.

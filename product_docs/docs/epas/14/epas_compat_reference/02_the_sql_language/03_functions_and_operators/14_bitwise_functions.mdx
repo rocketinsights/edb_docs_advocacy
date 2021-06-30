@@ -1,0 +1,90 @@
+---
+title: "Bitwise Functions"
+---
+
+<div id="numeric_functions" class="registered_link"></div>
+
+The following section describes bitwise functions `BITAND` and `BITOR`.
+
+## BITAND
+
+The `BITAND` function performs a bitwise `AND` operation and returns a value based on the data type of input argument. The signature is:
+
+```text
+BITAND(<expr1>, <expr2>)
+```
+
+The input data type of `expr1` and `expr2` is a `NUMBER` on which the bitwise `AND` operation will be performed. The `BITAND` compares each bit of `expr1` value to the corresponding bit of `exp2` using a bitwise `AND` operation and returns the value based on the data type of the input argument. If either argument to `BITAND` is `NULL`, the result is a `NULL` value.
+
+**Return Types**
+
+The `BITAND` function returns the same value as the data type of the input argument.
+
+**Examples**
+
+The following example performs an `AND` operation on the numbers 10 and 11.
+
+```text
+edb=# SELECT BITAND(10,11) FROM DUAL;
+ bitand 
+--------
+     10
+(1 row)
+```
+
+# BITOR
+
+The `BITOR` function performs a bitwise `OR` operation and returns a value based on the data type of input argument. The signature is:
+
+```text
+BITOR(<expr1>, <expr2>)
+```
+
+The `BITOR` compares each bit of `expr1` value to the corresponding bit of `exp2` using a bitwise `OR` operation and returns the value based on the data type of the input argument.
+
+**Return Types**
+
+The `BITOR` function returns the same value as the data type of the input argument. However, if all the values of a column are `NULL`, the `BITOR` returns `NULL`.
+
+**Examples**
+
+The following example performs an `OR` operation on the numbers 10 and 11.
+
+```text
+edb=# SELECT BITOR(10,11) FROM DUAL;
+ bitor 
+-------
+    11
+(1 row)
+```
+
+# BITWISE OPERATORS
+
+The bitwise operators perform the same operation as `BITAND` and `BITOR`. The bitwise operators are:
+
+-  `&`: `(Bitwise AND)` Return the result of a bitwise `AND` operation performed on the input type.
+
+-  `|`: `(Bitwise OR)` Return the result of a bitwise `OR` operation performed on the input type.
+
+**Examples**
+
+The following example uses `&` operator and returns the output as `BITAND` of the input.
+
+```text
+edb=# SELECT 10&11 FROM DUAL;
+ ?column? 
+----------
+       10
+(1 row)
+```
+
+The following example uses the `|` operator and returns the output as `BITOR` of the input.
+
+```text
+edb=# SELECT 10|11 FROM DUAL;
+ ?column? 
+----------
+       11
+(1 row)
+```
+

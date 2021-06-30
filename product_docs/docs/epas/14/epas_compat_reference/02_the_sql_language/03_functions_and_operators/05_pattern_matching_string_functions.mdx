@@ -1,0 +1,216 @@
+---
+title: "Pattern Matching String Functions"
+---
+
+<div id="pattern_matching_string_functions" class="registered_link"></div>
+
+Advanced Server offers support for the `REGEXP_COUNT`, `REGEXP_INSTR` and `REGEXP_SUBSTR` functions. These functions search a string for a pattern specified by a regular expression, and return information about occurrences of the pattern within the string. The pattern should be a POSIX-style regular expression; for more information about forming a POSIX-style regular expression, please refer to the core documentation at:
+
+<https://www.postgresql.org/docs/current/static/functions-matching.html>
+
+## REGEXP_COUNT
+
+`REGEXP_COUNT` searches a string for a regular expression, and returns a count of the times that the regular expression occurs. The signature is:
+
+```text
+INTEGER REGEXP_COUNT
+(
+  srcstr    TEXT,
+  pattern   TEXT,
+  position  DEFAULT 1
+  modifier  DEFAULT NULL
+)
+```
+
+**Parameters**
+
+`srcstr`
+
+ `srcstr` specifies the string to search.
+
+`pattern`
+
+ `pattern` specifies the regular expression for which `REGEXP_COUNT` will search.
+
+`position`
+
+ `position` is an integer value that indicates the position in the source string at which `REGEXP_COUNT` will begin searching. The default value is `1`.
+
+`modifier`
+
+ `modifier` specifies values that control the pattern matching behavior. The default value is `NULL`. For a complete list of the modifiers supported by Advanced Server, see the PostgreSQL core documentation available at:
+
+ <https://www.postgresql.org/docs/current/static/functions-matching.html>
+
+**Example**
+
+In the following simple example, `REGEXP_COUNT` returns a count of the number of times the letter `i` is used in the character string `'reinitializing'`:
+
+```text
+edb=# SELECT REGEXP_COUNT('reinitializing', 'i', 1) FROM DUAL;
+ regexp_count
+--------------
+            5
+(1 row)
+```
+
+In the first example, the command instructs `REGEXP_COUNT` begins counting in the first position; if we modify the command to start the count on the 6th position:
+
+```text
+edb=# SELECT REGEXP_COUNT('reinitializing', 'i', 6) FROM DUAL;
+ regexp_count
+--------------
+            3
+(1 row)
+```
+
+`REGEXP_COUNT` returns `3`; the count now excludes any occurrences of the letter `i` that occur before the 6th position.
+
+## REGEXP_INSTR
+
+`REGEXP_INSTR` searches a string for a POSIX-style regular expression. This function returns the position within the string where the match was located. The signature is:
+
+```text
+INTEGER REGEXP_INSTR
+(
+  srcstr        TEXT,
+  pattern       TEXT,
+  position      INT  DEFAULT 1,
+  occurrence    INT  DEFAULT 1,
+  returnparam   INT  DEFAULT 0,
+  modifier      TEXT DEFAULT NULL,
+  subexpression INT  DEFAULT 0,
+)
+```
+
+**Parameters:**
+
+`srcstr`
+
+ `srcstr` specifies the string to search.
+
+`pattern`
+
+ `pattern` specifies the regular expression for which `REGEXP_INSTR` will search.
+
+`position`
+
+ `position` specifies an integer value that indicates the start position in a source string. The default value is `1`.
+
+`occurrence`
+
+ `occurrence` specifies which match is returned if more than one occurrence of the pattern occurs in the string that is searched. The default value is `1`.
+
+`returnparam`
+
+ `returnparam` is an integer value that specifies the location within the string that `REGEXP_INSTR` should return. The default value is `0`. Specify:
+
+-   `0` to return the location within the string of the first character that matches `pattern`.
+
+-   A value greater than `0` to return the position of the first character following the end of the `pattern`.
+
+`modifier`
+
+ `modifier` specifies values that control the pattern matching behavior. The default value is `NULL`. For a complete list of the modifiers supported by Advanced Server, see the PostgreSQL core documentation available at:
+
+ <https://www.postgresql.org/docs/current/static/functions-matching.html>
+
+`subexpression`
+
+ `subexpression` is an integer value that identifies the portion of the `pattern` that will be returned by `REGEXP_INSTR`. The default value of `subexpression` is `0`.
+
+ If you specify a value for `subexpression`, you must include one (or more) set of parentheses in the `pattern` that isolate a portion of the value being searched for. The value specified by `subexpression` indicates which set of parentheses should be returned; for example, if `subexpression` is `2`, `REGEXP_INSTR` will return the position of the second set of parentheses.
+
+**Example**
+
+In the following simple example, `REGEXP_INSTR` searches a string that contains the a phone number for the first occurrence of a pattern that contains three consecutive digits:
+
+```text
+edb=# SELECT REGEXP_INSTR('800-555-1212', '[0-9][0-9][0-9]', 1, 1) FROM DUAL;
+ regexp_instr
+--------------
+            1
+(1 row)
+```
+
+The command instructs `REGEXP_INSTR` to return the position of the first occurrence. If we modify the command to return the start of the second occurrence of three consecutive digits:
+
+```text
+edb=# SELECT REGEXP_INSTR('800-555-1212', '[0-9][0-9][0-9]', 1, 2) FROM DUAL;
+ regexp_instr
+--------------
+            5
+(1 row)
+```
+
+`REGEXP_INSTR` returns `5`; the second occurrence of three consecutive digits begins in the 5<sup>th</sup> position.
+
+## REGEXP_SUBSTR
+
+The `REGEXP_SUBSTR` function searches a string for a pattern specified by a POSIX compliant regular expression. `REGEXP_SUBSTR` returns the string that matches the pattern specified in the call to the function. The signature of the function is:
+
+```text
+TEXT REGEXP_SUBSTR
+(
+  srcstr        TEXT,
+  pattern       TEXT,
+  position      INT  DEFAULT 1,
+  occurrence    INT  DEFAULT 1,
+  modifier      TEXT DEFAULT NULL,
+  subexpression INT  DEFAULT 0
+)
+```
+
+**Parameters:**
+
+`srcstr`
+
+ `srcstr` specifies the string to search.
+
+`pattern`
+
+ `pattern` specifies the regular expression for which `REGEXP_SUBSTR` will search.
+
+`position`
+
+ `position` specifies an integer value that indicates the start position in a source string. The default value is `1`.
+
+`occurrence`
+
+ `occurrence` specifies which match is returned if more than one occurrence of the pattern occurs in the string that is searched. The default value is `1`.
+
+`modifier`
+
+ `modifier` specifies values that control the pattern matching behavior. The default value is `NULL`. For a complete list of the modifiers supported by Advanced Server, see the PostgreSQL core documentation available at:
+
+ <https://www.postgresql.org/docs/current/static/functions-matching.html>
+
+`subexpression`
+
+ `subexpression` is an integer value that identifies the portion of the `pattern` that will be returned by `REGEXP_SUBSTR`. The default value of `subexpression` is `0`.
+
+ If you specify a value for `subexpression`, you must include one (or more) set of parentheses in the `pattern` that isolate a portion of the value being searched for. The value specified by `subexpression` indicates which set of parentheses should be returned; for example, if `subexpression` is `2`, `REGEXP_SUBSTR` will return the value contained within the second set of parentheses.
+
+**Example**
+
+In the following simple example, `REGEXP_SUBSTR` searches a string that contains a phone number for the first set of three consecutive digits:
+
+```text
+edb=# SELECT REGEXP_SUBSTR('800-555-1212', '[0-9][0-9][0-9]', 1, 1) FROM DUAL;
+ regexp_substr
+---------------
+ 800
+(1 row)
+```
+
+It locates the first occurrence of three digits and returns the string `(800)`; if we modify the command to check for the second occurrence of three consecutive digits:
+
+```text
+edb=# SELECT REGEXP_SUBSTR('800-555-1212', '[0-9][0-9][0-9]', 1, 2) FROM DUAL;
+ regexp_substr
+---------------
+ 555
+(1 row)
+```
+
+`REGEXP_SUBSTR` returns `555`, the contents of the second substring.

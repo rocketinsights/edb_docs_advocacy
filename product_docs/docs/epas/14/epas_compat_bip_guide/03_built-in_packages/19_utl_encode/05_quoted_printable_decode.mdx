@@ -1,0 +1,47 @@
+---
+title: "QUOTED_PRINTABLE_DECODE"
+---
+
+Use the `QUOTED_PRINTABLE_DECODE` function to translate an encoded quoted-printable string into a decoded `RAW` string.
+
+The signature is:
+
+```text
+QUOTED_PRINTABLE_DECODE(<r> IN RAW)
+```
+
+This function returns a `RAW` value.
+
+**Parameters**
+
+`r`
+
+ `r` contains the encoded string that will be decoded. The string is a `RAW` value, encoded by `QUOTED_PRINTABLE_ENCODE`.
+
+**Examples**
+
+Before executing the following example, invoke the command:
+
+```
+SET bytea_output = escape;
+```
+
+This command instructs the server to escape any non-printable characters, and to display `BYTEA` or `RAW` values onscreen in readable form. For more information, refer to the Postgres Core Documentation available at:
+
+<https://www.postgresql.org/docs/current/static/datatype-binary.html>
+
+The following example first encodes and then decodes a string:
+
+```text
+edb=# SELECT UTL_ENCODE.QUOTED_PRINTABLE_ENCODE('E=mc2') FROM DUAL;
+quoted_printable_encode
+-------------------------
+ E=3Dmc2
+(1 row)
+
+edb=# SELECT UTL_ENCODE.QUOTED_PRINTABLE_DECODE('E=3Dmc2') FROM DUAL;
+ quoted_printable_decode
+-------------------------
+ E=mc2
+(1 row)
+```

@@ -1,0 +1,33 @@
+---
+title: "Qualifiers"
+---
+
+<div id="qualifiers" class="registered_link"></div>
+
+A *qualifier* is a name that specifies the owner or context of an entity that is the object of the qualification. A qualified object is specified as the qualifier name followed by a dot with no intervening white space, followed by the name of the object being qualified with no intervening white space. This syntax is called *dot notation*.
+
+The following is the syntax of a qualified object.
+
+```text
+<qualifier.> [ <qualifier.> ]... <object>
+```
+
+`qualifier` is the name of the owner of the object. `object` is the name of the entity belonging to `qualifier`. It is possible to have a chain of qualifications where the preceding qualifier owns the entity identified by the subsequent qualifier(s) and object.
+
+Almost any identifier can be qualified. What an identifier is qualified by depends upon what the identifier represents and the context of its usage.
+
+Some examples of qualification follow:
+
+-   Procedure and function names qualified by the schema to which they belong - e.g., `schema_name.procedure_name(...)`
+-   Trigger names qualified by the schema to which they belong - e.g., `schema_name.trigger_name`
+-   Column names qualified by the table to which they belong - e.g., `emp.empno`
+-   Table names qualified by the schema to which they belong - e.g., `public.emp`
+-   Column names qualified by table and schema - e.g., `public.emp.empno`
+
+As a general rule, wherever a name appears in the syntax of an SPL statement, its qualified name can be used as well. Typically a qualified name would only be used if there is some ambiguity associated with the name. For example, if two procedures with the same name belonging to two different schemas are invoked from within a program or if the same name is used for a table column and SPL variable within the same program.
+
+You should avoid using qualified names if at all possible. In this chapter, the following conventions are adopted to avoid naming conflicts:
+
+-   All variables declared in the declaration section of an SPL program are prefixed by `v_`. E.g., `v_empno`
+-   All formal parameters declared in a procedure or function definition are prefixed by `p_`. E.g., `p_empno`
+-   Column names and table names do not have any special prefix conventions. E.g., column `empno` in table `emp`

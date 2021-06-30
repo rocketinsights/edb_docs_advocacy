@@ -1,0 +1,779 @@
+---
+title: "DBMS_UTILITY"
+---
+
+The `DBMS_UTILITY` package provides support for the following various utility programs:
+
+| Function/Procedure                                                                                             | Function or Procedure | Return Type      | Description                                                  |
+| -------------------------------------------------------------------------------------------------------------- | --------------------- | ---------------- | ------------------------------------------------------------ |
+| `ANALYZE_DATABASE(method [, estimate_rows [, estimate_percent [, method_opt ]]])`                              | Procedure             | n/a              | Analyze database tables.                                     |
+| `ANALYZE_PART_OBJECT(schema, object_name [, object_type [, command_type [, command_opt [, sample_clause ]]]])` | Procedure             | n/a              | Analyze a partitioned table.                                 |
+| `ANALYZE_SCHEMA(schema, method [, estimate_rows [, estimate_percent [, method_opt ]]])`                        | Procedure             | n/a              | Analyze schema tables.                                       |
+| `CANONICALIZE(name, canon_name OUT, canon_len)`                                                                | Procedure             | n/a              | Canonicalizes a string – e.g., strips off white space.       |
+| `COMMA_TO_TABLE(list, tablen OUT, tab OUT)`                                                                    | Procedure             | n/a              | Convert a comma-delimited list of names to a table of names. |
+| `DB_VERSION(version OUT, compatibility OUT)`                                                                   | Procedure             | n/a              | Get the database version.                                    |
+| `EXEC_DDL_STATEMENT (parse_string)`                                                                            | Procedure             | n/a              | Execute a DDL statement.                                     |
+| `FORMAT_CALL_STACK`                                                                                            | Function              | `TEXT`           | Formats the current call stack.                              |
+| `GET_CPU_TIME`                                                                                                 | Function              | `NUMBER`         | Get the current CPU time.                                    |
+| `GET_DEPENDENCY(type, schema, name)`                                                                           | Procedure             | n/a              | Get objects that are dependent upon the given object..       |
+| `GET_HASH_VALUE(name, base, hash_size)`                                                                        | Function              | `NUMBER`         | Compute a hash value.                                        |
+| `GET_PARAMETER_VALUE(parnam, intval OUT, strval OUT)`                                                          | Procedure             | `BINARY_INTEGER` | Get database initialization parameter settings.              |
+| `GET_TIME`                                                                                                     | Function              | `NUMBER`         | Get the current time.                                        |
+| `NAME_TOKENIZE(name, a OUT, b OUT, c OUT, dblink OUT, nextpos OUT)`                                            | Procedure             | n/a              | Parse the given name into its component parts.               |
+| `TABLE_TO_COMMA(tab, tablen OUT, list OUT)`                                                                    | Procedure             | n/a              | Convert a table of names to a comma-delimited list.          |
+
+Advanced Server's implementation of `DBMS_UTILITY` is a partial implementation when compared to Oracle's version. Only those functions and procedures listed in the table above are supported.
+
+The following table lists the public variables available in the `DBMS_UTILITY` package.
+
+| Public Variables            | Data Type     | Value | Description                         |
+| --------------------------- | ------------- | ----- | ----------------------------------- |
+| `inv_error_on_restrictions` | `PLS_INTEGER` | `1`   | Used by the `INVALIDATE` procedure. |
+| `lname_array`               | `TABLE`       |       | For lists of long names.            |
+| `uncl_array`                | `TABLE`       |       | For lists of users and names.       |
+
+<div id="lname_array" class="registered_link"></div>
+
+## LNAME_ARRAY
+
+The `LNAME_ARRAY` is for storing lists of long names including fully-qualified names.
+
+```text
+TYPE lname_array IS `TABLE OF VARCHAR2(4000) INDEX BY BINARY_INTEGER;
+```
+
+<div id="uncl_array" class="registered_link"></div>
+
+## UNCL_ARRAY
+
+The `UNCL_ARRAY` is for storing lists of users and names.
+
+```text
+TYPE uncl_array IS TABLE OF VARCHAR2(227) INDEX BY BINARY_INTEGER;
+```
+
+## ANALYZE_DATABASE, ANALYZE SCHEMA and ANALYZE PART_OBJECT
+
+The `ANALYZE_DATABASE(), ANALYZE_SCHEMA() and ANALYZE_PART_OBJECT()` procedures provide the capability to gather statistics on tables in the database. When you execute the `ANALYZE` statement, Postgres samples the data in a table and records distribution statistics in the `pg_statistics system` table.
+
+`ANALYZE_DATABASE, ANALYZE_SCHEMA`, and `ANALYZE_PART_OBJECT` differ primarily in the number of tables that are processed:
+
+-   `ANALYZE_DATABASE` analyzes all tables in all schemas within the current database.
+-   `ANALYZE_SCHEMA` analyzes all tables in a given schema (within the current database).
+-   `ANALYZE_PART_OBJECT` analyzes a single table.
+
+The syntax for the `ANALYZE` commands are:
+
+```text
+ANALYZE_DATABASE(<method> VARCHAR2 [, <estimate_rows> NUMBER
+  [, <estimate_percent> NUMBER [, <method_opt> VARCHAR2 ]]])
+
+ANALYZE_SCHEMA(<schema> VARCHAR2, <method> VARCHAR2
+  [, <estimate_rows> NUMBER [, <estimate_percent> NUMBER
+  [, <method_opt> VARCHAR2 ]]])
+
+ANALYZE_PART_OBJECT(<schema> VARCHAR2, <object_name> VARCHAR2
+  [, <object_type> CHAR [, <command_type> CHAR
+  [, <command_opt> VARCHAR2 [, <sample_clause> ]]]])
+```
+
+**Parameters** - `ANALYZE_DATABASE` and `ANALYZE_SCHEMA`
+
+`method`
+
+ method determines whether the `ANALYZE` procedure populates the `pg_statistics` table or removes entries from the `pg_statistics` table. If you specify a method of `DELETE`, the `ANALYZE` procedure removes the relevant rows from `pg_statistics`. If you specify a method of `COMPUTE` or `ESTIMATE`, the `ANALYZE` procedure analyzes a table (or multiple tables) and records the distribution information in `pg_statistics`. There is no difference between `COMPUTE` and `ESTIMATE`; both methods execute the Postgres `ANALYZE` statement. All other parameters are validated and then ignored.
+
+`estimate_rows`
+
+ Number of rows upon which to base estimated statistics. One of `estimate_rows` or `estimate_percent` must be specified if method is `ESTIMATE`.
+
+ This argument is ignored, but is included for compatibility.
+
+`estimate_percent`
+
+ Percentage of rows upon which to base estimated statistics. One of `estimate_rows` or `estimate_percent` must be specified if method is `ESTIMATE`.
+
+ This argument is ignored, but is included for compatibility.
+
+`method_opt`
+
+ Object types to be analyzed. Any combination of the following:
+
+```
+[ FOR TABLE ]
+
+[ FOR ALL [ INDEXED ] COLUMNS ] [ SIZE n ]
+
+[ FOR ALL INDEXES ]
+```
+
+ This argument is ignored, but is included for compatibility.
+
+**Parameters** - `ANALYZE_PART_OBJECT`
+
+`schema`
+
+ Name of the schema whose objects are to be analyzed.
+
+`object_name`
+
+ Name of the partitioned object to be analyzed.
+
+`object_type`
+
+ Type of object to be analyzed. Valid values are: `T` – table, `I` – index.
+
+ This argument is ignored, but is included for compatibility.
+
+`command_type`
+
+ Type of analyze functionality to perform. Valid values are: `E` - gather estimated statistics based upon on a specified number of rows or a percentage of rows in the `sample_clause` clause; `C` - compute exact statistics; or `V` – validate the structure and integrity of the partitions.
+
+ This argument is ignored, but is included for compatibility.
+
+`command_opt`
+
+ For `command_type` `C` or `E`, can be any combination of:
+
+```
+[ FOR TABLE ]
+
+[ FOR ALL COLUMNS ]
+
+[ FOR ALL LOCAL INDEXES ]
+```
+
+ For `command_type V`, can be `CASCADE` if `object_type` is `T`.
+
+ This argument is ignored, but is included for compatibility.
+
+`sample_clause`
+
+ If `command_type` is `E`, contains the following clause to specify the number of rows or percentage or rows on which to base the estimate.
+
+ `SAMPLE n { ROWS | PERCENT }`
+
+ This argument is ignored, but is included for compatibility.
+
+## CANONICALIZE
+
+The `CANONICALIZE` procedure performs the following operations on an input string:
+
+-   If the string is not double-quoted, verifies that it uses the characters of a legal identifier. If not, an exception is thrown. If the string is double-quoted, all characters are allowed.
+-   If the string is not double-quoted and does not contain periods, uppercases all alphabetic characters and eliminates leading and trailing spaces.
+-   If the string is double-quoted and does not contain periods, strips off the double quotes.
+-   If the string contains periods and no portion of the string is double-quoted, uppercases each portion of the string and encloses each portion in double quotes.
+-   If the string contains periods and portions of the string are double-quoted, returns the double-quoted portions unchanged including the double quotes and returns the non-double-quoted portions uppercased and enclosed in double quotes.
+
+```text
+CANONICALIZE(<name> VARCHAR2, <canon_name> OUT VARCHAR2,
+  <canon_len> BINARY_INTEGER)
+```
+
+**Parameters**
+
+`name`
+
+ String to be canonicalized.
+
+`canon_name`
+
+ The canonicalized string.
+
+`canon_len`
+
+ Number of bytes in `name` to canonicalize starting from the first character.
+
+**Examples**
+
+The following procedure applies the `CANONICALIZE` procedure on its input parameter and displays the results.
+
+```text
+CREATE OR REPLACE PROCEDURE canonicalize (
+    p_name      VARCHAR2,
+    p_length    BINARY_INTEGER DEFAULT 30
+)
+IS
+    v_canon     VARCHAR2(100);
+BEGIN
+    DBMS_UTILITY.CANONICALIZE(p_name,v_canon,p_length);
+    DBMS_OUTPUT.PUT_LINE('Canonicalized name ==>' || v_canon || '<==');
+    DBMS_OUTPUT.PUT_LINE('Length: ' || LENGTH(v_canon));
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('SQLERRM: ' || SQLERRM);
+        DBMS_OUTPUT.PUT_LINE('SQLCODE: ' || SQLCODE);
+END;
+
+EXEC canonicalize('Identifier')
+Canonicalized name ==>IDENTIFIER<==
+Length: 10
+
+EXEC canonicalize('"Identifier"')
+Canonicalized name ==>Identifier<==
+Length: 10
+
+EXEC canonicalize('"_+142%"')
+Canonicalized name ==>_+142%<==
+Length: 6
+
+EXEC canonicalize('abc.def.ghi')
+Canonicalized name ==>"ABC"."DEF"."GHI"<==
+Length: 17
+
+EXEC canonicalize('"abc.def.ghi"')
+Canonicalized name ==>abc.def.ghi<==
+Length: 11
+
+EXEC canonicalize('"abc".def."ghi"')
+Canonicalized name ==>"abc"."DEF"."ghi"<==
+Length: 17
+
+EXEC canonicalize('"abc.def".ghi')
+Canonicalized name ==>"abc.def"."GHI"<==
+Length: 15
+```
+
+## COMMA_TO_TABLE
+
+The `COMMA_TO_TABLE` procedure converts a comma-delimited list of names into a table of names. Each entry in the list becomes a table entry. The names must be formatted as valid identifiers.
+
+```text
+COMMA_TO_TABLE(<list> VARCHAR2, <tablen> OUT BINARY_INTEGER,
+  <tab> OUT { LNAME_ARRAY | UNCL_ARRAY })
+```
+
+**Parameters**
+
+`list`
+
+ Comma-delimited list of names.
+
+`tablen`
+
+ Number of entries in `tab`.
+
+`tab`
+
+ Table containing the individual names in `list`.
+
+`LNAME_ARRAY`
+
+ A `DBMS_UTILITY LNAME_ARRAY` (as described in the [LNAME_ARRAY](#lname_array) section).
+
+`UNCL_ARRAY`
+
+ A `DBMS_UTILITY UNCL_ARRAY` (as described in the [UNCL_ARRAY](#uncl_array) section).
+
+**Examples**
+
+The following procedure uses the `COMMA_TO_TABLE` procedure to convert a list of names to a table. The table entries are then displayed.
+
+```text
+CREATE OR REPLACE PROCEDURE comma_to_table (
+    p_list      VARCHAR2
+)
+IS
+    r_lname     DBMS_UTILITY.LNAME_ARRAY;
+    v_length    BINARY_INTEGER;
+BEGIN
+    DBMS_UTILITY.COMMA_TO_TABLE(p_list,v_length,r_lname);
+    FOR i IN 1..v_length LOOP
+        DBMS_OUTPUT.PUT_LINE(r_lname(i));
+    END LOOP;
+END;
+
+EXEC comma_to_table('edb.dept, edb.emp, edb.jobhist')
+
+edb.dept
+edb.emp
+edb.jobhist
+```
+
+## DB_VERSION
+
+The `DB_VERSION` procedure returns the version number of the database.
+
+```text
+DB_VERSION(<version> OUT VARCHAR2, <compatibility> OUT VARCHAR2)
+```
+
+**Parameters**
+
+`version`
+
+ Database version number.
+
+`compatibility`
+
+ Compatibility setting of the database. (To be implementation-defined as to its meaning.)
+
+**Examples**
+
+The following anonymous block displays the database version information.
+
+```text
+DECLARE
+    v_version       VARCHAR2(150);
+    v_compat        VARCHAR2(150);
+BEGIN
+    DBMS_UTILITY.DB_VERSION(v_version,v_compat);
+    DBMS_OUTPUT.PUT_LINE('Version: '       || v_version);
+    DBMS_OUTPUT.PUT_LINE('Compatibility: ' || v_compat);
+END;
+
+Version: EnterpriseDB 14.0.0 on i686-pc-linux-gnu, compiled by GCC gcc
+(GCC) 4.1.2 20080704 (Red Hat 4.1.2-48), 32-bit
+Compatibility: EnterpriseDB 14.0.0 on i686-pc-linux-gnu, compiled by GCC
+gcc (GCC) 4.1.220080704 (Red Hat 4.1.2-48), 32-bit
+```
+
+## EXEC_DDL_STATEMENT
+
+The `EXEC_DDL_STATEMENT` provides the capability to execute a `DDL` command.
+
+```text
+EXEC_DDL_STATEMENT(<parse_string> VARCHAR2)
+```
+
+**Parameters**
+
+`parse_string`
+
+ The DDL command to be executed.
+
+**Examples**
+
+The following anonymous block creates the `job` table.
+
+```text
+BEGIN
+    DBMS_UTILITY.EXEC_DDL_STATEMENT(
+        'CREATE TABLE job (' ||
+          'jobno NUMBER(3),' ||
+          'jname VARCHAR2(9))'
+    );
+END;
+```
+
+If the `parse_string` does not include a valid DDL statement, Advanced Server returns the following error:
+
+```text
+edb=#  exec dbms_utility.exec_ddl_statement('select rownum from dual');
+ERROR:  EDB-20001: 'parse_string' must be a valid DDL statement
+```
+
+In this case, Advanced Server's behavior differs from Oracle's; Oracle accepts the invalid `parse_string` without complaint.
+
+## FORMAT_CALL_STACK
+
+The `FORMAT_CALL_STACK` function returns the formatted contents of the current call stack.
+
+```text
+DBMS_UTILITY.FORMAT_CALL_STACK
+return VARCHAR2
+```
+
+This function can be used in a stored procedure, function or package to return the current call stack in a readable format. This function is useful for debugging purposes.
+
+## GET_CPU_TIME
+
+The `GET_CPU_TIME` function returns the CPU time in hundredths of a second from some arbitrary point in time.
+
+```text
+<cputime> NUMBER GET_CPU_TIME
+```
+
+**Parameters**
+
+`cputime`
+
+ Number of hundredths of a second of CPU time.
+
+**Examples**
+
+The following `SELECT` command retrieves the current CPU time, which is 603 hundredths of a second or .0603 seconds.
+
+```text
+SELECT DBMS_UTILITY.GET_CPU_TIME FROM DUAL;
+
+get_cpu_time
+--------------
+        603
+```
+
+## GET_DEPENDENCY
+
+The `GET_DEPENDENCY` procedure provides the capability to list the objects that are dependent upon the specified object. `GET_DEPENDENCY` does not show dependencies for functions or procedures.
+
+```text
+GET_DEPENDENCY(<type> VARCHAR2, <schema> VARCHAR2,
+  <name> VARCHAR2)
+```
+
+**Parameters**
+
+`type`
+
+ The object type of `name`. Valid values are `INDEX, PACKAGE, PACKAGE BODY, SEQUENCE, TABLE, TRIGGER, TYPE` and `VIEW`.
+
+`schema`
+
+ Name of the schema in which `name` exists.
+
+`name`
+
+ Name of the object for which dependencies are to be obtained.
+
+**Examples**
+
+The following anonymous block finds dependencies on the `EMP` table.
+
+```text
+BEGIN
+    DBMS_UTILITY.GET_DEPENDENCY('TABLE','public','EMP');
+END;
+
+DEPENDENCIES ON public.EMP
+------------------------------------------------------------------
+*TABLE public.EMP()
+*   CONSTRAINT c public.emp()
+*   CONSTRAINT f public.emp()
+*   CONSTRAINT p public.emp()
+*   TYPE public.emp()
+*   CONSTRAINT c public.emp()
+*   CONSTRAINT f public.jobhist()
+*   VIEW .empname_view()
+```
+
+## GET_HASH_VALUE
+
+The `GET_HASH_VALUE` function provides the capability to compute a hash value for a given string.
+
+```text
+<hash> NUMBER GET_HASH_VALUE(<name> VARCHAR2, <base> NUMBER,
+   <hash_size> NUMBER)
+```
+
+**Parameters**
+
+`name`
+
+ The string for which a hash value is to be computed.
+
+`base`
+
+ Starting value at which hash values are to be generated.
+
+`hash_size`
+
+ The number of hash values for the desired hash table.
+
+`hash`
+
+ The generated hash value.
+
+**Examples**
+
+The following anonymous block creates a table of hash values using the `ename` column of the `emp` table and then displays the key along with the hash value. The hash values start at 100 with a maximum of 1024 distinct values.
+
+```text
+DECLARE
+    v_hash          NUMBER;
+    TYPE hash_tab IS TABLE OF NUMBER INDEX BY VARCHAR2(10);
+    r_hash          HASH_TAB;
+    CURSOR emp_cur IS SELECT ename FROM emp;
+BEGIN
+    FOR r_emp IN emp_cur LOOP
+        r_hash(r_emp.ename) :=
+            DBMS_UTILITY.GET_HASH_VALUE(r_emp.ename,100,1024);
+    END LOOP;
+    FOR r_emp IN emp_cur LOOP
+        DBMS_OUTPUT.PUT_LINE(RPAD(r_emp.ename,10) || ' ' ||
+            r_hash(r_emp.ename));
+    END LOOP;
+END;
+
+SMITH      377
+ALLEN      740
+WARD       718
+JONES      131
+MARTIN     176
+BLAKE      568
+CLARK      621
+SCOTT      1097
+KING       235
+TURNER     850
+ADAMS      156
+JAMES      942
+FORD       775
+MILLER     148
+```
+
+## GET_PARAMETER_VALUE
+
+The `GET_PARAMETER_VALUE` procedure provides the capability to retrieve database initialization parameter settings.
+
+```text
+<status> BINARY_INTEGER GET_PARAMETER_VALUE(<parnam> VARCHAR2,
+   <intval> OUT INTEGER, <strval> OUT VARCHAR2)
+```
+
+**Parameters**
+
+`parnam`
+
+ Name of the parameter whose value is to be returned. The parameters are listed in the `pg_settings` system view.
+
+`intval`
+
+ Value of an integer parameter or the length of `strval`.
+
+`strval`
+
+ Value of a string parameter.
+
+`status`
+
+ Returns 0 if the parameter value is `INTEGER` or `BOOLEAN`. Returns 1 if the parameter value is a string.
+
+**Examples**
+
+The following anonymous block shows the values of two initialization parameters.
+
+```text
+DECLARE
+    v_intval        INTEGER;
+    v_strval        VARCHAR2(80);
+BEGIN
+    DBMS_UTILITY.GET_PARAMETER_VALUE('max_fsm_pages', v_intval, v_strval);
+    DBMS_OUTPUT.PUT_LINE('max_fsm_pages' || ': ' || v_intval);
+    DBMS_UTILITY.GET_PARAMETER_VALUE('client_encoding', v_intval, v_strval);
+    DBMS_OUTPUT.PUT_LINE('client_encoding' || ': ' || v_strval);
+END;
+
+max_fsm_pages: 72625
+client_encoding: SQL_ASCII
+```
+
+## GET_TIME
+
+The `GET_TIME` function provides the capability to return the current time in hundredths of a second.
+
+```text
+<time> NUMBER GET_TIME
+```
+
+**Parameters**
+
+`time`
+
+ Number of hundredths of a second from the time in which the program is started.
+
+**Examples**
+
+The following example shows calls to the `GET_TIME` function.
+
+```text
+SELECT DBMS_UTILITY.GET_TIME FROM DUAL;
+
+ get_time
+----------
+  1555860
+
+SELECT DBMS_UTILITY.GET_TIME FROM DUAL;
+
+ get_time
+----------
+  1556037
+```
+
+## NAME_TOKENIZE
+
+The `NAME_TOKENIZE` procedure parses a name into its component parts. Names without double quotes are uppercased. The double quotes are stripped from names with double quotes.
+
+```text
+NAME_TOKENIZE(<name> VARCHAR2, <a> OUT VARCHAR2,
+  <b> OUT VARCHAR2, <c> OUT VARCHAR2, <dblink> OUT VARCHAR2,
+  <nextpos> OUT BINARY_INTEGER)
+```
+
+**Parameters**
+
+`name`
+
+ String containing a name in the following format:
+
+ `a[.b[.c]][@dblink ]`
+
+`a`
+
+ Returns the leftmost component.
+
+`b`
+
+ Returns the second component, if any.
+
+`c`
+
+ Returns the third component, if any.
+
+`dblink`
+
+ Returns the database link name.
+
+`nextpos`
+
+ Position of the last character parsed in name.
+
+**Examples**
+
+The following stored procedure is used to display the returned parameter values of the `NAME_TOKENIZE` procedure for various names.
+
+```text
+CREATE OR REPLACE PROCEDURE name_tokenize (
+    p_name          VARCHAR2
+)
+IS
+    v_a             VARCHAR2(30);
+    v_b             VARCHAR2(30);
+    v_c             VARCHAR2(30);
+    v_dblink        VARCHAR2(30);
+    v_nextpos       BINARY_INTEGER;
+BEGIN
+    DBMS_UTILITY.NAME_TOKENIZE(p_name,v_a,v_b,v_c,v_dblink,v_nextpos);
+    DBMS_OUTPUT.PUT_LINE('name   : ' || p_name);
+    DBMS_OUTPUT.PUT_LINE('a      : ' || v_a);
+    DBMS_OUTPUT.PUT_LINE('b      : ' || v_b);
+    DBMS_OUTPUT.PUT_LINE('c      : ' || v_c);
+    DBMS_OUTPUT.PUT_LINE('dblink : ' || v_dblink);
+    DBMS_OUTPUT.PUT_LINE('nextpos: ' || v_nextpos);
+END;
+```
+
+Tokenize the name, `emp`:
+
+```text
+BEGIN
+    name_tokenize('emp');
+END;
+
+name   : emp
+a      : EMP
+b      :
+c      :
+dblink :
+nextpos: 3
+```
+
+Tokenize the name, `edb.list_emp`:
+
+```text
+BEGIN
+    name_tokenize('edb.list_emp');
+END;
+
+name   : edb.list_emp
+a      : EDB
+b      : LIST_EMP
+c      :
+dblink :
+nextpos: 12
+```
+
+Tokenize the name, `"edb"."Emp_Admin".update_emp_sal`:
+
+```text
+BEGIN
+    name_tokenize('"edb"."Emp_Admin".update_emp_sal');
+END;
+
+name   : "edb"."Emp_Admin".update_emp_sal
+a      : edb
+b      : Emp_Admin
+c      : UPDATE_EMP_SAL
+dblink :
+nextpos: 32
+```
+
+Tokenize the name `edb.emp@edb_dblink`:
+
+```text
+BEGIN
+    name_tokenize('edb.emp@edb_dblink');
+END;
+
+name   : edb.emp@edb_dblink
+a      : EDB
+b      : EMP
+c      :
+dblink : EDB_DBLINK
+nextpos: 18
+```
+
+## TABLE_TO_COMMA
+
+The `TABLE_TO_COMMA` procedure converts table of names into a comma-delimited list of names. Each table entry becomes a list entry. The names must be formatted as valid identifiers.
+
+```text
+TABLE_TO_COMMA(<tab> { LNAME_ARRAY | UNCL_ARRAY },
+  <tablen> OUT BINARY_INTEGER, <list> OUT VARCHAR2)
+```
+
+**Parameters**
+
+`tab`
+
+ Table containing names.
+
+`LNAME_ARRAY`
+
+ A `DBMS_UTILITY LNAME_ARRAY` (as described in the [LNAME ARRAY](#lname_array) section.
+
+`UNCL_ARRAY`
+
+ A `DBMS_UTILITY UNCL_ARRAY` (as described the [UNCL_ARRAY](#uncl_array) section).
+
+`tablen`
+
+ Number of entries in `list`.
+
+`list`
+
+ Comma-delimited list of names from `tab`.
+
+**Examples**
+
+The following example first uses the `COMMA_TO_TABLE` procedure to convert a comma-delimited list to a table. The `TABLE_TO_COMMA` procedure then converts the table back to a comma-delimited list that is displayed.
+
+```text
+CREATE OR REPLACE PROCEDURE table_to_comma (
+    p_list      VARCHAR2
+)
+IS
+    r_lname     DBMS_UTILITY.LNAME_ARRAY;
+    v_length    BINARY_INTEGER;
+    v_listlen   BINARY_INTEGER;
+    v_list      VARCHAR2(80);
+BEGIN
+    DBMS_UTILITY.COMMA_TO_TABLE(p_list,v_length,r_lname);
+    DBMS_OUTPUT.PUT_LINE('Table Entries');
+    DBMS_OUTPUT.PUT_LINE('-------------');
+    FOR i IN 1..v_length LOOP
+        DBMS_OUTPUT.PUT_LINE(r_lname(i));
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('-------------');
+    DBMS_UTILITY.TABLE_TO_COMMA(r_lname,v_listlen,v_list);
+    DBMS_OUTPUT.PUT_LINE('Comma-Delimited List: ' || v_list);
+END;
+
+EXEC table_to_comma('edb.dept, edb.emp, edb.jobhist')
+
+Table Entries
+-------------
+edb.dept
+edb.emp
+edb.jobhist
+-------------
+Comma-Delimited List: edb.dept, edb.emp, edb.jobhist
+```

@@ -1,0 +1,91 @@
+---
+title: "Command Line Options - Reference"
+---
+
+`pg_upgrade` accepts the following command line options; each option is available in a long form or a short form:
+
+`-b path_to_old_bin_directory`  
+`--old-bindir path_to_old_bin_directory`
+
+Use the `-b` or `--old-bindir` keyword to specify the location of the old cluster's executable directory.
+
+`-B path_to_new_bin_directory`  
+`--new-bindir path_to_new_bin_directory`
+
+Use the `-B` or `--new-bindir` keyword to specify the location of the new cluster's executable directory.
+
+`-c`  
+`--check`
+
+Include the `-c` or `--check` keyword to specify that `pg_upgrade` should perform a consistency check on the old and new cluster without performing a version upgrade.
+
+`-d path_to_old_data_directory`  
+`--old-datadir path_to_old_data_directory`
+
+Use the `-d` or `--old-datadir` keyword to specify the location of the old cluster's `data` directory.
+
+`-D path_to_new_data_directory`  
+`--new-datadir path_to_new_data_directory`
+
+Use the `-D` or `--new-datadir` keyword to specify the location of the new cluster's `data` directory.
+
+Data that is stored in user-defined tablespaces is not copied to the new cluster; it stays in the same location in the file system, but is copied into a subdirectory whose name reflects the version number of the new cluster. To manually relocate files that are stored in a tablespace after upgrading, you must move the files to the new location and update the symbolic links (located in the `pg_tblspc` directory under your cluster's `data` directory) to point to the files.
+
+`-j`  
+`--jobs`
+
+Include the `-j` or `--jobs` keyword to specify the number of simultaneous processes or threads to use during the upgrade.
+
+`-k`  
+`--link`
+
+Include the `-k` or `--link` keyword to create a hard link from the new cluster to the old cluster. See [Linking versus Copying](../01_performing_an_upgrade/01_linking_versus_copying/#linking_versus_copying) for more information about using a symbolic link.
+
+`-o options`  
+`--old-options options`
+
+Use the `-o` or `--old-options` keyword to specify options that will be passed to the old `postgres` command. Enclose options in single or double quotes to ensure that they are passed as a group.
+
+`-O options`  
+`--new-options options`
+
+Use the `-O` or `--new-options` keyword to specify options to be passed to the new `postgres` command. Enclose options in single or double quotes to ensure that they are passed as a group.
+
+`-p old_port_number`  
+`--old-port old_port_number`
+
+Include the `-p` or `--old-port` keyword to specify the port number of the Advanced Server installation that you are upgrading.
+
+`-P new_port_number`  
+`--new-port new_port_number`
+
+Include the `-P` or `--new-port` keyword to specify the port number of the new Advanced Server installation.
+
+!!! Note
+    If the original Advanced Server installation is using port number `5444` when you invoke the Advanced Server 14 installer, the installer will recommend using listener port `5445` for the new installation of Advanced Server.
+
+`-r`  
+`--retain`
+
+During the upgrade process, `pg_upgrade` creates four append-only log files; when the upgrade is completed, `pg_upgrade` deletes these files. Include the `-r` or `--retain` option to specify that the server should retain the `pg_upgrade` log files.
+
+`-U user_name`  
+`--username user_name`
+
+Include the `-U` or `--username` keyword to specify the name of the Advanced Server database superuser. The same superuser must exist in both clusters.
+
+`-v`  
+`--verbose`
+
+Include the `-v` or `--verbose` keyword to enable verbose output during the upgrade process.
+
+`-V`  
+`--version`
+
+Use the `-V` or `--version` keyword to display version information for `pg_upgrade`.
+
+`-?`  
+`-h`  
+`--help`
+
+Use `-?, -h,` or `--help` options to display `pg_upgrade` help information.

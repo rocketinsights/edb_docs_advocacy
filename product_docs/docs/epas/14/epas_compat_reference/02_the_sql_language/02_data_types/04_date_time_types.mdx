@@ -1,0 +1,163 @@
+---
+title:  "Date/Time Types"
+---
+
+<div id="date_time_types" class="registered_link"></div>
+
+The following discussion of the date/time types assumes that the configuration parameter, `edb_redwood_date`, has been set to `TRUE` whenever a table is created or altered.
+
+Advanced Server supports the date/time types shown in the following table:
+
+| Name                             | Storage Size | Description                  | Low Value        | High Value      | Resolution                |
+| -------------------------------- | ------------ | ---------------------------- | ---------------- | --------------- | ------------------------- |
+| `DATE`                           | 8 bytes      | Date and time                | 4713 BC          | 5874897 AD      | 1 second                  |
+| `INTERVAL DAY TO SECOND [(p)]`   | 12 bytes     | Period of time               | -178000000 years | 178000000 years | 1 microsecond / 14 digits |
+| `INTERVAL YEAR TO MONTH`         | 12 bytes     | Period of time               | -178000000 years | 178000000 years | 1 microsecond / 14 digits |
+| `TIMESTAMP [(p)]`                | 8 bytes      | Date and time                | 4713 BC          | 5874897 AD      | 1 microsecond             |
+| `TIMESTAMP [(p)] WITH TIME ZONE` | 8 bytes      | Date and time with time zone | 4713 BC          | 5874897 AD      | 1 microsecond             |
+
+When `DATE` appears as the data type of a column in the data definition language (DDL) commands, `CREATE TABLE` or `ALTER TABLE`, it is translated to `TIMESTAMP` at the time the table definition is stored in the database. Thus, a time component will also be stored in the column along with the date.
+
+When `DATE` appears as a data type of a variable in an SPL declaration section, or the data type of a formal parameter in an SPL procedure or an SPL function, or the return type of an SPL function, it is always translated to `TIMESTAMP` and thus can handle a time component if present.
+
+`TIMESTAMP` accepts an optional precision value `p` which specifies the number of fractional digits retained in the seconds field. The allowed range of `p` is from `0` to `6` with the default being `6`.
+
+When `TIMESTAMP` values are stored as double precision floating-point numbers (currently the default), the effective limit of precision may be less than 6. `TIMESTAMP` values are stored as seconds before or after midnight 2000-01-01. Microsecond precision is achieved for dates within a few years of 2000-01-01, but the precision degrades for dates further away. When `TIMESTAMP` values are stored as eight-byte integers (a compile-time option), microsecond precision is available over the full range of values. However eight-byte integer timestamps have a more limited range of dates than shown above: from 4713 BC up to 294276 AD.
+
+`TIMESTAMP (p) WITH TIME ZONE` is similar to `TIMESTAMP (p)`, but includes the time zone as well.
+
+## INTERVAL Types
+
+`INTERVAL` values specify a period of time. Values of `INTERVAL` type are composed of fields that describe the value of the data. The following table lists the fields allowed in an `INTERVAL` type:
+
+| Field Name | INTERVAL Values Allowed                                             |
+| ---------- | ------------------------------------------------------------------- |
+| `YEAR`     | Integer value (positive or negative)                                |
+| `MONTH`    | 0 through 11                                                        |
+| `DAY`      | Integer value (positive or negative)                                |
+| `HOUR`     | 0 through 23                                                        |
+| `MINUTE`   | 0 through 59                                                        |
+| `SECOND`   | 0 through 59.9(p) where 9(p) is the precision of fractional seconds |
+
+The fields must be presented in descending order – from `YEARS` to `MONTHS`, and from `DAYS` to `HOURS`, `MINUTES` and then `SECONDS`.
+
+Advanced Server supports two `INTERVAL` types compatible with Oracle databases.
+
+The first variation supported by Advanced Server is `INTERVAL DAY TO SECOND [(p)]`. `INTERVAL DAY TO SECOND [(p)]` stores a time interval in days, hours, minutes and seconds.
+
+ `p` specifies the precision of the `second` field.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '1 2:34:5.678' DAY TO SECOND(3)`
+
+as 1 day, 2 hours, 34 minutes, 5 seconds and 678 thousandths of a second.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '1 23' DAY TO HOUR`
+
+as 1 day and 23 hours.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '2:34' HOUR TO MINUTE`
+
+as 2 hours and 34 minutes.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '2:34:56.129' HOUR TO SECOND(2)`
+
+as 2 hours, 34 minutes, 56 seconds and 13 thousandths of a second. Note that the fractional second is rounded up to 13 because of the specified precision.
+
+The second variation supported by Advanced Server that is compatible with Oracle databases is `INTERVAL YEAR TO MONTH`. This variation stores a time interval in years and months.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '12-3' YEAR TO MONTH`
+
+as 12 years and 3 months.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '456' YEAR(2)`
+
+as 12 years and 3 months.
+
+Advanced Server interprets the value:
+
+ `INTERVAL '300' MONTH`
+
+as 25 years.
+
+## Date/Time Input
+
+Date and time input is accepted in ISO 8601 SQL-compatible format, the Oracle default `dd-MON-yy` format, as well as a number of other formats provided that there is no ambiguity as to which component is the year, month, and day. However, use of the `TO_DATE` function is strongly recommended to avoid ambiguities.
+
+Any date or time literal input needs to be enclosed in single quotes, like text strings. The following SQL standard syntax is also accepted:
+
+ `type 'value'`
+
+`type` is either `DATE` or `TIMESTAMP`.
+
+`value` is a date/time text string.
+
+### Dates
+
+The following block shows some possible input formats for dates, all of which equate to January 8, 1999.
+
+```text
+Example
+January 8, 1999
+1999-01-08
+1999-Jan-08
+Jan-08-1999
+08-Jan-1999
+08-Jan-99
+Jan-08-99
+19990108
+990108
+```
+
+The date values can be assigned to a `DATE` or `TIMESTAMP` column or variable. The hour, minute, and seconds fields will be set to zero if the date value is not appended with a time value.
+
+### Times
+
+Some examples of the time component of a date or time stamp are shown in the following table:
+
+| Example        | Description                                |
+| -------------- | ------------------------------------------ |
+| `04:05:06.789` | ISO 8601                                   |
+| `04:05:06`     | ISO 8601                                   |
+| `04:05`        | ISO 8601                                   |
+| `040506`       | ISO 8601                                   |
+| `04:05 AM`     | Same as 04:05; AM does not affect value    |
+| `04:05 PM`     | Same as 16:05; input hour must be &lt;= 12 |
+
+### Time Stamps
+
+Valid input for time stamps consists of a concatenation of a date and a time. The date portion of the time stamp can be formatted according to any of the examples shown in the block under section `Dates`. The time portion of the time stamp can be formatted according to any of examples shown in table under section `Times`.
+
+The following is an example of a time stamp which follows the Oracle default format.
+
+ `08-JAN-99 04:05:06`
+
+The following is an example of a time stamp which follows the ISO 8601 standard.
+
+ `1999-01-08 04:05:06`
+
+## Date/Time Output
+
+The default output format of the date/time types will be either (`dd-MON-yy`) referred to as the `Redwood date style`, compatible with Oracle databases, or (`yyyy-mm-dd`) referred to as the ISO 8601 format, depending upon the application interface to the database. Applications that use JDBC such as SQL Interactive always present the date in ISO 8601 form. Other applications such as PSQL present the date in Redwood form.
+
+The following table shows examples of the output formats for the two styles, Redwood and ISO 8601:
+
+| Description           | Example               |
+| --------------------- | --------------------- |
+| Redwood style         | `31-DEC-05 07:37:16`  |
+| ISO 8601/SQL standard | `1997-12-17 07:37:16` |
+
+## Internals
+
+Advanced Server uses Julian dates for all date/time calculations. Julian dates correctly predict or calculate any date after 4713 BC based on the assumption that the length of the year is 365.2425 days.

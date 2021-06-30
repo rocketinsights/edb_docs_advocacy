@@ -1,0 +1,51 @@
+---
+title: "Example - PARTITION BY RANGE"
+---
+
+<div id="example_partition_by_range" class="registered_link"></div>
+
+The following example creates a partitioned table `(sales)` using the `PARTITION BY RANGE` clause. The `sales` table stores information in four partitions `(q1_2012, q2_2012, q3_2012` and `q4_2012)`.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE(date)
+(
+  PARTITION q1_2012
+    VALUES LESS THAN('2012-Apr-01'),
+  PARTITION q2_2012
+    VALUES LESS THAN('2012-Jul-01'),
+  PARTITION q3_2012
+    VALUES LESS THAN('2012-Oct-01'),
+  PARTITION q4_2012
+    VALUES LESS THAN('2013-Jan-01')
+);
+```
+
+The resulting table is partitioned by the value specified in the `date` column.
+
+```text
+edb=# SELECT partition_name, high_value from ALL_TAB_PARTITIONS;
+ partition_name |      high_value
+----------------+----------------------
+ Q1_2012        | '01-APR-12 00:00:00'
+ Q2_2012        | '01-JUL-12 00:00:00'
+ Q3_2012        | '01-OCT-12 00:00:00'
+ Q4_2012        | '01-JAN-13 00:00:00'
+(4 rows)
+```
+
+-   Any row with a value in the `date` column before April 1, 2012 is stored in a partition named `q1_2012`.
+-   Any row with a value in the `date` column before July 1, 2012 is stored in a partition named `q2_2012`.
+-   Any row with a value in the `date` column before October 1, 2012 is stored in a partition named `q3_2012`.
+-   Any row with a value in the `date` column before January 1, 2013 is stored in a partition named `q4_2012`.
+
+The server would evaluate the following statement against the partitioning rules and store the row in the `q3_2012` partition.
+
+`INSERT INTO sales VALUES (10, '9519a', 'FRANCE', '18-Aug-2012', '650000');`

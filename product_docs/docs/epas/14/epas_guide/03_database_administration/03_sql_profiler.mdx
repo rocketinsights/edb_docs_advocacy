@@ -1,0 +1,83 @@
+---
+title: "SQL Profiler"
+---
+
+<div id="sql_profiler" class="registered_link"></div>
+
+Inefficient SQL code is one of, if not the leading cause of database performance problems. The challenge for database administrators and developers is locating and then optimizing this code in large, complex systems.
+
+*SQL Profiler* helps you locate and optimize poorly running SQL code.
+
+Specific features and benefits of SQL Profiler include the following:
+
+-   **On-Demand Traces.** You can capture SQL traces at any time by manually setting up your parameters and starting the trace.
+-   **Scheduled Traces.** For inconvenient times, you can also specify your trace parameters and schedule them to run at some later time.
+-   **Save Traces.** Execute your traces and save them for later review.
+-   **Trace Filters.** Selectively filter SQL captures by database and by user, or capture every SQL statement sent by all users against all databases.
+-   **Trace Output Analyzer.** A graphical table lets you quickly sort and filter queries by duration or statement, and a graphical or text based `EXPLAIN` plan lays out your query paths and joins.
+-   **Index Advisor Integration.** Once you have found your slow queries and optimized them, you can also let the Index Advisor recommend the creation of underlying table indices to further improve performance.
+
+The following describes the installation process.
+
+**Step 1:** Install SQL Profiler
+
+SQL Profiler is installed by the Advanced Server installer on Windows or from the `edb-asxx-server-sqlprofiler` RPM package on Linux where `xx` is the Advanced Server version number.
+
+**Step 2:** Add the SQL Profiler library
+
+Modify the `postgresql.conf` parameter file for the instance to include the SQL Profiler library in the`shared_preload_libraries` configuration parameter.
+
+For Linux installations, the parameter value should include:
+
+```text
+$libdir/sql-profiler
+```
+
+On Windows, the parameter value should include:
+
+```text
+$libdir\sql-profiler.dll
+```
+
+**Step 3:** Create the functions used by SQL Profiler
+
+The SQL Profiler installation program places a SQL script (named `sql-profiler.sql`) in:
+
+On Linux:
+
+```text
+/usr/edb/as14/share/contrib/
+```
+
+On Windows:
+
+```text
+C:\Program Files\edb\as14\share\contrib\
+```
+
+Use the `psql` command line interface to run the `sql-profiler.sql` script in the database specified as the Maintenance Database on the server you wish to profile. If you are using Advanced Server, the default maintenance database is named `edb`. If you are using a PostgreSQL instance, the default maintenance database is named `postgres`.
+
+The following command uses the `psql` command line to invoke the `sql-profiler.sql` script on a Linux system:
+
+```text
+$ /usr/edb/as14/bin/psql -U user_name database_name <
+/usr/edb/as14/share/contrib/sql-profiler.sql
+```
+
+**Step 4:** Stop and restart the server for the changes to take effect.
+
+After configuring SQL Profiler, it is ready to use with all databases that reside on the server. You can take advantage of SQL Profiler functionality with EDB Postgres Enterprise Manager; for more information about Postgres Enterprise Manager, visit the EDB website at:
+
+[https://www.enterprisedb.com/docs](/pem/latest/)
+
+**Troubleshooting**
+
+If (after performing an upgrade to a newer version of SQL Profiler) you encounter an error that contains the following text:
+
+```text
+An error has occurred:
+ERROR: function return row and query-specified return row do not match.
+DETAIL: Returned row contains 11 attributes, but the query expects 10.
+```
+
+To correct this error, you must replace the existing query set with a new query set. First, uninstall SQL Profiler by invoking the `uninstall-sql-profiler.sql` script, and then reinstall SQL Profiler by invoking the `sql-profiler.sql` script.

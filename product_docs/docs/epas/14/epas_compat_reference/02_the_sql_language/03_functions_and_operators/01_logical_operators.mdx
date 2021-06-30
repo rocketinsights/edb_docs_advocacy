@@ -1,0 +1,30 @@
+---
+title: "Logical Operators"
+---
+
+<div id="logical_operators" class="registered_link"></div>
+
+The usual logical operators are available: `AND`, `OR`, `NOT`
+
+SQL uses a three-valued Boolean logic where the null value represents "unknown". Observe the following truth tables:
+
+`AND/OR Truth Table`
+
+| a     | b     | a AND b | a OR b |
+| ----- | ----- | ------- | ------ |
+| True  | True  | True    | True   |
+| True  | False | False   | True   |
+| True  | Null  | Null    | True   |
+| False | False | False   | False  |
+| False | Null  | False   | Null   |
+| Null  | Null  | Null    | Null   |
+
+`NOT Truth Table`
+
+| a     | NOT a |
+| ----- | ----- |
+| True  | False |
+| False | True  |
+| Null  | Null  |
+
+The operators `AND` and `OR` are commutative, that is, you can switch the left and right operand without affecting the result.

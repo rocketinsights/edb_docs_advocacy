@@ -1,0 +1,56 @@
+---
+title: "Example - Adding a Partition to a LIST Partitioned Table"
+---
+
+<div id="example_adding_a_partition_to_a_list_partitioned_table" class="registered_link"></div>
+
+The example that follows adds a partition to the list-partitioned `sales` table. The table was created using the command:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA')
+);
+```
+
+The table contains three partitions (`americas, asia`, and `europe`).
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |     high_value
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+(3 rows)
+```
+
+The following command adds a partition named `east_asia` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION east_asia
+  VALUES ('CHINA', 'KOREA');
+```
+
+After invoking the command, the table includes the `east_asia` partition.
+
+```text
+edb=# SELECT partition_name, high_value FROM ALL_TAB_PARTITIONS;
+ partition_name |     high_value
+----------------+---------------------
+ EUROPE         | 'FRANCE', 'ITALY'
+ ASIA           | 'INDIA', 'PAKISTAN'
+ AMERICAS       | 'US', 'CANADA'
+ EAST_ASIA      | 'CHINA', 'KOREA'
+(4 rows)
+```

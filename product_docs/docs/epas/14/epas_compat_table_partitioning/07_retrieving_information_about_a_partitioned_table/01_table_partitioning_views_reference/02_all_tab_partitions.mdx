@@ -1,0 +1,45 @@
+---
+title: "ALL_TAB_PARTITIONS"
+---
+
+<div id="all_tab_partitions" class="registered_link"></div>
+
+The following table lists the information available in the `ALL_TAB_PARTITIONS` view:
+
+| Column               | Type                          | Description                                                            |
+| -------------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| `table_owner`        | `name`                        | The owner of the table.                                                |
+| `schema_name`        | `name`                        | The schema in which the table resides.                                 |
+| `table_name`         | `name`                        | The name of the table.                                                 |
+| `composite`          | `text`                        | YES if the table is subpartitioned; NO if it is not subpartitioned.    |
+| `partition_name`     | `name`                        | The name of the partition.                                             |
+| `subpartition_count` | `bigint`                      | The number of subpartitions for this partition.                        |
+| `high_value`         | `text`                        | The high partitioning value specified in the `CREATE TABLE` statement. |
+| `high_value_length`  | `integer`                     | The length of high partitioning value.                                 |
+| `partition_position` | `integer`                     | The ordinal position of this partition.                                |
+| `tablespace_name`    | `name`                        | The tablespace in which this partition resides.                        |
+| `pct_free`           | `numeric`                     | This column will always be 0.                                          |
+| `pct_used`           | `numeric`                     | This column will always be 0.                                          |
+| `ini_trans`          | `numeric`                     | This column will always be 0.                                          |
+| `max_trans`          | `numeric`                     | This column will always be 0.                                          |
+| `initial_extent`     | `numeric`                     | This column will always be NULL.                                       |
+| `next_extent`        | `numeric`                     | This column will always be NULL.                                       |
+| `min_extent`         | `numeric`                     | This column will always be 0.                                          |
+| `max_extent`         | `numeric`                     | This column will always be 0.                                          |
+| `pct_increase`       | `numeric`                     | This column will always be 0.                                          |
+| `freelists`          | `numeric`                     | This column will always be NULL.                                       |
+| `freelist_groups`    | `numeric`                     | This column will always be NULL.                                       |
+| `logging`            | `character varying(7)`        | This column will always be YES.                                        |
+| `compression`        | `character varying(8)`        | This column will always be NONE.                                       |
+| `num_rows`           | `numeric`                     | The approx. number of rows in this partition.                          |
+| `blocks`             | `integer`                     | The approx. number of blocks in this partition.                        |
+| `empty_blocks`       | `numeric`                     | This column will always be NULL.                                       |
+| `avg_space`          | `numeric`                     | This column will always be NULL.                                       |
+| `chain_cnt`          | `numeric`                     | This column will always be NULL.                                       |
+| `avg_row_len`        | `numeric`                     | This column will always be NULL.                                       |
+| `sample_size`        | `numeric`                     | This column will always be NULL.                                       |
+| `last_analyzed`      | `timestamp without time zone` | This column will always be NULL.                                       |
+| `buffer_pool`        | `character varying(7)`        | This column will always be NULL.                                       |
+| `global_stats`       | `character varying(3)`        | This column will always be YES.                                        |
+| `user_stats`         | `character varying(3)`        | This column will always be NO.                                         |
+| `backing_table`      | `regclass`                    | OID of the backing table for this partition.                           |

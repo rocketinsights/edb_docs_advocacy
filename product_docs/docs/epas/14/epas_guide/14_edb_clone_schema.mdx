@@ -1,0 +1,1085 @@
+---
+title: "EDB Clone Schema"
+---
+
+<div id="edb_clone_schema" class="registered_link"></div>
+
+*EDB Clone Schema* is an extension module for Advanced Server that allows you to copy a schema and its database objects from a local or remote database (the source database) to a receiving database (the target database).
+
+The source and target databases can be the same physical database, or different databases within the same database cluster, or separate databases running under different database clusters on separate database server hosts.
+
+Use the following functions with EDB Clone Schema:
+
+-   **localcopyschema.** This function makes a copy of a schema and its database objects from a source database back into the same database (the target), but with a different schema name than the original. Use this function when the original source schema and the resulting copy are to reside within the same database. See [localcopyschema](#localcopyschema) for information on the `localcopyschema` function.
+-   **localcopyschema_nb.** This function performs the same purpose as `localcopyschema`, but as a background job, thus freeing up the terminal from which the function was initiated. This is referred to as a *non-blocking* function. See [localcopyschema_nb](#localcopyschema_nb) for information on the `localcopyschema_nb` function.
+-   **remotecopyschema.** This function makes a copy of a schema and its database objects from a source database to a different target database. Use this function when the original source schema and the resulting copy are to reside in two, separate databases. The separate databases can reside in the same, or in different Advanced Server database clusters. See [remotecopyschema](#remotecopyschema) for information on the `remotecopyschema` function.
+-   **remotecopyschema_nb.** This function performs the same purpose as `remotecopyschema`, but as a background job, thus freeing up the terminal from which the function was initiated. This is referred to as a *non-blocking* function. See [remotecopyschema_nb](#remotecopyschema_nb) for information on the `remotecopyschema_nb` function.
+-   **process_status_from_log.** This function displays the status of the cloning functions. The information is obtained from a log file that must be specified when a cloning function is invoked. See [process_status_from_log](#process_status_from_log) for information on the `process_status_from_log` function.
+-   **remove_log_file_and_job.** This function deletes the log file created by a cloning function. This function can also be used to delete a job created by the non-blocking form of the function. See [remove_log_file_and_job](#remove_log_file_and_job) for information on the `remove_log_file_and_job` function.
+
+The database objects that can be cloned from one schema to another are the following:
+
+-   Data types
+-   Tables including partitioned tables, excluding foreign tables
+-   Indexes
+-   Constraints
+-   Sequences
+-   View definitions
+-   Materialized views
+-   Private synonyms
+-   Table triggers, but excluding event triggers
+-   Rules
+-   Functions
+-   Procedures
+-   Packages
+-   Comments for all supported object types
+-   Access control lists (ACLs) for all supported object types
+
+The following database objects cannot be cloned:
+
+-   Large objects (Postgres `LOBs` and `BFILEs`)
+-   Logical replication attributes for a table
+-   Database links
+-   Foreign data wrappers
+-   Foreign tables
+-   Event triggers
+-   Extensions (For cloning objects that rely on extensions, see the third bullet point in the following limitations list.)
+-   Row level security
+-   Policies
+-   Operator class
+
+In addition, the following limitations apply:
+
+-   EDB Clone Schema is supported on Advanced Server only when a dialect of `Compatible with Oracle` is specified on the Advanced Server `Dialect` dialog during installation, or when the `--redwood-like` keywords are included during a text mode installation or cluster initialization.
+-   The source code within functions, procedures, triggers, packages, etc., are not modified after being copied to the target schema. If such programs contain coded references to objects with schema names, the programs may fail upon invocation in the target schema if such schema names are no longer consistent within the target schema.
+-   Cross schema object dependencies are not resolved. If an object in the target schema depends upon an object in another schema, this dependency is not resolved by the cloning functions.
+-   For remote cloning, if an object in the source schema is dependent upon an extension, then this extension must be created in the public schema of the remote database before invoking the remote cloning function.
+-   At most, 16 copy jobs can run in parallel to clone schemas, whereas each job can have at most 16 worker processes to copy table data in parallel.
+-   Queries being run by background workers cannot be cancelled.
+
+The following section describes how to set up EDB Clone Schema on the databases.
+
+## Setup Process
+
+Several extensions along with the PL/Perl language must be installed on any database to be used as the source or target database by an EDB Clone Schema function.
+
+In addition, some configuration parameters in the `postgresql.conf` file of the database servers may benefit from some modification.
+
+The following is the setup instructions for these requirements.
+
+### Installing Extensions and PL/Perl
+
+The following describes the steps to install the required extensions and the PL/Perl language.
+
+**These steps must be performed on any database to be used as the source or target database by an EDB Clone Schema function.**
+
+**Step 1:** The following extensions must be installed on the database:
+
+-   `postgres_fdw`
+-   `dblink`
+-   `adminpack`
+-   `pgagent`
+
+Ensure that pgAgent is installed before creating the `pgagent` extension. On Linux, you can use the `edb-asxx-pgagent` RPM package where `xx` is the Advanced Server version number to install pgAgent. On Windows, use StackBuilder Plus to download and install pgAgent.
+
+The previously listed extensions can be installed by the following commands if they do not already exist:
+
+```text
+CREATE EXTENSION postgres_fdw SCHEMA public;
+CREATE EXTENSION dblink SCHEMA public;
+CREATE EXTENSION adminpack;
+CREATE EXTENSION pgagent;
+```
+
+For more information about using the `CREATE EXTENSION` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createextension.html>
+
+**Step 2:** Modify the `postgresql.conf` file.
+
+Modify the `postgresql.conf` file by adding `$libdir/parallel_clone` to the `shared_preload_libraries` configuration parameter as shown by the following example:
+
+```text
+shared_preload_libraries = '$libdir/dbms_pipe,$libdir/dbms_aq,$libdir/parallel_clone'
+```
+
+**Step 3:** The Perl Procedural Language (PL/Perl) must be installed on the database and the `CREATE TRUSTED LANGUAGE plperl` command must be run. For Linux, install PL/Perl using the `edb-asxx-server-plperl` RPM package where `xx` is the Advanced Server version number. For Windows, use the EDB Postgres Language Pack. For information on EDB Language Pack, see the *EDB Postgres Language Pack Guide* available at:
+
+[https://www.enterprisedb.com/docs](/epas/latest/language_pack/)
+
+**Step 4:** Connect to the database as a superuser and run the following command:
+
+```text
+CREATE TRUSTED LANGUAGE plperl;
+```
+
+For more information about using the `CREATE LANGUAGE` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createlanguage.html>
+
+<div id="setting-configuration-parameters-1" class="registered_link"></div>
+
+### Setting Configuration Parameters
+
+The following sections describe configuration parameters that may need to be altered in the `postgresql.conf` file.
+
+#### Performance Configuration Parameters
+
+You may need to tune the system for copying a large schema as part of one transaction.
+
+Tuning of configuration parameters is for the source database server referenced in a cloning function.
+
+The configuration parameters in the `postgresql.conf` file that may need to be tuned include the following:
+
+-   **work_mem.** Specifies the amount of memory to be used by internal sort operations and hash tables before writing to temporary disk files.
+-   **maintenance_work_mem.** Specifies the maximum amount of memory to be used by maintenance operations, such as `VACUUM`, `CREATE INDEX`, and `ALTER TABLE ADD FOREIGN KEY`.
+-   **max_worker_processes.** Sets the maximum number of background processes that the system can support.
+-   **checkpoint_timeout.** Maximum time between automatic WAL checkpoints, in seconds.
+-   **checkpoint_completion_target.** Specifies the target of checkpoint completion, as a fraction of total time between checkpoints.
+-   **checkpoint_flush_after.** Whenever more than `checkpoint_flush_after` *bytes* have been written while performing a checkpoint, attempt to force the OS to issue these writes to the underlying storage.
+-   **max_wal_size.** Maximum size to let the WAL grow to between automatic WAL checkpoints.
+-   **max_locks_per_transaction.** This parameter controls the average number of object locks allocated for each transaction; individual transactions can lock more objects as long as the locks of all transactions fit in the lock table.
+
+For information about the configuration parameters, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/runtime-config.html>
+
+#### Status Logging
+
+Status logging by the cloning functions creates log files in the directory specified by the `log_directory` parameter in the `postgresql.conf` file for the database server to which you are connected when invoking the cloning function.
+
+The default location is `PGDATA/log` as shown by the following:
+
+```text
+#log_directory = 'log'        # directory where log files are written,
+                              # can be absolute or relative to PGDATA
+```
+
+This directory must exist prior to running a cloning function.
+
+The name of the log file is determined by what you specify in the parameter list when invoking the cloning function.
+
+To display the status from a log file, use the `process_status_from_log` function.
+
+To delete a log file, use the `remove_log_file_and_job` function, or simply navigate to the log directory and delete it manually.
+
+### Installing EDB Clone Schema
+
+The following are the directions for installing EDB Clone Schema.
+
+**These steps must be performed on any database to be used as the source or target database by an EDB Clone Schema function.**
+
+**Step 1:** If you had previously installed an older version of the `edb_cloneschema` extension, then you must run the following command:
+
+```text
+DROP EXTENSION parallel_clone CASCADE;
+```
+
+This command also drops the `edb_cloneschema` extension.
+
+**Step 2:** Install the extensions using the following commands:
+
+```text
+CREATE EXTENSION parallel_clone SCHEMA public;
+
+CREATE EXTENSION edb_cloneschema;
+```
+
+Make sure you create the `parallel_clone` extension before creating the `edb_cloneschema` extension.
+
+### Creating the Foreign Servers and User Mappings
+
+When using one of the local cloning functions, `localcopyschema` or `localcopyschema_nb`, one of the required parameters includes a single, foreign server for identifying the database server along with its database that is the source and the receiver of the cloned schema.
+
+When using one of the remote cloning functions, `remotecopyschema` or `remotecopyschema_nb`, two of the required parameters include two foreign servers. The foreign server specified as the first parameter identifies the source database server along with its database that is the provider of the cloned schema. The foreign server specified as the second parameter identifies the target database server along with its database that is the receiver of the cloned schema.
+
+For each foreign server, a user mapping must be created. When a selected database superuser invokes a cloning function, that database superuser who invokes the function must have been mapped to a database user name and password that has access to the foreign server that is specified as a parameter in the cloning function.
+
+For general information about foreign data, foreign servers, and user mappings, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/ddl-foreign-data.html>
+
+The following two sections describe how these foreign servers and user mappings are defined.
+
+#### Foreign Server and User Mapping for Local Cloning Functions
+
+For the `localcopyschema` and `localcopyschema_nb` functions, the source and target schemas are both within the same database of the same database server. Thus, only one foreign server must be defined and specified for these functions. This foreign server is also referred to as the *local server*.
+
+This server is referred to as the local server because this server is the one to which you must be connected when invoking the `localcopyschema` or `localcopyschema_nb` function.
+
+The user mapping defines the connection and authentication information for the foreign server.
+
+**This foreign server and user mapping must be created within the database of the local server in which the cloning is to occur.**
+
+**The database user for whom the user mapping is defined must be a superuser and the user connected to the local server when invoking an EDB Clone Schema function.**
+
+The following example creates the foreign server for the database containing the schema to be cloned, and to receive the cloned schema as well.
+
+```text
+CREATE SERVER local_server FOREIGN DATA WRAPPER postgres_fdw
+  OPTIONS(
+    host 'localhost',
+    port '5444',
+    dbname 'edb'
+);
+```
+
+For more information about using the `CREATE SERVER` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/static/sql-createserver.html>
+
+The user mapping for this server is the following:
+
+```text
+CREATE USER MAPPING FOR enterprisedb SERVER local_server
+  OPTIONS (
+    user 'enterprisedb',
+    password 'password'
+);
+```
+
+For more information about using the `CREATE USER MAPPING` command, see the PostgreSQL core documentation at:
+
+<https://www.postgresql.org/docs/current/sql-createusermapping.html>
+
+The following `psql` commands show the foreign server and user mapping:
+
+```text
+edb=# \des+
+List of foreign servers
+-[ RECORD 1 ]--------+----------------------------------------------
+Name                 | local_server
+Owner                | enterprisedb
+Foreign-data wrapper | postgres_fdw
+Access privileges    |
+Type                 |
+Version              |
+FDW options          | (host 'localhost', port '5444', dbname 'edb')
+Description          |
+
+edb=# \deu+
+                        List of user mappings
+    Server    |  User name   |                 FDW options
+--------------+--------------+----------------------------------------------
+ local_server | enterprisedb | ("user" 'enterprisedb', password 'password')
+(1 row)
+```
+
+When database superuser `enterprisedb` invokes a cloning function, the database user `enterprisedb` with its password is used to connect to `local_server` on the `localhost` with port `5444` to database `edb`.
+
+In this case, the mapped database user, `enterprisedb`, and the database user, `enterprisedb`, used to connect to the local `edb` database happen to be the same, identical database user, but that is not an absolute requirement.
+
+For specific usage of these foreign server and user mapping examples, see the example given in `localcopyschema`.
+
+#### Foreign Server and User Mapping for Remote Cloning Functions
+
+For the `remotecopyschema` and `remotecopyschema_nb` functions, the source and target schemas are in different databases of either the same or different database servers. Thus, two foreign servers must be defined and specified for these functions.
+
+The foreign server defining the originating database server and its database containing the source schema to be cloned is referred to as the *source server* or the *remote server*.
+
+The foreign server defining the database server and its database to receive the schema to be cloned is referred to as the *target server* or the *local server*.
+
+The target server is also referred to as the local server because this server is the one to which you must be connected when invoking the `remotecopyschema` or `remotecopyschema_nb` function.
+
+The user mappings define the connection and authentication information for the foreign servers.
+
+**All of these foreign servers and user mappings must be created within the target database of the target/local server.**
+
+**The database user for whom the user mappings are defined must be a superuser and the user connected to the local server when invoking an EDB Clone Schema function.**
+
+The following example creates the foreign server for the local, target database that is to receive the cloned schema.
+
+```text
+CREATE SERVER tgt_server FOREIGN DATA WRAPPER postgres_fdw
+  OPTIONS(
+    host 'localhost',
+    port '5444',
+    dbname 'tgtdb'
+);
+```
+
+The user mapping for this server is the following:
+
+```text
+CREATE USER MAPPING FOR enterprisedb SERVER tgt_server
+  OPTIONS (
+    user 'tgtuser',
+    password 'tgtpassword'
+);
+```
+
+The following example creates the foreign server for the remote, source database that is to be the source for the cloned schema.
+
+```text
+CREATE SERVER src_server FOREIGN DATA WRAPPER postgres_fdw
+  OPTIONS(
+    host '192.168.2.28',
+    port '5444',
+    dbname 'srcdb'
+);
+```
+
+The user mapping for this server is the following:
+
+```text
+CREATE USER MAPPING FOR enterprisedb SERVER src_server
+  OPTIONS (
+    user 'srcuser',
+    password 'srcpassword'
+);
+```
+
+The following `psql` commands show the foreign servers and user mappings:
+
+```text
+tgtdb=# \des+
+List of foreign servers
+-[ RECORD 1 ]--------+---------------------------------------------------
+Name                 | src_server
+Owner                | tgtuser
+Foreign-data wrapper | postgres_fdw
+Access privileges    |
+Type                 |
+Version              |
+FDW options          | (host '192.168.2.28', port '5444', dbname 'srcdb')
+Description          |
+-[ RECORD 2 ]--------+---------------------------------------------------
+Name                 | tgt_server
+Owner                | tgtuser
+Foreign-data wrapper | postgres_fdw
+Access privileges    |
+Type                 |
+Version              |
+FDW options          | (host 'localhost', port '5444', dbname 'tgtdb')
+Description          |
+
+tgtdb=# \deu+
+                      List of user mappings
+   Server   |  User name   |                FDW options
+------------+--------------+--------------------------------------------
+ src_server | enterprisedb | ("user" 'srcuser', password 'srcpassword')
+ tgt_server | enterprisedb | ("user" 'tgtuser', password 'tgtpassword')
+(2 rows)
+```
+
+When database superuser `enterprisedb` invokes a cloning function, the database user `tgtuser` with password `tgtpassword` is used to connect to `tgt_server` on the `localhost` with port `5444` to database `tgtdb`.
+
+In addition, database user `srcuser` with password `srcpassword` connects to `src_server` on host `192.168.2.28` with port `5444` to database `srcdb`.
+
+!!! Note
+    Be sure the `pg_hba.conf` file of the database server running the source database `srcdb` has an appropriate entry permitting connection from the target server location (address `192.168.2.27` in the following example) connecting with the database user `srcuser` that was included in the user mapping for the foreign server `src_server` defining the source server and database.
+
+```text
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# "local" is for Unix domain socket connections only
+local   all             all                                     md5
+# IPv4 local connections:
+host    srcdb           srcuser         192.168.2.27/32         md5
+```
+
+For specific usage of these foreign server and user mapping examples, see the example given `remotecopyschema`.
+
+## EDB Clone Schema Functions
+
+The EDB Clone Schema functions are created in the `edb_util` schema when the `parallel_clone` and `edb_cloneschema` extensions are installed.
+
+Verify the following conditions before using an EDB Clone Schema function:
+
+-   You are connected to the target or local database as the database superuser defined in the `CREATE USER MAPPING` command for the foreign server of the target or local database.
+-   The `edb_util` schema is in the search path, or the cloning function is to be invoked with the `edb_util` prefix.
+-   The target schema does not exist in the target database.
+-   When using the remote copy functions, if the `on_tblspace` parameter is to be set to `true`, then the target database cluster contains all tablespaces that are referenced by objects in the source schema, otherwise creation of the DDL statements for those database objects will fail in the target schema. This causes a failure of the cloning process.
+-   When using the remote copy functions, if the `copy_acls` parameter is to be set to `true`, then all roles that have `GRANT` privileges on objects in the source schema exist in the target database cluster, otherwise granting of privileges to those roles will fail in the target schema. This causes a failure of the cloning process.
+-   pgAgent is running against the target database if the non-blocking form of the function is to be used.
+
+For information about pgAgent, see the pgAdmin documentation available at:
+
+<https://www.pgadmin.org/docs/pgadmin4/dev/pgagent.html>
+
+Note that pgAgent is provided as a component with Advanced Server.
+
+### localcopyschema
+
+<div id="localcopyschema" class="registered_link"></div>
+
+The `localcopyschema` function copies a schema and its database objects within a local database specified within the `source_fdw` foreign server from the source schema to the specified target schema within the same database.
+
+```text
+localcopyschema(
+  <source_fdw> TEXT,
+  <source_schema> TEXT,
+  <target_schema> TEXT,
+  <log_filename> TEXT
+  [, <on_tblspace> BOOLEAN
+  [, <verbose_on> BOOLEAN
+  [, <copy_acls> BOOLEAN
+  [, <worker_count> INTEGER ]]]]
+)
+```
+
+A `BOOLEAN` value is returned by the function. If the function succeeds, then `true` is returned. If the function fails, then `false` is returned.
+
+The `source_fdw, source_schema, target_schema`, and `log_filename` are required parameters while all other parameters are optional.
+
+**Parameters**
+
+`source_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper from which database objects are to be cloned.
+
+`source_schema`
+
+Name of the schema from which database objects are to be cloned.
+
+`target_schema`
+
+Name of the schema into which database objects are to be cloned from the source schema.
+
+`log_filename`
+
+Name of the log file in which information from the function is recorded. The log file is created under the directory specified by the `log_directory` configuration parameter in the `postgresql.conf` file.
+
+`on_tblspace`
+
+`BOOLEAN` value to specify whether or not database objects are to be created within their tablespaces. If `false` is specified, then the `TABLESPACE` clause is not included in the applicable `CREATE` DDL statement when added to the target schema. If true is specified, then the `TABLESPACE` clause is included in the `CREATE` DDL statement when added to the target schema. If the `on_tblspace` parameter is omitted, the default value is `false`.
+
+`verbose_on`
+
+`BOOLEAN` value to specify whether or not the DDLs are to be printed in `log_filename` when creating objects in the target schema. If `false` is specified, then DDLs are not printed. If `true` is specified, then DDLs are printed. If omitted, the default value is `false`.
+
+`copy_acls`
+
+`BOOLEAN` value to specify whether or not the access control list (ACL) is to be included while creating objects in the target schema. The access control list is the set of `GRANT` privilege statements. If `false` is specified, then the access control list is not included for the target schema. If `true` is specified, then the access control list is included for the target schema. If the `copy_acls` parameter is omitted, the default value is `false`.
+
+`worker_count`
+
+Number of background workers to perform the clone in parallel. If omitted, the default value is `1`.
+
+**Example**
+
+The following example shows the cloning of schema `edb` containing a set of database objects to target schema `edbcopy`, both within database `edb` as defined by `local_server`.
+
+The example is for the following environment:
+
+-   Host on which the database server is running: `localhost`
+-   Port of the database server: `5444`
+-   Database source/target of the clone: `edb`
+-   Foreign server (`local_server`) and user mapping with the information of the preceding bullet points
+-   Source schema: `edb`
+-   Target schema: `edbcopy`
+-   Database superuser to invoke `localcopyschema: enterprisedb`
+
+Before invoking the function, the connection is made by database user `enterprisedb` to database `edb`.
+
+```text
+edb=# SET search_path TO "$user",public,edb_util;
+SET
+edb=# SHOW search_path;
+        search_path
+---------------------------
+ "$user", public, edb_util
+(1 row)
+
+edb=# SELECT localcopyschema ('local_server','edb','edbcopy','clone_edb_edbcopy');
+ localcopyschema
+-----------------
+ t
+(1 row)
+```
+
+The following displays the logging status using the `process_status_from_log` function:
+
+```text
+edb=# SELECT process_status_from_log('clone_edb_edbcopy');
+                                    process_status_from_log
+------------------------------------------------------------------------------------------------
+ (FINISH,"2017-06-29 11:07:36.830783-04",3855,INFO,"STAGE: FINAL","successfully cloned schema")
+(1 row)
+```
+
+After the clone has completed, the following shows some of the database objects copied to the `edbcopy` schema:
+
+```text
+edb=# SET search_path TO edbcopy;
+SET
+edb=# \dt+
+                       List of relations
+ Schema  |  Name   | Type  |    Owner     |    Size    | Description
+---------+---------+-------+--------------+------------+-------------
+ edbcopy | dept    | table | enterprisedb | 8192 bytes |
+ edbcopy | emp     | table | enterprisedb | 8192 bytes |
+ edbcopy | jobhist | table | enterprisedb | 8192 bytes |
+(3 rows)
+
+edb=# \dv
+         List of relations
+ Schema  |   Name   | Type |    Owner
+---------+----------+------+--------------
+ edbcopy | salesemp | view | enterprisedb
+(1 row)
+
+edb=# \di
+                 List of relations
+ Schema  |     Name      | Type  |    Owner     |  Table
+---------+---------------+-------+--------------+---------
+ edbcopy | dept_dname_uq | index | enterprisedb | dept
+ edbcopy | dept_pk       | index | enterprisedb | dept
+ edbcopy | emp_pk        | index | enterprisedb | emp
+ edbcopy | jobhist_pk    | index | enterprisedb | jobhist
+(4 rows)
+
+edb=# \ds
+            List of relations
+ Schema  |    Name    |   Type   |    Owner
+---------+------------+----------+--------------
+ edbcopy | next_empno | sequence | enterprisedb
+(1 row)
+
+edb=# SELECT DISTINCT schema_name, name, type FROM user_source WHERE
+schema_name = 'EDBCOPY' ORDER BY type, name;
+ schema_name |              name              |     type
+-------------+--------------------------------+--------------
+ EDBCOPY     | EMP_COMP                       | FUNCTION
+ EDBCOPY     | HIRE_CLERK                     | FUNCTION
+ EDBCOPY     | HIRE_SALESMAN                  | FUNCTION
+ EDBCOPY     | NEW_EMPNO                      | FUNCTION
+ EDBCOPY     | EMP_ADMIN                      | PACKAGE
+ EDBCOPY     | EMP_ADMIN                      | PACKAGE BODY
+ EDBCOPY     | EMP_QUERY                      | PROCEDURE
+ EDBCOPY     | EMP_QUERY_CALLER               | PROCEDURE
+ EDBCOPY     | LIST_EMP                       | PROCEDURE
+ EDBCOPY     | SELECT_EMP                     | PROCEDURE
+ EDBCOPY     | EMP_SAL_TRIG                   | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_19991" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_19992" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_19999" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_20000" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_20004" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_a_20005" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_19993" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_19994" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_20001" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_20002" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_20006" | TRIGGER
+ EDBCOPY     | "RI_ConstraintTrigger_c_20007" | TRIGGER
+ EDBCOPY     | USER_AUDIT_TRIG                | TRIGGER
+(24 rows)
+```
+
+### localcopyschema_nb
+
+<div id="localcopyschema_nb" class="registered_link"></div>
+
+The `localcopyschema_nb` function copies a schema and its database objects within a local database specified within the `source_fdw` foreign server from the source schema to the specified target schema within the same database, but in a non-blocking manner as a job submitted to pgAgent.
+
+```text
+localcopyschema_nb(
+  <source_fdw> TEXT,
+  <source> TEXT,
+  <target> TEXT,
+  <log_filename> TEXT
+  [, <on_tblspace> BOOLEAN
+  [, <verbose_on> BOOLEAN
+  [, <copy_acls> BOOLEAN
+  [, <worker_count> INTEGER ]]]]
+)
+```
+
+An `INTEGER` value job ID is returned by the function for the job submitted to pgAgent. If the function fails, then null is returned.
+
+The `source_fdw, source, target`, and `log_filename` are required parameters while all other parameters are optional.
+
+After completion of the pgAgent job, remove the job with the `remove_log_file_and_job` function.
+
+**Parameters**
+
+`source_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper from which database objects are to be cloned.
+
+`source`
+
+Name of the schema from which database objects are to be cloned.
+
+`target`
+
+Name of the schema into which database objects are to be cloned from the source schema.
+
+`log_filename`
+
+Name of the log file in which information from the function is recorded. The log file is created under the directory specified by the `log_directory` configuration parameter in the `postgresql.conf` file.
+
+`on_tblspace`
+
+`BOOLEAN` value to specify whether or not database objects are to be created within their tablespaces. If `false` is specified, then the `TABLESPACE` clause is not included in the applicable `CREATE` DDL statement when added to the target schema. If `true` is specified, then the `TABLESPACE` clause is included in the `CREATE` DDL statement when added to the target schema. If the `on_tblspace` parameter is omitted, the default value is `false`.
+
+`verbose_on`
+
+`BOOLEAN` value to specify whether or not the DDLs are to be printed in `log_filename` when creating objects in the target schema. If `false` is specified, then DDLs are not printed. If `true` is specified, then DDLs are printed. If omitted, the default value is `false`.
+
+`copy_acls`
+
+`BOOLEAN` value to specify whether or not the access control list (ACL) is to be included while creating objects in the target schema. The access control list is the set of `GRANT` privilege statements. If `false` is specified, then the access control list is not included for the target schema. If `true` is specified, then the access control list is included for the target schema. If the `copy_acls` parameter is omitted, the default value is `false`.
+
+`worker_count`
+
+Number of background workers to perform the clone in parallel. If omitted, the default value is `1`.
+
+**Example**
+
+The same cloning operation is performed as the example in `localcopyschema`, but using the non-blocking function `localcopyschema_nb`.
+
+The following command can be used to observe if pgAgent is running on the appropriate local database:
+
+```text
+[root@localhost ~]# ps -ef | grep pgagent
+root       4518      1  0 11:35 pts/1    00:00:00 pgagent -s /tmp/pgagent_edb_log 
+hostaddr=127.0.0.1 port=5444 dbname=edb user=enterprisedb password=password
+root       4525   4399  0 11:35 pts/1    00:00:00 grep --color=auto pgagent
+```
+
+If pgAgent is not running, it can be started as shown by the following. The `pgagent` program file is located in the `bin` subdirectory of the Advanced Server installation directory.
+
+```text
+[root@localhost bin]# ./pgagent -l 2 -s /tmp/pgagent_edb_log hostaddr=127.0.0.1 port=5444 
+dbname=edb user=enterprisedb password=password
+```
+
+!!! Note
+    The `pgagent -l 2` option starts pgAgent in `DEBUG` mode, which logs continuous debugging information into the log file specified with the `-s` option. Use a lower value for the `-l` option, or omit it entirely to record less information.
+
+The `localcopyschema_nb` function returns the job ID shown as `4` in the example.
+
+```text
+edb=# SELECT edb_util.localcopyschema_nb ('local_server','edb','edbcopy','clone_edb_edbcopy');
+ localcopyschema_nb
+--------------------
+               4
+(1 row)
+```
+
+The following displays the job status:
+
+```text
+edb=# SELECT edb_util.process_status_from_log('clone_edb_edbcopy');
+                                   process_status_from_log
+---------------------------------------------------------------------------------------------------
+ (FINISH,"29-JUN-17 11:39:11.620093 -04:00",4618,INFO,"STAGE: FINAL","successfully cloned schema")
+(1 row)
+```
+
+The following removes the pgAgent job:
+
+```text
+edb=# SELECT edb_util.remove_log_file_and_job (4);
+ remove_log_file_and_job
+-------------------------
+ t
+(1 row)
+```
+
+### remotecopyschema
+
+<div id="remotecopyschema" class="registered_link"></div>
+
+The `remotecopyschema` function copies a schema and its database objects from a source schema in the remote source database specified within the `source_fdw` foreign server to a target schema in the local target database specified within the `target_fdw` foreign server.
+
+```text
+remotecopyschema(
+  <source_fdw> TEXT,
+  <target_fdw> TEXT,
+  <source_schema> TEXT,
+  <target_schema> TEXT,
+  <log_filename> TEXT
+  [, <on_tblspace> BOOLEAN
+  [, <verbose_on> BOOLEAN
+  [, <copy_acls> BOOLEAN
+  [, <worker_count> INTEGER ]]]]
+)
+```
+
+A `BOOLEAN` value is returned by the function. If the function succeeds, then `true` is returned. If the function fails, then `false` is returned.
+
+The `source_fdw, target_fdw, source_schema, target_schema`, and `log_filename` are required parameters while all other parameters are optional.
+
+**Parameters**
+
+`source_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper from which database objects are to be cloned.
+
+`target_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper to which database objects are to be cloned.
+
+`source_schema`
+
+Name of the schema from which database objects are to be cloned.
+
+`target_schema`
+
+Name of the schema into which database objects are to be cloned from the source schema.
+
+`log_filename`
+
+Name of the log file in which information from the function is recorded. The log file is created under the directory specified by the `log_directory` configuration parameter in the `postgresql.conf` file.
+
+`on_tblspace`
+
+`BOOLEAN` value to specify whether or not database objects are to be created within their tablespaces. If `false` is specified, then the `TABLESPACE` clause is not included in the applicable `CREATE` DDL statement when added to the target schema. If `true` is specified, then the `TABLESPACE` clause is included in the `CREATE` DDL statement when added to the target schema. If the `on_tblspace` parameter is omitted, the default value is `false`.
+
+!!! Note
+    If `true` is specified and a database object has a `TABLESPACE` clause, but that tablespace does not exist in the target database cluster, then the cloning function fails.
+
+`verbose_on`
+
+`BOOLEAN` value to specify whether or not the DDLs are to be printed in `log_filename` when creating objects in the target schema. If `false` is specified, then DDLs are not printed. If `true` is specified, then DDLs are printed. If omitted, the default value is `false`.
+
+`copy_acls`
+
+`BOOLEAN` value to specify whether or not the access control list (ACL) is to be included while creating objects in the target schema. The access control list is the set of `GRANT` privilege statements. If `false` is specified, then the access control list is not included for the target schema. If `true` is specified, then the access control list is included for the target schema. If the `copy_acls` parameter is omitted, the default value is `false`.
+
+!!! Note
+    If `true` is specified and a role with `GRANT` privilege does not exist in the target database cluster, then the cloning function fails.
+
+`worker_count`
+
+Number of background workers to perform the clone in parallel. If omitted, the default value is `1`.
+
+**Example**
+
+The following example shows the cloning of schema `srcschema` within database `srcdb` as defined by `src_server` to target schema `tgtschema` within database `tgtdb` as defined by `tgt_server`.
+
+The source server environment:
+
+-   Host on which the source database server is running: `192.168.2.28`
+-   Port of the source database server: `5444`
+-   Database source of the clone: `srcdb`
+-   Foreign server (`src_server`) and user mapping with the information of the preceding bullet points
+-   Source schema: `srcschema`
+
+The target server environment:
+
+-   Host on which the target database server is running: `localhost`
+-   Port of the target database server: `5444`
+-   Database target of the clone: `tgtdb`
+-   Foreign server (`tgt_server`) and user mapping with the information of the preceding bullet points
+-   Target schema: `tgtschema`
+-   Database superuser to invoke `remotecopyschema: enterprisedb`
+
+Before invoking the function, the connection is made by database user `enterprisedb` to database `tgtdb`. A `worker_count` of `4` is specified for this function.
+
+```text
+tgtdb=# SELECT edb_util.remotecopyschema
+('src_server','tgt_server','srcschema','tgtschema','clone_rmt_src_tgt',worker_count => 4);
+ remotecopyschema
+------------------
+ t
+(1 row)
+```
+
+The following displays the status from the log file during various points in the cloning process:
+
+```text
+tgtdb=# SELECT edb_util.process_status_from_log('clone_rmt_src_tgt');
+                                                      process_status_from_log
+
+-----------------------------------------------------------------------------------------------------
+--------------------------------------
+ (RUNNING,"28-JUN-17 13:18:05.299953 -04:00",4021,INFO,"STAGE: DATA-COPY","[0][0] successfully 
+ copied data in [tgtschema.pgbench_tellers]
+")
+ (1 row)
+
+tgtdb=# SELECT edb_util.process_status_from_log('clone_rmt_src_tgt');
+                                                      process_status_from_log
+
+-----------------------------------------------------------------------------------------------------
+---------------------------------------
+ (RUNNING,"28-JUN-17 13:18:06.634364 -04:00",4022,INFO,"STAGE: DATA-COPY","[0][1] successfully 
+ copied data in [tgtschema.pgbench_history]
+")
+ (1 row)
+
+tgtdb=# SELECT edb_util.process_status_from_log('clone_rmt_src_tgt');
+                                                      process_status_from_log
+
+------------------------------------------------------------------------------------------------------
+-------------------------------------
+ (RUNNING,"28-JUN-17 13:18:10.550393 -04:00",4039,INFO,"STAGE: POST-DATA","CREATE PRIMARY KEY 
+ CONSTRAINT pgbench_tellers_pkey successful"
+)
+ (1 row)
+
+tgtdb=# SELECT edb_util.process_status_from_log('clone_rmt_src_tgt');
+                                                      process_status_from_log
+-------------------------------------------------------------------------------------------------------
+---------------------------------
+ (FINISH,"28-JUN-17 13:18:12.019627 -04:00",4039,INFO,"STAGE: FINAL","successfully clone 
+ schema into tgtschema")
+ (1 row)
+```
+
+The following shows the cloned tables:
+
+```text
+tgtdb=# \dt+
+                             List of relations
+  Schema   |       Name       | Type  |    Owner     |    Size    | Description
+-----------+------------------+-------+--------------+------------+-------------
+ tgtschema | pgbench_accounts | table | enterprisedb | 256 MB     |
+ tgtschema | pgbench_branches | table | enterprisedb | 8192 bytes |
+ tgtschema | pgbench_history  | table | enterprisedb | 25 MB      |
+ tgtschema | pgbench_tellers  | table | enterprisedb | 16 kB      |
+(4 rows)
+```
+
+When the `remotecopyschema` function was invoked, four background workers were specified.
+
+The following portion of the log file `clone_rmt_src_tgt` shows the status of the parallel data copying operation using four background workers:
+
+```text
+Wed Jun 28 13:18:05.232949 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0] table count [4]
+Wed Jun 28 13:18:05.233321 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0][0] worker started to
+copy data
+Wed Jun 28 13:18:05.233640 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0][1] worker started to
+copy data
+Wed Jun 28 13:18:05.233919 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0][2] worker started to
+copy data
+Wed Jun 28 13:18:05.234231 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0][3] worker started to
+copy data
+Wed Jun 28 13:18:05.298174 2017 EDT: [4024] INFO: [STAGE: DATA-COPY] [0][3] successfully
+copied data in [tgtschema.pgbench_branches]
+Wed Jun 28 13:18:05.299913 2017 EDT: [4021] INFO: [STAGE: DATA-COPY] [0][0] successfully
+copied data in [tgtschema.pgbench_tellers]
+Wed Jun 28 13:18:06.634310 2017 EDT: [4022] INFO: [STAGE: DATA-COPY] [0][1] successfully
+copied data in [tgtschema.pgbench_history]
+Wed Jun 28 13:18:10.477333 2017 EDT: [4023] INFO: [STAGE: DATA-COPY] [0][2] successfully
+copied data in [tgtschema.pgbench_accounts]
+Wed Jun 28 13:18:10.477609 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0] all workers finished
+[4]
+Wed Jun 28 13:18:10.477654 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] [0] copy done [4] tables
+Wed Jun 28 13:18:10.493938 2017 EDT: [4019] INFO: [STAGE: DATA-COPY] successfully copied data
+into tgtschema
+```
+
+Note that the `DATA-COPY` log message includes two, square bracket numbers (for example, `[0][3]`).
+
+The first number is the job index whereas the second number is the worker index. The worker index values range from `0` to `3` for the four background workers.
+
+In case two clone schema jobs are running in parallel, the first log file will have `0` as the job index whereas the second will have `1` as the job index.
+
+### remotecopyschema_nb
+
+<div id="remotecopyschema_nb" class="registered_link"></div>
+
+The `remotecopyschema_nb` function copies a schema and its database objects from a source schema in the remote source database specified within the `source_fdw` foreign server to a target schema in the local target database specified within the `target_fdw` foreign server, but in a non-blocking manner as a job submitted to pgAgent.
+
+```text
+remotecopyschema_nb(
+  <source_fdw> TEXT,
+  <target_fdw> TEXT,
+  <source> TEXT,
+  <target> TEXT,
+  <log_filename> TEXT
+  [, <on_tblspace> BOOLEAN
+  [, <verbose_on> BOOLEAN
+  [, <copy_acls> BOOLEAN
+  [, <worker_count> INTEGER ]]]]
+)
+```
+
+An `INTEGER` value job ID is returned by the function for the job submitted to pgAgent. If the function fails, then null is returned.
+
+The `source_fdw, target_fdw, source, target`, and `log_filename` are required parameters while all other parameters are optional.
+
+After completion of the pgAgent job, remove the job with the `remove_log_file_and_job` function.
+
+**Parameters**
+
+`source_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper from which database objects are to be cloned.
+
+`target_fdw`
+
+Name of the foreign server managed by the `postgres_fdw` foreign data wrapper to which database objects are to be cloned.
+
+`source`
+
+Name of the schema from which database objects are to be cloned.
+
+`target`
+
+Name of the schema into which database objects are to be cloned from the source schema.
+
+`log_filename`
+
+Name of the log file in which information from the function is recorded. The log file is created under the directory specified by the `log_directory` configuration parameter in the `postgresql.conf` file.
+
+`on_tblspace`
+
+`BOOLEAN` value to specify whether or not database objects are to be created within their tablespaces. If `false` is specified, then the `TABLESPACE` clause is not included in the applicable `CREATE` DDL statement when added to the target schema. If `true` is specified, then the `TABLESPACE` clause is included in the `CREATE` DDL statement when added to the target schema. If the `on_tblspace` parameter is omitted, the default value is `false`.
+
+!!! Note
+    If `true` is specified and a database object has a `TABLESPACE` clause, but that tablespace does not exist in the target database cluster, then the cloning function fails.
+
+`verbose_on`
+
+`BOOLEAN` value to specify whether or not the DDLs are to be printed in `log_filename` when creating objects in the target schema. If `false` is specified, then DDLs are not printed. If `true` is specified, then DDLs are printed. If omitted, the default value is `false`.
+
+`copy_acls`
+
+`BOOLEAN` value to specify whether or not the access control list (ACL) is to be included while creating objects in the target schema. The access control list is the set of `GRANT` privilege statements. If `false` is specified, then the access control list is not included for the target schema. If `true` is specified, then the access control list is included for the target schema. If the `copy_acls` parameter is omitted, the default value is `false`.
+**Note:** If `true` is specified and a role with `GRANT` privilege does not exist in the target database cluster, then the cloning function fails.
+
+`worker_count`
+
+Number of background workers to perform the clone in parallel. If omitted, the default value is `1`.
+
+**Example**
+
+The same cloning operation is performed as the example in `remotecopyschema`, but using the non-blocking function `remotecopyschema_nb`.
+
+The following command starts pgAgent on the target database `tgtdb`. The `pgagent` program file is located in the `bin` subdirectory of the Advanced Server installation directory.
+
+```text
+[root@localhost bin]# ./pgagent -l 1 -s /tmp/pgagent_tgtdb_log hostaddr=127.0.0.1 port=5444 
+user=enterprisedb dbname=tgtdb password=password
+```
+
+The `remotecopyschema_nb` function returns the job ID shown as `2` in the example.
+
+```text
+tgtdb=# SELECT edb_util.remotecopyschema_nb
+('src_server','tgt_server','srcschema','tgtschema','clone_rmt_src_tgt',worker_count => 4);
+ remotecopyschema_nb
+---------------------
+                2
+(1 row)
+```
+
+The completed status of the job is shown by the following:
+
+```text
+tgtdb=# SELECT edb_util.process_status_from_log('clone_rmt_src_tgt');
+                                             process_status_from_log
+--------------------------------------------------------------------------------------------------------------------
+ (FINISH,"29-JUN-17 current:16:00.100284 -04:00",3849,INFO,"STAGE: FINAL","successfully clone schema into tgtschema")
+(1 row)
+```
+
+The following removes the log file and the pgAgent job:
+
+```text
+tgtdb=# SELECT edb_util.remove_log_file_and_job ('clone_rmt_src_tgt',2);
+ remove_log_file_and_job
+-------------------------
+ t
+(1 row)
+```
+
+### process_status_from_log
+
+<div id="process_status_from_log" class="registered_link"></div>
+
+The `process_status_from_log` function provides the status of a cloning function from its log file.
+
+```text
+process_status_from_log (
+  <log_file> TEXT
+)
+```
+
+The function returns the following fields from the log file:
+
+| Field Name       | Description                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------------- |
+| `status`         | Displays either `STARTING`, `RUNNING`, `FINISH`, or `FAILED`.                                             |
+| `execution_time` | When the command was executed. Displayed in timestamp format.                                             |
+| `pid`            | Session process ID in which clone schema is getting called.                                               |
+| `level`          | Displays either `INFO`, `ERROR`, or `SUCCESSFUL`.                                                         |
+| `stage`          | Displays either `STARTUP`, `INITIAL`, `DDL-COLLECTION`, `PRE-DATA`, `DATA-COPY`, `POST-DATA`, or `FINAL`. |
+| `message`        | Information respective to each command or failure.                                                        |
+
+**Parameters**
+
+`log_file`
+
+Name of the log file recording the cloning of a schema as specified when the cloning function was invoked.
+
+**Example**
+
+The following shows usage of the `process_status_from_log` function:
+
+```text
+edb=# SELECT edb_util.process_status_from_log('clone_edb_edbcopy');
+                                      process_status_from_log
+---------------------------------------------------------------------------------------------------
+ (FINISH,"26-JUN-17 11:57:03.214458 -04:00",3691,INFO,"STAGE: FINAL","successfully cloned schema")
+(1 row)
+```
+
+### remove_log_file_and_job
+
+<div id="remove_log_file_and_job" class="registered_link"></div>
+
+The `remove_log_file_and_job` function performs cleanup tasks by removing the log files created by the schema cloning functions and the jobs created by the non-blocking functions.
+
+```text
+remove_log_file_and_job (
+  { <log_file> TEXT |
+    <job_id> INTEGER |
+    <log_file> TEXT, <job_id> INTEGER
+  }
+)
+```
+
+Values for any or both of the two parameters may be specified when invoking the `remove_log_file_and_job` function:
+
+-   If only `log_file` is specified, then the function will only remove the log file.
+-   If only `job_id` is specified, then the function will only remove the job.
+-   If both are specified, then the function will remove the log file and the job.
+
+**Parameters**
+
+`log_file`
+
+Name of the log file to be removed.
+
+`job_id`
+
+Job ID of the job to be removed.
+
+**Example**
+
+The following examples removes only the log file, given the log filename.
+
+```text
+edb=# SELECT edb_util.remove_log_file_and_job ('clone_edb_edbcopy');
+ remove_log_file_and_job
+-------------------------
+ t
+(1 row)
+```
+
+The following example removes only the job, given the job ID.
+
+```text
+edb=# SELECT edb_util.remove_log_file_and_job (3);
+ remove_log_file_and_job
+-------------------------
+ t
+(1 row)
+```
+
+The following example removes the log file and the job, given both values:
+
+```text
+tgtdb=# SELECT edb_util.remove_log_file_and_job ('clone_rmt_src_tgt',2);
+ remove_log_file_and_job
+-------------------------
+ t
+(1 row)
+```

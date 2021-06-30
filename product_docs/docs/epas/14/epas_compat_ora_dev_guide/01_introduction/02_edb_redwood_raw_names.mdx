@@ -1,0 +1,65 @@
+---
+title: "edb_redwood_raw_names"
+---
+
+<div id="edb_redwood_raw_names" class="registered_link"></div>
+
+When `edb_redwood_raw_names` is set to its default value of `FALSE`, database object names such as table names, column names, trigger names, program names, user names, etc. appear in uppercase letters when viewed from Oracle catalogs (for a complete list of supported catalog views, see the *Database Compatibility for Oracle Developers Catalog Views Guide*). In addition, quotation marks enclose names that were created with enclosing quotation marks.
+
+When `edb_redwood_raw_names` is set to `TRUE`, the database object names are displayed exactly as they are stored in the PostgreSQL system catalogs when viewed from the Oracle catalogs. Thus, names created without enclosing quotation marks appear in lowercase as expected in PostgreSQL. Names created with enclosing quotation marks appear exactly as they were created, but without the quotation marks.
+
+For example, the following user name is created, and then a session is started with that user.
+
+```text
+CREATE USER reduser IDENTIFIED BY password;
+edb=# \c - reduser
+Password for user reduser:
+You are now connected to database "edb" as user "reduser".
+```
+
+When connected to the database as `reduser`, the following tables are created.
+
+```text
+CREATE TABLE all_lower (col INTEGER);
+CREATE TABLE ALL_UPPER (COL INTEGER);
+CREATE TABLE "Mixed_Case" ("Col" INTEGER);
+```
+
+When viewed from the Oracle catalog, `USER_TABLES`, with `edb_redwood_raw_names` set to the default value `FALSE`, the names appear in uppercase except for the `Mixed_Case` name, which appears as created and also with enclosing quotation marks.
+
+```text
+edb=> SELECT * FROM USER_TABLES;
+ schema_name  |  table_name  | tablespace_name | status | temporary
+--------------+--------------+-----------------+--------+-----------
+ REDUSER      | ALL_LOWER    |                 | VALID  | N
+ REDUSER      | ALL_UPPER    |                 | VALID  | N
+ REDUSER      | "Mixed_Case" |                 | VALID  | N
+(3 rows)
+```
+
+When viewed with `edb_redwood_raw_names` set to `TRUE`, the names appear in lowercase except for the `Mixed_Case` name, which appears as created, but now without the enclosing quotation marks.
+
+```text
+edb=> SET edb_redwood_raw_names TO true;
+SET
+edb=> SELECT * FROM USER_TABLES;
+ schema_name  | table_name | tablespace_name | status | temporary
+--------------+------------+-----------------+--------+-----------
+ reduser      | all_lower  |                 | VALID  | N
+ reduser      | all_upper  |                 | VALID  | N
+ reduser      | Mixed_Case |                 | VALID  | N
+(3 rows)
+```
+
+These names now match the case when viewed from the PostgreSQL `pg_tables` catalog.
+
+```text
+edb=> SELECT schemaname, tablename, tableowner FROM pg_tables WHERE
+tableowner = 'reduser';
+ schemaname  | tablename  | tableowner
+-------------+------------+------------
+ reduser     | all_lower  | reduser
+ reduser     | all_upper  | reduser
+ reduser     | Mixed_Case | reduser
+(3 rows)
+```

@@ -1,0 +1,455 @@
+---
+title: "Example - Setting a SUBPARTITION TEMPLATE"
+---
+
+<div id="example_setting_a_subpartition_template" class="registered_link"></div>
+
+The following example creates a table `sales` that is range partitioned by `date` and hash subpartitioned by `country`. Use the following command to create the `sales` table:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY RANGE (date) SUBPARTITION BY HASH (country) SUBPARTITIONS 2
+(
+  PARTITION q1_2012
+    VALUES LESS THAN('2012-Apr-01'),
+  PARTITION q2_2012
+    VALUES LESS THAN('2012-Jul-01'),
+  PARTITION q3_2012
+    VALUES LESS THAN('2012-Oct-01'),
+  PARTITION q4_2012
+    VALUES LESS THAN('2013-Jan-01')
+);
+```
+
+The table definition creates four partitions `(q1_2012, q2_2012, q3_2012`, and `q4_2012)`, each partition consisting of two subpartitions with system-generated names.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | Q1_2012        | SYS0101
+ SALES      | Q1_2012        | SYS0102
+ SALES      | Q2_2012        | SYS0103
+ SALES      | Q2_2012        | SYS0104
+ SALES      | Q3_2012        | SYS0105
+ SALES      | Q3_2012        | SYS0106
+ SALES      | Q4_2012        | SYS0107
+ SALES      | Q4_2012        | SYS0108
+(8 rows)
+```
+
+To set the subpartition template on the `sales` table, invoke the following command:
+
+```text
+ALTER TABLE sales SET SUBPARTITION TEMPLATE 8;
+```
+
+The `sales` table is modified with the subpartition template set to eight. Now, if you try to add a new partition `q1_2013`, a new partition will be created consisting of eight subpartitions as described in the subpartition template.
+
+```text
+ALTER TABLE sales ADD PARTITION q1_2013 VALUES LESS THAN ('2013-Apr-01');
+```
+
+Query the `ALL_TAB_PARTITIONS` view, the `q1_2013` partition is successfully added comprising of eight subpartitions with system-generated names assigned to them.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' and partition_name =
+'Q1_2013' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | Q1_2013        | SYS0113
+ SALES      | Q1_2013        | SYS0114
+ SALES      | Q1_2013        | SYS0115
+ SALES      | Q1_2013        | SYS0116
+ SALES      | Q1_2013        | SYS0117
+ SALES      | Q1_2013        | SYS0118
+ SALES      | Q1_2013        | SYS0119
+ SALES      | Q1_2013        | SYS0120
+(8 rows)
+```
+
+## Example - Adding a Subpartition Template for LIST/LIST Partitioned Table 
+
+The following example creates a table `sales` that is list-partitioned by `country` and subpartitioned using the list by a `date` column.  
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) 
+  SUBPARTITION BY LIST (date)
+  SUBPARTITION TEMPLATE
+(
+    SUBPARTITION europe VALUES('2021-Jan-01') TABLESPACE ts1,
+    SUBPARTITION asia VALUES('2021-Apr-01') TABLESPACE ts2,
+    SUBPARTITION americas VALUES('2021-Jul-01') TABLESPACE ts3
+)
+( 
+    PARTITION q1_2021 VALUES('2021-Jul-01')
+); 
+```   
+
+The `SELECT` statement shows partition `q1_2021` consisting of three subpartitions stored in tablespaces `(ts1)`, `(ts2)`, and `(ts3)`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(3 rows)
+```
+
+The following command adds a partition named `q2_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q2_2021 VALUES('US', 'CANADA');
+```
+
+Invoke the following command; the `sales` table includes the `q2_2021` partition.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q2_2021        | Q2_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q2_2021        | Q2_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q2_2021        | Q2_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(6 rows)
+```
+
+## Example - Adding a Subpartition Template for LIST/RANGE Partitioned Table
+
+The following example creates a table `sales` list-partitioned by `country` and subpartitioned using range partitioning by the `date` column. 
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+  SUBPARTITION BY RANGE(date)
+  SUBPARTITION TEMPLATE
+(
+    SUBPARTITION europe VALUES LESS THAN('2021-Jan-01') TABLESPACE ts1,
+    SUBPARTITION asia VALUES LESS THAN('2021-Apr-01') TABLESPACE ts2,
+    SUBPARTITION americas VALUES LESS THAN('2021-Jul-01') TABLESPACE ts3
+)
+( 
+    PARTITION q1_2021 VALUES ('2021-Jul-01')
+); 
+```     
+
+The `sales` table creates a partition named `q1_2021` that includes three subpartitions stored in tablespaces `(ts1)`, `(ts2)`, and `(ts3)`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(3 rows)
+```
+
+The following command adds a partition named `q2_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q2_2021 VALUES('INDIA', 'PAKISTAN');
+```
+
+Invoke the following command; the `sales` table includes the `q2_2021` partition.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q2_2021        | Q2_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q2_2021        | Q2_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q2_2021        | Q2_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(6 rows)
+```
+
+## Example - Adding a Subpartition Template for LIST/HASH Partitioned Table
+
+The following example creates a list-partitioned table `sales` that is first partitioned by `country` and then hash-subpartitioned using the value of the `dept_no` column.
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+  SUBPARTITION BY HASH (dept_no)
+  SUBPARTITION TEMPLATE
+(
+    SUBPARTITION europe TABLESPACE ts1,
+    SUBPARTITION asia TABLESPACE ts2,
+    SUBPARTITION americas TABLESPACE ts3
+)
+( 
+    PARTITION q1_2021 VALUES ('2021-Jul-01')
+); 
+```  
+
+The `sales` table creates a `q1_2021` partition that includes three subpartitions stored in tablespaces `(ts1)`, `(ts2)`, and `(ts3)`. 
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name 
+FROM DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name | high_value | tablespace_name 
+----------------+-------------------+------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  |            | TS3
+ Q1_2021        | Q1_2021_ASIA      |            | TS2
+ Q1_2021        | Q1_2021_EUROPE    |            | TS1
+(3 rows)
+```
+
+The following command adds a partition named `q2_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q2_2021 VALUES('FRANCE', 'ITALY');
+```
+
+Invoke the following command; the `sales` table includes the `q2_2021` partition.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name 
+FROM DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name | high_value | tablespace_name 
+----------------+-------------------+------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  |            | TS3
+ Q1_2021        | Q1_2021_ASIA      |            | TS2
+ Q1_2021        | Q1_2021_EUROPE    |            | TS1
+ Q2_2021        | Q2_2021_AMERICAS  |            | TS3
+ Q2_2021        | Q2_2021_ASIA      |            | TS2
+ Q2_2021        | Q2_2021_EUROPE    |            | TS1
+(6 rows)
+```
+
+## Example - Resetting a SUBPARTITION TEMPLATE
+
+**Example 1**
+
+The following example creates a list-partitioned table `sales` that is list partitioned by `country` and hash subpartitioned by `part_no`. Use the following command to create the `sales` table:
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST (country) SUBPARTITION BY HASH (part_no) SUBPARTITIONS 3
+(
+  PARTITION europe VALUES('FRANCE', 'ITALY'),
+  PARTITION asia VALUES('INDIA', 'PAKISTAN'),
+  PARTITION americas VALUES('US', 'CANADA')
+);
+```
+
+The table contains three partitions (`americas`, `asia`, and `europe`), each partition consists of three subpartitions with system-generated names.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | AMERICAS       | SYS0109
+ SALES      | AMERICAS       | SYS0107
+ SALES      | AMERICAS       | SYS0108
+ SALES      | ASIA           | SYS0105
+ SALES      | ASIA           | SYS0104
+ SALES      | ASIA           | SYS0106
+ SALES      | EUROPE         | SYS0101
+ SALES      | EUROPE         | SYS0103
+ SALES      | EUROPE         | SYS0102
+(9 rows)
+```
+
+The following command resets the subpartition template on the `sales` table.
+
+```text
+ALTER TABLE sales SET SUBPARTITION TEMPLATE ();
+```
+
+The `sales` table is modified with the subpartition template reset to default `1`. Now, try to add a new partition `east_asia` using the following command:
+
+```text
+ALTER TABLE sales ADD PARTITION east_asia VALUES ('CHINA', 'KOREA');
+```
+
+Query the `ALL_TAB_PARTITIONS` view, a new partition `east_asia` will be created consisting of one subpartition with a system-generated name assigned to them.
+
+```text
+edb=# SELECT table_name, partition_name, subpartition_name FROM
+ALL_TAB_SUBPARTITIONS WHERE table_name = 'SALES' and partition_name =
+'EAST_ASIA' ORDER BY 1,2;
+ table_name | partition_name | subpartition_name
+------------+----------------+-------------------
+ SALES      | EAST_ASIA      | SYS0113
+(1 row)
+```
+
+**Example 2**
+
+The following example creates a table `sales` list-partitioned by `country` and subpartitioned using range partitioning by the `date` column. 
+
+```text
+CREATE TABLE sales
+(
+  dept_no     number,
+  part_no     varchar2,
+  country     varchar2(20),
+  date        date,
+  amount      number
+)
+PARTITION BY LIST(country)
+  SUBPARTITION BY RANGE(date)
+  SUBPARTITION TEMPLATE
+(
+    SUBPARTITION europe VALUES LESS THAN('2021-Jan-01') TABLESPACE ts1,
+    SUBPARTITION asia VALUES LESS THAN('2021-Apr-01') TABLESPACE ts2,
+    SUBPARTITION americas VALUES LESS THAN('2021-Jul-01') TABLESPACE ts3
+)
+( 
+    PARTITION q1_2021 VALUES ('2021-Jul-01')
+); 
+```    
+
+The `sales` table contains a partition named `q1_2021` that includes three subpartitions stored in tablespaces `(ts1)`, `(ts2)`, and `(ts3)`.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name 
+FROM DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(3 rows)
+```
+
+The following command adds a partition named `q2_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q2_2021 VALUES('INDIA', 'PAKISTAN');
+```
+
+Invoke the following command; the `sales` table includes the `q2_2021` partition.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q2_2021        | Q2_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q2_2021        | Q2_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q2_2021        | Q2_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+(6 rows)
+```
+
+Use the `ALTER TABLE... SET SUBPARTITION TEMPLATE` command to specify a new subpartition template. 
+
+```text
+ALTER TABLE sales SET SUBPARTITION TEMPLATE 
+(
+   SUBPARTITION europe VALUES LESS THAN('2021-Jan-01'),
+   SUBPARTITION asia VALUES LESS THAN('2021-Apr-01') TABLESPACE ts2
+);
+```
+
+The following command adds a partition named `q3_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q3_2021 VALUES('US', 'CANADA');
+```
+
+Invoke the following command; the `sales` table includes the `q3_2021` partition.
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q2_2021        | Q2_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q2_2021        | Q2_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q2_2021        | Q2_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q3_2021        | Q3_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q3_2021        | Q3_2021_EUROPE    | '01-JAN-21 00:00:00' | PG_DEFAULT
+(8 rows)
+```
+
+The following command resets or drops the subpartition template on the `sales` table.
+
+```text
+ALTER TABLE sales SET SUBPARTITION TEMPLATE ();
+```
+
+The following command adds a partition named `q4_2021` to the `sales` table.
+
+```text
+ALTER TABLE sales ADD PARTITION q4_2021 VALUES('FRANCE', 'ITALY');
+```
+
+The `SELECT` statement shows partition `q4_2021` consisting of a subpartition with a system-generated name. 
+
+```text
+edb=# SELECT partition_name, subpartition_name, high_value, tablespace_name FROM 
+DBA_TAB_SUBPARTITIONS WHERE table_name = 'SALES' ORDER BY 1,2;
+ partition_name | subpartition_name |      high_value      | tablespace_name 
+----------------+-------------------+----------------------+-----------------
+ Q1_2021        | Q1_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q1_2021        | Q1_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q1_2021        | Q1_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q2_2021        | Q2_2021_AMERICAS  | '01-JUL-21 00:00:00' | TS3
+ Q2_2021        | Q2_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q2_2021        | Q2_2021_EUROPE    | '01-JAN-21 00:00:00' | TS1
+ Q3_2021        | Q3_2021_ASIA      | '01-APR-21 00:00:00' | TS2
+ Q3_2021        | Q3_2021_EUROPE    | '01-JAN-21 00:00:00' | PG_DEFAULT
+ Q4_2021        | SYS0112           | MAXVALUE             | PG_DEFAULT
+(9 rows)
+```
+
+

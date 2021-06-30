@@ -1,0 +1,39 @@
+---
+title: "ALTER TABLE...SET INTERVAL"
+---
+
+<div id="alter_table_set_interval" class="registered_link"></div>
+
+Use the `ALTER TABLE… SET INTERVAL` command to convert an existing range-partitioned table to an interval range partitioned table. The database automatically creates a new partition of a specified range or interval for the partitioned table when `INTERVAL` is set. The syntax is:
+
+```text
+ALTER TABLE <table_name> SET INTERVAL (<constant> | <expression>);
+```
+
+To disable an interval range partitioned table and convert it to a range-partitioned table, the syntax is:
+
+```text
+ALTER TABLE <table_name> SET INTERVAL ();
+```
+
+**Parameters**
+
+`table_name`
+
+ The name (optionally schema-qualified) of the range-partitioned table.
+
+`constant | expression`
+
+ Specifies a `NUMERIC, DATE`, or `TIME` value.
+
+**Description**
+
+The `ALTER TABLE… SET INTERVAL` command can be used to convert the range-partitioned table to use interval range partitioning. A new partition of a specified interval is created and data can be inserted into the new partition.
+
+The `SET INTERVAL ()` command can be used to disable interval range partitioning. The database converts an interval range partitioned table to range-partitioned and sets the boundaries of the interval range partitions to the boundaries for the range partitions.
+
+<div class="toctree" maxdepth="3">
+
+example_setting_an_interval_range_partition
+
+</div>

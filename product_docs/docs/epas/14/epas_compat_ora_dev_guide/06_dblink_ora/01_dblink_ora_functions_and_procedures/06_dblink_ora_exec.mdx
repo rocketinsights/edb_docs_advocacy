@@ -1,0 +1,19 @@
+---
+title: "dblink_ora_exec()"
+---
+
+<div id="dblink_ora_exec" class="registered_link"></div>
+
+The `dblink_ora_exec()` procedure executes a DML or DDL statement in the remote database. The signature is:
+
+```text
+dblink_ora_exec(<conn_name>, <command>)
+```
+
+**Where:**
+
+-   `conn_name` specifies the name of the link.
+
+-   `command` specifies the text of the `INSERT, UPDATE`, or `DELETE` SQL statement that will be invoked on the Oracle server.
+
+The function returns a `VOID`.

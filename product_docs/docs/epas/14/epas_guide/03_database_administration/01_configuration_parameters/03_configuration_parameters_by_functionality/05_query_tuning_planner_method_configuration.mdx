@@ -1,0 +1,29 @@
+---
+title: "Query Tuning / Planner Method Configuration"
+---
+
+<div id="query_tuning_planner_method_configuration" class="registered_link"></div>
+
+This section describes the configuration parameters used for planner method configuration.
+
+## edb_enable_pruning
+
+**Parameter Type:** Boolean
+
+**Default Value:** `true`
+
+**Range:** `{true | false}`
+
+**Minimum Scope of Effect:** Per session
+
+**When Value Changes Take Effect:** Immediate
+
+**Required Authorization to Activate:** Session user
+
+When set to `TRUE`, `edb_enable_pruning` allows the query planner to early-prune partitioned tables. `Early-pruning` means that the query planner can `prune` (i.e., ignore) partitions that would not be searched in a query `before` generating query plans. This helps improve performance time as it eliminates the generation of query plans of partitions that would not be searched.
+
+Conversely, `late-pruning` means that the query planner prunes partitions `after` generating query plans for each partition. (The `constraint_exclusion` configuration parameter controls late-pruning.)
+
+The ability to early-prune depends upon the nature of the query in the `WHERE` clause. Early-pruning can be utilized in only simple queries with constraints of the type `WHERE column = literal` (e.g., `WHERE deptno = 10)`.
+
+Early-pruning is not used for more complex queries such as `WHERE column = expression` (e.g., `WHERE deptno = 10 + 5)`.

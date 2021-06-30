@@ -1,0 +1,60 @@
+---
+title: "Creating Object Instances"
+---
+
+<div id="creating_object_instances" class="registered_link"></div>
+
+To create an instance of an object type, you must first declare a variable of the object type, and then initialize the declared object variable. The syntax for declaring an object variable is:
+
+```text
+<object obj_type>
+```
+
+`object` is an identifier assigned to the object variable.
+
+`obj_type` is the identifier of a previously defined object type.
+
+After declaring the object variable, you must invoke a *constructor* *method* to initialize the object with values. Use the following syntax to invoke the constructor method:
+
+```text
+[NEW] <obj_type> ({expr1 | NULL} [, {expr2 | NULL} ] [, ...])
+```
+
+`obj_type` is the identifier of the object type’s constructor method; the constructor method has the same name as the previously declared object type.
+
+`expr1, expr2, …` are expressions that are type-compatible with the first attribute of the object type, the second attribute of the object type, etc. If an attribute is of an object type, then the corresponding expression can be `NULL`, an object initialization expression, or any expression that returns that object type.
+
+The following anonymous block declares and initializes a variable:
+
+```text
+DECLARE
+    v_emp           EMP_OBJ_TYP;
+BEGIN
+    v_emp := emp_obj_typ (9001,'JONES',
+        addr_obj_typ('123 MAIN STREET','EDISON','NJ',08817));
+END;
+```
+
+The variable `(v_emp)` is declared with a previously defined object type named `EMP_OBJ_TYPE`. The body of the block initializes the variable using the `emp_obj_typ` and `addr_obj_type` constructors.
+
+You can include the `NEW` keyword when creating a new instance of an object in the body of a block. The `NEW` keyword invokes the object constructor whose signature matches the arguments provided.
+
+The following example declares two variables, named `mgr` and `emp`. The variables are both of `EMP_OBJ_TYPE`. The `mgr` object is initialized in the declaration, while the emp object is initialized to `NULL` in the declaration, and assigned a value in the body.
+
+```text
+DECLARE
+    mgr  EMP_OBJ_TYPE := (9002,'SMITH');
+    emp  EMP_OBJ_TYPE;
+BEGIN
+    emp := NEW EMP_OBJ_TYPE (9003,'RAY');
+END;
+```
+
+!!! Note
+    In Advanced Server, the following alternate syntax can be used in place of the constructor method.
+
+```text
+[ ROW ] ({ expr1 | NULL } [, { expr2 | NULL } ] [, ...])
+```
+
+`ROW` is an optional keyword if two or more terms are specified within the parenthesis-enclosed, comma-delimited list. If only one term is specified, then specification of the `ROW` keyword is mandatory.

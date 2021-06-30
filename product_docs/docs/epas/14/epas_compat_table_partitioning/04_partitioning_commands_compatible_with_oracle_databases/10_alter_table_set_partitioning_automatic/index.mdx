@@ -1,0 +1,35 @@
+---
+title: "ALTER TABLE...SET [ PARTITIONING ] AUTOMATIC"
+---
+
+<div id="alter_table_set_partitioning_automatic" class="registered_link"></div>
+
+Use the `ALTER TABLE… SET [ PARTITIONING ] AUTOMATIC` command to convert an existing list partitioned table to automatic list partitioning. The database automatically creates a partition based on a new value inserted into a table when `AUTOMATIC` is set. The syntax is:
+
+```text
+ALTER TABLE <table_name> SET [ PARTITIONING ] AUTOMATIC;
+```
+
+To disable `AUTOMATIC LIST PARTITIONING` and convert to regular `LIST` partition, the syntax is:
+
+```text
+ALTER TABLE <table_name> SET [ PARTITIONING ] MANUAL;
+```
+
+**Parameters**
+
+`table_name`
+
+ The name (optionally schema-qualified) of the list-partitioned table.
+
+**Description**
+
+The `ALTER TABLE… SET [ PARTITIONING ] AUTOMATIC` command can be used to convert the regular list partitioned table to use automatic partitioning. A partition is created and data can be inserted into the new partition.
+
+The `ALTER TABLE… SET [ PARTITIONING ] MANUAL` command can be used to disable the automatic list partitioning; the database converts an automatic list partitioned table to a regular list partitioned table.
+
+<div class="toctree" maxdepth="3">
+
+example_setting_an_automatic_list_partition
+
+</div>

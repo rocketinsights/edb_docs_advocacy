@@ -1,0 +1,58 @@
+---
+title: "DROP TABLE"
+---
+
+<div id="drop_table" class="registered_link"></div>
+
+**Name**
+
+`DROP TABLE` -- remove a table.
+
+**Synopsis**
+
+```text
+DROP TABLE <name> [CASCADE | RESTRICT | CASCADE CONSTRAINTS]
+```
+
+**Description**
+
+`DROP TABLE` removes tables from the database. Only its owner may destroy a table. To empty a table of rows, without destroying the table, use `DELETE`. `DROP TABLE` always removes any indexes, rules, triggers, and constraints that exist for the target table.
+
+**Parameters**
+
+`name`
+
+ The name (optionally schema-qualified) of the table to drop.
+
+-   Include the `RESTRICT` keyword to specify that the server should refuse to drop the table if any objects depend on it. This is the default behavior; the `DROP TABLE` command will report an error if any objects depend on the table.
+
+-   Include the `CASCADE` clause to drop any objects that depend on the table.
+
+-   Include the `CASCADE CONSTRAINTS` clause to specify that Advanced Server should drop any dependent constraints (excluding other object types) on the specified table.
+
+**Examples**
+
+The following command drops a table named `emp` that has no dependencies:
+
+```text
+DROP TABLE emp;
+```
+
+The outcome of a `DROP TABLE` command will vary depending on whether the table has any dependencies - you can control the outcome by specifying a `drop behavior`. For example, if you create two tables, `orders` and `items`, where the `items` table is dependent on the `orders` table:
+
+```text
+CREATE TABLE orders
+  (order_id int PRIMARY KEY, order_date date, …);
+CREATE TABLE items
+  (order_id REFERENCES orders, quantity int, …);
+```
+
+Advanced Server will perform one of the following actions when dropping the `orders` table, depending on the drop behavior that you specify:
+
+-   If you specify `DROP TABLE orders RESTRICT`, Advanced Server will report an error.
+-   If you specify `DROP TABLE orders CASCADE`, Advanced Server will drop the `orders` table *and* the `items` table.
+-   If you specify `DROP TABLE orders CASCADE CONSTRAINTS`, Advanced Server will drop the `orders` table and remove the foreign key specification from the `items` table, but not drop the `items` table.
+
+**See Also**
+
+[CREATE TABLE](36_create_table/#create_table), [ALTER TABLE](12_alter_table/#alter_table)
