@@ -154,7 +154,7 @@ Where `ENV_VARIABLE` is the environment variable that is set to the directory pa
 The `EDBLDR_ENV_STYLE` environment variable instructs Advanced Server to interpret environment variable references as Windows-styled references or Linux-styled references irregardless of the operating system on which EDB\*Loader resides. You can use this environment variable to create portable control files for EDB\*Loader.
 
 -   On a Windows system, set `EDBLDR_ENV_STYLE` to `linux` or `unix` to instruct Advanced Server to recognize Linux-style references within the control file.
--   On a Linux system, set `EDBLDR_ENV_STYLE` to windows to instruct Advanced Server to recognize Windows-style references within the control file.
+-   On a Linux system, set `EDBLDR_ENV_STYLE` to `windows` to instruct Advanced Server to recognize Windows-style references within the control file.
 
 The operating system account `enterprisedb` must have read permission on the directory and file specified by `data_file`.
 
@@ -401,11 +401,8 @@ If the `FIELDS TERMINATED BY` clause is specified, then the `POSITION (start:end
 
 ```
 CHAR [(<length>)] | DATE [(<length>)] | TIMESTAMP [(<length>)] [ "<datemask>" ] | 
-
 INTEGER EXTERNAL [(<length>)] |
-
 FLOAT EXTERNAL [(<length>)] | DECIMAL EXTERNAL [(<length>)] |
-
 ZONED EXTERNAL [(<length>)] | ZONED [(<precision>[,<scale>])]
 ```
 
@@ -525,7 +522,7 @@ The following is the corresponding delimiter-separated data file:
 9104,"JONES, JR.",MANAGER,7839,02-APR-09,7975.00,20
 ```
 
-The use of the `TRAILING NULLCOLS` clause allows the last field supplying the comm column to be omitted from the first and last records. The `comm` column is set to null for the rows inserted from these records.
+The use of the `TRAILING NULLCOLS` clause allows the last field supplying the `comm` column to be omitted from the first and last records. The `comm` column is set to null for the rows inserted from these records.
 
 The double quotation mark enclosure character surrounds the value `JONES, JR.` in the last record since the comma delimiter character is part of the field value.
 
@@ -758,7 +755,7 @@ SELECT * FROM emp WHERE empno > 9100;
 
 **NULLIF Clause**
 
-The following example uses the `NULLIF` clause on the sal column to set it to null for employees of job `MANAGER` as well as on the comm column to set it to null if the employee is not a `SALESMAN` and is not in department `30`. In other words, a comm value is accepted if the employee is a `SALESMAN` or is a member of department `30`.
+The following example uses the `NULLIF` clause on the `sal` column to set it to null for employees of job `MANAGER` as well as on the `comm` column to set it to null if the employee is not a `SALESMAN` and is not in department `30`. In other words, a `comm` value is accepted if the employee is a `SALESMAN` or is a member of department `30`.
 
 The following is the control file:
 
