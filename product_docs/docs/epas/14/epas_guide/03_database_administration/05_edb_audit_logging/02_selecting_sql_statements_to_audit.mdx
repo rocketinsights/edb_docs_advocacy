@@ -566,7 +566,7 @@ INSERT INTO salgrade VALUES (2, 1201, 1400);
 INSERT INTO salgrade VALUES (3, 1401, 2000);
 ```
 
-The resulting audit log file contains only the connection authentication information. The setting the `edb_audit_statement` parameter to `none` does not allow auditing any of the SQL statements for `carol`, and thereby no audit logs are generated.
+The resulting audit log file contains only the connection authentication information. Setting the `edb_audit_statement` parameter to `none` does not allow auditing any of the SQL statements for `carol`, and thereby no audit logs are generated.
 
 Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
 
