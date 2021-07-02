@@ -27,7 +27,7 @@ PURGE_QUEUE_TABLE(
 
 | Attribute       | Type    | Description                                                                                                         |
 | --------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| `Block`         | Boolean | Specify `TRUE` if an exclusive lock should be held on all queues within the table; the default is `FALSE`.          |
+| `block`         | Boolean | Specify `TRUE` if an exclusive lock should be held on all queues within the table; the default is `FALSE`.          |
 | `delivery_mode` | INTEGER | `delivery_mode` specifies the type of message that will be purged. The only accepted value is `DBMS_AQ.PERSISTENT`. |
 
 **Example**
