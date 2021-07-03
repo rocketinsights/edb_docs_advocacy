@@ -235,7 +235,7 @@ struct SQLDA
 
 `N - maximum number of entries`
 
- The N structure member contains the maximum number of entries that the SQLDA may describe. This member is populated by the `sqlald()` function when you allocate the SQLDA structure. Before using a descriptor in an `OPEN` or `FETCH` statement, you must set `N` to the *actual* number of values described.
+ The `N` structure member contains the maximum number of entries that the SQLDA may describe. This member is populated by the `sqlald()` function when you allocate the SQLDA structure. Before using a descriptor in an `OPEN` or `FETCH` statement, you must set `N` to the *actual* number of values described.
 
 `V - data values`
 
@@ -397,7 +397,7 @@ EXEC SQL CALL get_job_desc(:ename)
 
 ### CLOSE
 
-Use the `CLOSE` statement to close a cursor, and free any resources scurrently in use by the cursor. A client application cannot fetch rows from a closed cursor. The syntax of the `CLOSE` statement is:
+Use the `CLOSE` statement to close a cursor, and free any resources currently in use by the cursor. A client application cannot fetch rows from a closed cursor. The syntax of the `CLOSE` statement is:
 
 ```text
 EXEC SQL CLOSE [<cursor_name>];
@@ -691,7 +691,7 @@ DELETE FROM emp WHERE sal > :max_sal;
 
 For more information about using the `DELETE` statement, see the PostgreSQL Core documentation available at:
 
- <https://www.postgresql.org/docs/current/static/sql-delete.html>
+<https://www.postgresql.org/docs/current/static/sql-delete.html>
 
 ### DESCRIBE
 
@@ -971,9 +971,9 @@ If you include an `INTO` clause, the `FETCH` statement will populate the host va
 The following code fragment declares a cursor named `employees` that retrieves the `employee number`, `name` and `salary` from the `emp` table:
 
 ```text
-EXEC SQL DECLARE employees CURSOR
-    SELECT empno, ename, esal FROM emp
-EXEC SQL OPEN emp_cursor
+EXEC SQL DECLARE employees CURSOR FOR
+    SELECT empno, ename, esal FROM emp;
+EXEC SQL OPEN emp_cursor;
 EXEC SQL FETCH emp_cursor INTO :emp_no, :emp_name, :emp_sal;
 ```
 
@@ -1291,7 +1291,7 @@ SELECT
   [ GROUP BY expression [, ...]]
   [ HAVING condition ]
   [ { UNION [ ALL ] | INTERSECT | MINUS } (subquery) ]
-  [ ORDER BY expression> [order_by_options]]
+  [ ORDER BY expression [order_by_options]]
   [ LIMIT { count | ALL }]
   [ OFFSET start [ ROW | ROWS ] ]
   [ FETCH { FIRST | NEXT } [ count ] { ROW | ROWS } ONLY ]

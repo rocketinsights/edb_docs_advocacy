@@ -200,7 +200,7 @@ The first option tells `make` how to transform a file that ends in `.pgc` (presu
     ecpg -C PROC -c $(INCLUDES) $?
 ```
 
-The second option tells make how to transform a file that ends in `.pg` (an ECPG source file) into a file that ends in `.c` (a C program), using the ECPGPlus extensions. It invokes the ECPG pre-compiler with the `-c` flag (instructing the compiler to convert SQL code into C), as well as the `-C PROC` flag (instructing the compiler to use ECPGPlus in Pro\*C-compatibility mode), using the value of the `INCLUDES` variable and the name of the `.pgc` file.
+The second option tells `make` how to transform a file that ends in `.pg` (an ECPG source file) into a file that ends in `.c` (a C program), using the ECPGPlus extensions. It invokes the ECPG pre-compiler with the `-c` flag (instructing the compiler to convert SQL code into C), as well as the `-C PROC` flag (instructing the compiler to use ECPGPlus in Pro\*C-compatibility mode), using the value of the `INCLUDES` variable and the name of the `.pgc` file.
 
 When you run `make`, pass the name of the ECPG source code file you wish to compile. For example, to compile an ECPG source code file named `customer_list.pgc`, use the command:
 
