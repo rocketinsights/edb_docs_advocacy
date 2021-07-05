@@ -84,7 +84,7 @@ Use the following configuration parameters to control database auditing. See [Su
 
 `edb_audit_statement`
 
- This configuration parameter is used to specify auditing of different categories of SQL statements. Various combinations of the following values may be specified: `none`, `dml`, `insert`, `update`, `delete`, `truncate`, `select`, `error`, `rollback`, `ddl`, `create`, `drop`, `alter`, `grant`, `revoke`, `set`, and `all`. The default is `ddl` and `error`. See [Selecting SQL Statements to Audit](02_selecting_sql_statements_to_audit/#selecting_sql_statements_to_audit) for information regarding the setting of this parameter.
+ This configuration parameter is used to specify auditing of different categories of SQL statements. Various combinations of the following values may be specified: `none`, `dml`, `insert`, `update`, `delete`, `truncate`, `select`, `error`, `rollback`, `ddl`, `create`, `drop`, `alter`, `grant`, `revoke`, `set`, `all`, and `{ select | update | delete | insert }@groupname`. The default is `ddl` and `error`. See [Selecting SQL Statements to Audit](02_selecting_sql_statements_to_audit/#selecting_sql_statements_to_audit) for information regarding the setting of this parameter.
 
 `edb_audit_tag`
 

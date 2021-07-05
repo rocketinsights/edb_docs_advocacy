@@ -8,7 +8,7 @@ title: "edb_audit_statement"
 
 **Default Value:** `ddl, error`
 
-**Range:** `{none | ddl | dml | insert | update | delete | truncate | select | error | create | drop | alter | grant | revoke | rollback | set | all} ...`
+**Range:** `{none | ddl | dml | insert | update | delete | truncate | select | error | create | drop | alter | grant | revoke | rollback | set | all | { select | update | delete | insert }@groupname} ...`
 
 **Minimum Scope of Effect:** Cluster
 
@@ -17,3 +17,4 @@ title: "edb_audit_statement"
 **Required Authorization to Activate:** EPAS service account
 
 This configuration parameter is used to specify auditing of different categories of SQL statements as well as those statements related to specific SQL commands. To log errors, set the parameter value to `error`. To audit all DDL statements such as `CREATE TABLE`, `ALTER TABLE`, etc., set the parameter value to `ddl`. To audit specific types of DDL statements, the parameter values can include those specific SQL commands (`create`, `drop`, or `alter`). In addition, the object type may be specified following the command such as `create table`, `create view`, `drop role`, etc. All modification statements such as `INSERT`, `UPDATE`, `DELETE` or `TRUNCATE` can be audited by setting `edb_audit_statement` to `dml`. To audit specific types of DML statements, the parameter values can include the specific SQL commands, `insert`, `update`, `delete`, or `truncate`. Include parameter values `select`, `grant`, `revoke`, or `rollback` to audit statements regarding those SQL commands. To audit `SET` statements, include the parameter value to `SET`. Setting the value to `all` will audit every statement while `none` disables this feature.
+The per-object level auditing audits the operations permitted by object privileges, such as `SELECT`, `UPDATE`, `DELETE`, and `INSERT` statements including `(@)` and excluding `(-)` groups on a given table. To audit specific type of object, specify the name of the object to be audited. The `edb_audit_statement` parameter can include the specific SQL commands, `select`, `update`, `delete`, or `insert`.

@@ -30,6 +30,7 @@ edb_audit_statement = 'all'     # Statement type to be audited:
                                 # none, dml, insert, update, delete, truncate,
                                 # select, error, rollback, ddl, create, drop,
                                 # alter, grant, revoke, set, all
+                                # {select | update | delete | insert}@groupname
 ```
 
 A database and role are established with the following settings for the `edb_audit_statement` parameter:

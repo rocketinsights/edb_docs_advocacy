@@ -1,0 +1,146 @@
+---
+title: "Object Auditing"
+---
+
+<div id="object_auditing" class="registered_link"></div>
+
+The object level auditing allows selective auditing of objects for specific `dml` statements, such as `SELECT`, `UPDATE`, `DELETE`, and `INSERT` on a given table. The object level auditing also lets you include or exclude specific groups by specifying `(@)` or `(-)` with the `edb_audit_statement` parameter. For more information about Data Manipulation Language Statements, see [Selecting SQL Statements to Audit](02_selecting_sql_statements_to_audit/#selecting_sql_statements_to_audit).
+
+Use the following syntax to specify an `edb_audit_statement` parameter value for `SELECT`, `UPDATE`, `DELETE`, or `INSERT` statements:
+
+```text
+{ select | update | delete | insert }@groupname
+```
+
+**Example**
+
+The following is an example where `edb_audit_connect` and `edb_audit_statement` are set with the following non-default values:
+
+```text
+logging_collector = 'on'
+edb_audit_connect = 'all'
+edb_audit = 'csv'
+edb_audit_statement = 'select, insert, update, delete'
+```
+
+The SQL statements invoked by the `SELECT`, `INSERT` and `UPDATE` commands are audited.
+
+The database session that occurs is the following:
+
+```text
+$ psql edb enterprisedb
+Password for user enterprisedb:
+psql.bin (14.0.0)
+Type "help" for help.
+
+edb=# SHOW edb_audit_connect;
+ edb_audit_connect 
+-------------------
+ all
+(1 row)
+
+edb=# SHOW edb_audit_statement;
+  edb_audit_statement   
+------------------------
+ select, insert, update
+(1 row)
+
+edb=# CREATE TABLE emp
+edb-#        (empno NUMBER(4) NOT NULL,
+edb(#         ename VARCHAR2(10),
+edb(#         job VARCHAR2(9),
+edb(#         mgr NUMBER(4),
+edb(#         hiredate DATE,
+edb(#         sal NUMBER(7, 2),
+edb(#         comm NUMBER(7, 2),
+edb(#         deptno NUMBER(2));
+CREATE TABLE
+
+edb=# ALTER TABLE emp SET (edb_audit_group = 'high_sal');
+ALTER TABLE
+
+edb=# CREATE TABLE dept
+edb-#        (deptno NUMBER(2),
+edb(#         dname VARCHAR2(14),
+edb(#         loc VARCHAR2(13) ) with (edb_audit_group = 'low_sal');
+CREATE TABLE
+
+edb=# SET edb_audit_statement = 'select@high_sal, insert-high_sal, update@low_sal';
+SET
+
+edb=# SELECT reloptions FROM pg_class WHERE relname='emp';
+         reloptions         
+----------------------------
+ {edb_audit_group=high_sal}
+(1 row)
+
+edb=# SELECT reloptions FROM pg_class WHERE relname='dept';
+        reloptions         
+---------------------------
+ {edb_audit_group=low_sal}
+(1 row)
+
+edb=# SELECT setting FROM pg_settings WHERE name = 'edb_audit_statement';
+                     setting                      
+--------------------------------------------------
+ select@high_sal, insert-high_sal, update@low_sal
+(1 row)
+
+edb=# SELECT * FROM emp;
+ empno | ename | job | mgr | hiredate | sal | comm | deptno 
+-------+-------+-----+-----+----------+-----+------+--------
+(0 rows)
+
+edb=# SELECT * FROM dept;
+ deptno | dname | loc 
+--------+-------+-----
+(0 rows)
+
+edb=# INSERT INTO emp VALUES (7369, 'SMITH', 'CLERK', 7902, TO_DATE('17-DEC-1980', 'DD-MON-YYYY'), 800, NULL, 10);
+INSERT 0 1
+edb=# INSERT INTO emp VALUES (7788, 'SCOTT', 'ANALYST', 7566, TO_DATE('09-DEC-1982', 'DD-MON-YYYY'), 3000, NULL, 20);
+INSERT 0 1
+edb=# INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
+INSERT 0 1
+edb=# INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
+INSERT 0 1
+
+edb=# UPDATE emp SET sal = '5000' WHERE deptno = 10;
+UPDATE 1
+edb=# UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
+UPDATE 1
+
+edb=# DELETE FROM emp WHERE deptno = 10;
+DELETE 1
+```
+
+The resulting audit log file contains the following.
+
+Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
+
+```text
+2021-07-05 09:21:30.140 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
+130f5,1,"authentication",2021-07-05 09:21:30 IST,4/19,0,AUDIT,00000,
+"connection authorized: user=edb database=edb",,,,,,,,,"","client backend",,"","","connect"
+
+2021-07-05 09:23:29.297 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
+130f5,2,"SELECT",2021-07-05 09:21:30 IST,4/30,0,AUDIT,00000,"statement: SELECT * FROM emp;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+
+2021-07-05 09:24:16.935 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
+130f5,3,"INSERT",2021-07-05 09:21:30 IST,4/34,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-05 09:24:36.531 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
+130f5,4,"INSERT",2021-07-05 09:21:30 IST,4/35,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-05 09:24:58.464 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
+130f5,5,"UPDATE",2021-07-05 09:21:30 IST,4/37,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
+",,,,,,,,,"psql","client backend",,"UPDATE","","update"
+```
+
+
+
+
+
