@@ -40,9 +40,9 @@ edb=# SHOW edb_audit_connect;
 (1 row)
 
 edb=# SHOW edb_audit_statement;
-  edb_audit_statement   
-------------------------
- select, insert, update
+      edb_audit_statement       
+--------------------------------
+ select, insert, update, delete
 (1 row)
 
 edb=# CREATE TABLE emp
@@ -56,34 +56,44 @@ edb(#         comm NUMBER(7, 2),
 edb(#         deptno NUMBER(2));
 CREATE TABLE
 
-edb=# ALTER TABLE emp SET (edb_audit_group = 'high_sal');
+edb=# ALTER TABLE emp SET (edb_audit_group = 'hr_americas_sal');
 ALTER TABLE
 
 edb=# CREATE TABLE dept
-edb-#        (deptno NUMBER(2),
-edb(#         dname VARCHAR2(14),
-edb(#         loc VARCHAR2(13) ) with (edb_audit_group = 'low_sal');
+edb-#         (deptno NUMBER(2),
+edb(#          dname VARCHAR2(14),
+edb(#          loc VARCHAR2(13) ) with (edb_audit_group = 'hr_americas_sal');
 CREATE TABLE
 
-edb=# SET edb_audit_statement = 'select@high_sal, insert-high_sal, update@low_sal';
+edb=# CREATE TABLE bonus
+edb-#         (ename VARCHAR2(10),
+edb(#          job   VARCHAR2(9),
+edb(#          sal   NUMBER,
+edb(#          comm  NUMBER) with (edb_audit_group = 'hr_europe_sal'); 
+CREATE TABLE
+
+edb=# CREATE TABLE salgrade
+edb-#         (grade NUMBER,
+edb(#          losal NUMBER,
+edb(#          hisal NUMBER) with (edb_audit_group = 'hr_europe_sal');  
+CREATE TABLE
+    
+edb=# SET edb_audit_statement = 'select@hr_americas_sal@hr_europe_sal, insert@hr_americas_sal-hr_europe_sal, update-hr_europe_sal@hr_americas_sal, delete@hr_americas_sal-hr_europe_sal';
 SET
 
-edb=# SELECT reloptions FROM pg_class WHERE relname='emp';
-         reloptions         
-----------------------------
- {edb_audit_group=high_sal}
-(1 row)
-
-edb=# SELECT reloptions FROM pg_class WHERE relname='dept';
-        reloptions         
----------------------------
- {edb_audit_group=low_sal}
-(1 row)
+edb=# SELECT reloptions FROM pg_class WHERE relname IN('emp', 'dept', 'bonus', 'salgrade');
+            reloptions             
+-----------------------------------
+ {edb_audit_group=hr_americas_sal}
+ {edb_audit_group=hr_americas_sal}
+ {edb_audit_group=hr_europe_sal}
+ {edb_audit_group=hr_europe_sal}
+(4 rows)
 
 edb=# SELECT setting FROM pg_settings WHERE name = 'edb_audit_statement';
-                     setting                      
---------------------------------------------------
- select@high_sal, insert-high_sal, update@low_sal
+                                                                        setting                                                                         
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+ select@hr_americas_sal@hr_europe_sal, insert@hr_americas_sal-hr_europe_sal, update-hr_europe_sal@hr_americas_sal, delete@hr_americas_sal-hr_europe_sal
 (1 row)
 
 edb=# SELECT * FROM emp;
@@ -96,49 +106,137 @@ edb=# SELECT * FROM dept;
 --------+-------+-----
 (0 rows)
 
+edb=# SELECT * FROM bonus;
+ ename | job | sal | comm 
+-------+-----+-----+------
+(0 rows)
+
+edb=# SELECT * FROM salgrade;
+ grade | losal | hisal 
+-------+-------+-------
+(0 rows)
+
 edb=# INSERT INTO emp VALUES (7369, 'SMITH', 'CLERK', 7902, TO_DATE('17-DEC-1980', 'DD-MON-YYYY'), 800, NULL, 10);
 INSERT 0 1
 edb=# INSERT INTO emp VALUES (7788, 'SCOTT', 'ANALYST', 7566, TO_DATE('09-DEC-1982', 'DD-MON-YYYY'), 3000, NULL, 20);
 INSERT 0 1
+edb=# INSERT INTO emp VALUES (7566, 'JONES', 'MANAGER', 7839, TO_DATE('2-APR-1981', 'DD-MON-YYYY'), 2975, NULL, 30);
+INSERT 0 1
+
 edb=# INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
 INSERT 0 1
 edb=# INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
 INSERT 0 1
+edb=# INSERT INTO dept VALUES (30, 'SALES', 'CHICAGO');
+INSERT 0 1
+edb=# INSERT INTO dept VALUES (40, 'OPERATIONS', 'BOSTON');
+INSERT 0 1
 
-edb=# UPDATE emp SET sal = '5000' WHERE deptno = 10;
+edb=# INSERT INTO bonus VALUES ('SMITH', 'CLERK', 800, NULL);
+INSERT 0 1
+edb=# INSERT INTO bonus VALUES ('SCOTT', 'ANALYST', 3000, NULL);
+INSERT 0 1
+edb=# INSERT INTO bonus VALUES ('JONES', 'MANAGER', 2975, 300);
+INSERT 0 1
+
+edb=# INSERT INTO salgrade VALUES (3, 800, 1500);
+INSERT 0 1
+edb=# INSERT INTO salgrade VALUES (2, 2975, 4000);
+INSERT 0 1
+edb=# INSERT INTO salgrade VALUES (1, 3000, 5000);
+INSERT 0 1
+
+edb=# UPDATE emp SET sal = '5500' WHERE deptno = 10;
 UPDATE 1
 edb=# UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
 UPDATE 1
+edb=# UPDATE bonus SET sal = '4000' WHERE ename = 'SMITH';
+UPDATE 1
+edb=# UPDATE salgrade SET losal = '5000';
+UPDATE 3
 
 edb=# DELETE FROM emp WHERE deptno = 10;
 DELETE 1
+edb=# DELETE FROM dept WHERE deptno = 20;
+DELETE 1
+edb=# DELETE FROM bonus WHERE sal = 4000;
+DELETE 1
+edb=# DELETE FROM salgrade WHERE losal = 5000;
+DELETE 3
 ```
+
+Setting the `edb_audit_statement` parameter to `'select@hr_americas_sal@hr_europe_sal, insert@hr_americas_sal-hr_europe_sal, update-hr_europe_sal@hr_americas_sal, delete@hr_americas_sal-hr_europe_sal'` for the `enterprisedb` user and `edb` database allows to audit `SELECT`, `INSERT`, `UPDATE` or `DELETE` statements including `(@)` and excluding `(-)` for a group in the audit log file.
 
 The resulting audit log file contains the following.
 
 Each audit log entry has been split and displayed across multiple lines, and a blank line has been inserted between the audit log entries for more clarity in the appearance of the results.
 
 ```text
-2021-07-05 09:21:30.140 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
-130f5,1,"authentication",2021-07-05 09:21:30 IST,4/19,0,AUDIT,00000,
-"connection authorized: user=edb database=edb",,,,,,,,,"","client backend",,"","","connect"
+2021-07-06 03:25:06.123 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,1,"authentication",2021-07-06 03:25:06 IST,4/22,0,AUDIT,00000,"connection authorized: user=enterprisedb database=edb",,,,,,,,,"",
+"client backend",,"","","connect"
 
-2021-07-05 09:23:29.297 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
-130f5,2,"SELECT",2021-07-05 09:21:30 IST,4/30,0,AUDIT,00000,"statement: SELECT * FROM emp;",,,,,,,,,
+2021-07-06 03:27:21.233 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,2,"SELECT",2021-07-06 03:25:06 IST,4/34,0,AUDIT,00000,"statement: SELECT * FROM emp;",,,,,,,,,
 "psql","client backend",,"SELECT","","select"
 
-2021-07-05 09:24:16.935 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
-130f5,3,"INSERT",2021-07-05 09:21:30 IST,4/34,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
+2021-07-06 03:27:26.659 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,3,"SELECT",2021-07-06 03:25:06 IST,4/35,0,AUDIT,00000,"statement: SELECT * FROM dept;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+
+2021-07-06 03:27:31.701 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,4,"SELECT",2021-07-06 03:25:06 IST,4/36,0,AUDIT,00000,"statement: SELECT * FROM bonus;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+
+2021-07-06 03:27:38.334 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,5,"SELECT",2021-07-06 03:25:06 IST,4/37,0,AUDIT,00000,"statement: SELECT * FROM salgrade;",,,,,,,,,
+"psql","client backend",,"SELECT","","select"
+
+2021-07-06 03:27:49.391 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,6,"INSERT",2021-07-06 03:25:06 IST,4/38,0,AUDIT,00000,"statement: INSERT INTO emp VALUES (7369, 'SMITH', 'CLERK', 7902, TO_DATE('17-DEC-1980', 'DD-MON-YYYY'), 800, NULL, 10);
 ",,,,,,,,,"psql","client backend",,"INSERT","","insert"
 
-2021-07-05 09:24:36.531 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
-130f5,4,"INSERT",2021-07-05 09:21:30 IST,4/35,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
+2021-07-06 03:28:00.972 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,7,"INSERT",2021-07-06 03:25:06 IST,4/39,0,AUDIT,00000,"statement: INSERT INTO emp VALUES (7788, 'SCOTT', 'ANALYST', 7566, TO_DATE('09-DEC-1982', 'DD-MON-YYYY'), 3000, NULL, 20);
 ",,,,,,,,,"psql","client backend",,"INSERT","","insert"
 
-2021-07-05 09:24:58.464 IST,"enterprisedb","edb",78069,"[local]",60e3075a.
-130f5,5,"UPDATE",2021-07-05 09:21:30 IST,4/37,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;
+2021-07-06 03:28:12.161 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,8,"INSERT",2021-07-06 03:25:06 IST,4/40,0,AUDIT,00000,"statement: INSERT INTO emp VALUES (7566, 'JONES', 'MANAGER', 7839, TO_DATE('2-APR-1981', 'DD-MON-YYYY'), 2975, NULL, 30);
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-06 03:28:22.772 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,9,"INSERT",2021-07-06 03:25:06 IST,4/41,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (10, 'ACCOUNTING', 'NEW YORK');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-06 03:28:32.082 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,10,"INSERT",2021-07-06 03:25:06 IST,4/42,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (20, 'RESEARCH', 'DALLAS');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-06 03:28:41.289 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,11,"INSERT",2021-07-06 03:25:06 IST,4/43,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (30, 'SALES', 'CHICAGO');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-06 03:28:49.802 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,12,"INSERT",2021-07-06 03:25:06 IST,4/44,0,AUDIT,00000,"statement: INSERT INTO dept VALUES (40, 'OPERATIONS', 'BOSTON');
+",,,,,,,,,"psql","client backend",,"INSERT","","insert"
+
+2021-07-06 03:29:56.337 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,13,"UPDATE",2021-07-06 03:25:06 IST,4/51,0,AUDIT,00000,"statement: UPDATE emp SET sal = '5500' WHERE deptno = 10;
 ",,,,,,,,,"psql","client backend",,"UPDATE","","update"
+
+2021-07-06 03:30:06.307 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,14,"UPDATE",2021-07-06 03:25:06 IST,4/52,0,AUDIT,00000,"statement: UPDATE dept SET loc = 'BEDFORD' WHERE deptno = 20;",,,,,,,,,
+"psql","client backend",,"UPDATE","","update"
+
+2021-07-06 03:30:37.683 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,15,"DELETE",2021-07-06 03:25:06 IST,4/55,0,AUDIT,00000,"statement: DELETE FROM emp WHERE deptno = 10;",,,,,,,,,
+"psql","client backend",,"DELETE","","delete"
+
+2021-07-06 03:30:48.144 IST,"enterprisedb","edb",82009,"[local]",60e40552.
+14059,16,"DELETE",2021-07-06 03:25:06 IST,4/56,0,AUDIT,00000,"statement: DELETE FROM dept WHERE deptno = 20;
+",,,,,,,,,"psql","client backend",,"DELETE","","delete"
 ```
+
 
 
 
