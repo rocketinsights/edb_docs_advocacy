@@ -15,7 +15,7 @@ CREATE TABLE [ schema. ]<table_name>
    <table_definition>
    PARTITION BY LIST(<column>) [ AUTOMATIC ]
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...) 
-    SUBPARTITION TEMPLATE (<subpartition_template_description>)]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]]
    (<list_partition_definition>[, <list_partition_definition>]...);
 
 Where list_partition_definition is:
@@ -42,7 +42,7 @@ CREATE TABLE [ schema. ]<table_name>
    PARTITION BY RANGE(<column>[, <column> ]...)
    [INTERVAL (<constant> | <expression>)]
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...) 
-    SUBPARTITION TEMPLATE (<subpartition_template_description>)]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]]
    (<range_partition_definition>[, <range_partition_definition>]...);
 
 Where range_partition_definition is:
@@ -68,7 +68,7 @@ CREATE TABLE [ schema. ]<table_name>
    <table_definition>
    PARTITION BY HASH(<column>[, <column> ]...)
    [SUBPARTITION BY {RANGE|LIST|HASH} (<column>[, <column> ]...) 
-    SUBPARTITION TEMPLATE (<subpartition_template_description>)]
+   [SUBPARTITION TEMPLATE (<subpartition_template_description>)]]
    [SUBPARTITIONS <num>] [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ]]
    [PARTITIONS <num>] [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ] |
    (<hash_partition_definition>[, <hash_partition_definition>]...);
@@ -149,7 +149,7 @@ If the subpartition is system-defined, the server-generated subpartition will re
 
 The server will generate a subpartition name that is a combination of the partition table name and a unique identifier. You can query the `ALL_TAB_SUBPARTITIONS` table to review a complete list of subpartition names.
 
-Use the `SUBPARTITION TEMPLATE` with a list, range, or hash subpartitioning to create default subpartitions for each table partition for which you do not explicitly define subpartitions. The `subpartition_template_description` in the `SUBPARTITION BY` clause displays a list of subpartition details with subpartition name, subpartition bound, and tablespace name where a subpartition resides. For more information about setting subpartition template, see [ALTER TABLE...SET SUBPARTITION TEMPLATE](../../04_partitioning_commands_compatible_with_oracle_databases/11_alter_table_set_subpartition_template/#alter_table_set_subpartition_template).
+Use the `SUBPARTITION TEMPLATE` with a list, range, or hash subpartitioning to create default subpartitions for each table partition for which you do not explicitly define subpartitions. For more information about setting subpartition template, see [ALTER TABLE...SET SUBPARTITION TEMPLATE](../../04_partitioning_commands_compatible_with_oracle_databases/11_alter_table_set_subpartition_template/#alter_table_set_subpartition_template).
 
 **Parameters**
 
@@ -178,6 +178,10 @@ Use the `SUBPARTITION TEMPLATE` with a list, range, or hash subpartitioning to c
  **Note**: You can either use `PARTITIONS` or `PARTITION DEFINITION` when creating a table.
 
  The `SUBPARTITIONS num` clause is only supported for `HASH` partitions, and can be used to specify the number of hash subpartitions to be created. Alternatively, you can use the subpartition definition to specify individual subpartitions and their tablespaces. If no `SUBPARTITIONS` or `SUBPARTITION DEFINITION` is specified, then the partition creates a subpartition based on the `SUBPARTITION TEMPLATE`.
+
+`subpartition_template_description`
+
+ The list of subpartition details with subpartition name, subpartition bound, and tablespace name.
 
 `column`
 

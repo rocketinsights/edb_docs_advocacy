@@ -35,9 +35,13 @@ ALTER TABLE <table_name> SET SUBPARTITION TEMPLATE ();
 
  The number of subpartitions to be added for a partition.
 
+`subpartition_template_description`
+
+ The list of subpartition details with subpartition name, subpartition bound, and tablespace name.
+
 **Description**
 
-The `ALTER TABLE… SET SUBPARTITION TEMPLATE` command can be used to update the subpartition template for range, list, or hash partitioned table. The `subpartition_template_description` displays a list of subpartition details with subpartition name, subpartition bound, and tablespace name where a subpartition resides. If you are specifying a subpartition descriptor for a partition then a subpartition descriptor is used instead of a subpartition template. The subpartition template can be used whenever a subpartition descriptor is not specified for a partition. If either subpartition descriptor or subpartition template is not specified, then by default a single subpartition is created. For more information about creating a subpartition template, see [CREATE TABLE...PARTITION BY](../../04_partitioning_commands_compatible_with_oracle_databases/01_create_table_partition_by/#create_table_partition_by).
+The `ALTER TABLE… SET SUBPARTITION TEMPLATE` command can be used to update the subpartition template for range, list, or hash partitioned table. If you are specifying a subpartition descriptor for a partition then a subpartition descriptor is used instead of a subpartition template. The subpartition template can be used whenever a subpartition descriptor is not specified for a partition. If either subpartition descriptor or subpartition template is not specified, then by default a single subpartition is created. For more information about creating a subpartition template, see [CREATE TABLE...PARTITION BY](../../04_partitioning_commands_compatible_with_oracle_databases/01_create_table_partition_by/#create_table_partition_by).
 
 !!! Note
     The partitions added to a table after invoking `ALTER TABLE… SET SUBPARTITION TEMPLATE` command will use the new `SUBPARTITION TEMPLATE`.
