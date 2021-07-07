@@ -39,13 +39,13 @@ and list_subpartition is:
 
 and range_subpartition is:
 
-        SUBPARTITION [<subpartition_name> ]
+        SUBPARTITION [<subpartition_name>]
           VALUES LESS THAN (<value>[, <value>]...)
           [TABLESPACE <tablespace_name>]
 
 and hash_subpartition is:
 
-        SUBPARTITION <subpartition_name>
+        SUBPARTITION [<subpartition_name>]
           [TABLESPACE <tablespace_name>] |
         SUBPARTITIONS <num> [STORE IN ( <tablespace_name> [, <tablespace_name>]... ) ]
 ```
