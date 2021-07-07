@@ -4,7 +4,7 @@ title: "Object Auditing"
 
 <div id="object_auditing" class="registered_link"></div>
 
-The object level auditing allows selective auditing of objects for specific `dml` statements, such as `SELECT`, `UPDATE`, `DELETE`, and `INSERT` on a given table. The object level auditing also lets you include or exclude specific groups by specifying `(@)` or `(-)` with the `edb_audit_statement` parameter. For more information about Data Manipulation Language Statements, see [Selecting SQL Statements to Audit](02_selecting_sql_statements_to_audit/#selecting_sql_statements_to_audit).
+The object-level auditing allows selective auditing of objects for specific Data Manipulation Language Statements, such as `SELECT`, `UPDATE`, `DELETE`, and `INSERT` on a given table. The object-level auditing also lets you include or exclude specific groups by specifying `(@)` or `(-)` with the `edb_audit_statement` parameter. For more information about Data Manipulation Language Statements, see [Selecting SQL Statements to Audit](02_selecting_sql_statements_to_audit/#selecting_sql_statements_to_audit).
 
 Use the following syntax to specify an `edb_audit_statement` parameter value for `SELECT`, `UPDATE`, `DELETE`, or `INSERT` statements:
 
@@ -23,7 +23,7 @@ edb_audit = 'csv'
 edb_audit_statement = 'select, insert, update, delete'
 ```
 
-The SQL statements invoked by the `SELECT`, `INSERT` and `UPDATE` commands are audited.
+The SQL statements invoked by the `SELECT`, `INSERT`, `UPDATE`, and `DELETE` commands are audited.
 
 The database session that occurs is the following:
 

@@ -22,7 +22,7 @@ The basic parameter values are the following:
 -   `set` – Results in the auditing of `SET` statements.
 -   `rollback` – Results in the auditing of `ROLLBACK` statements.
 -   `error` – Results in the logging of all error messages that occur. Unless the `error` value is included, no error messages are logged regarding any errors that occur on SQL statements related to any of the other preceding parameter values except when `all` is used.
--   `{ select | update | delete | insert }@groupname` – Results in the selective auditing of objects for specific `dml` statements including `(@)` and excluding `(-)` groups on a given table. For more information about object auditing, see [Object Auditing](09_object_auditing).
+-   `{ select | update | delete | insert }@groupname` – Results in the selective auditing of objects for specific data manipulation language (DML) statements (`SELECT`, `UPDATE`, `DELETE`, and `INSERT` ) including `(@)` and excluding `(-)` groups on a given table. For more information, see [Object Auditing](09_object_auditing).
 
 `Data Definition Language and Data Control Language Statements` describes additional parameter values for selecting particular DDL or DCL statements for auditing.
 
