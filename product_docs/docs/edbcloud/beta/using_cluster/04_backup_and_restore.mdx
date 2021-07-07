@@ -1,0 +1,28 @@
+---
+title: "Backup and Restore"
+---
+
+PITR & Restore Points, Redundancy
+
+Backups:
+
+- EDB provides automatic backups. Backups are continuously (commit to time period?) taken on clusters.
+
+- Type of backups: WAL archiving?
+
+- Retention: Customers can specify the retention period for backups. Include timing of retention.
+
+- Where are backups stored? Backups are stored in Azure Blob Storage (include which type). Customers are responsible for the charges associated with backup storage, please reference the Azure Blob Storage page for more information.
+
+Restore:
+
+- Point in time recovery available. Customers can enter in a timestamp that they want to restore to. Include the increments of time and where a customer can initiate a restore.
+
+- Customers can restore backups into a new cluster in the same region or a new region.
+
+- Include which fields are editable by the customers.
+
+- Archived clusters can be restored to the most recent point in time available.
+
+
+

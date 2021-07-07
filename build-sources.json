@@ -20,5 +20,6 @@
   "pgpool": true,
   "postgis": true,
   "repmgr": true,
-  "slony": true
+  "slony": true,
+  "edbcloud": true
 }

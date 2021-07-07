@@ -17,5 +17,6 @@
   "pgbouncer": true,
   "pgpool": true,
   "postgis": true,
-  "slony": true
+  "slony": true,
+  "edbcloud": true
 }

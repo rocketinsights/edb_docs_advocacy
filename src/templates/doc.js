@@ -3,6 +3,7 @@ import { Container, Row, Col, Dropdown, DropdownButton } from 'react-bootstrap';
 import { graphql, Link } from 'gatsby';
 import { MDXRenderer } from 'gatsby-plugin-mdx';
 import {
+  CardDecks,
   DevOnly,
   DevFrontmatter,
   Footer,
@@ -86,6 +87,58 @@ const ContentRow = ({ children }) => (
     <Row>{children}</Row>
   </div>
 );
+
+const findDescendent = (root, predicate) => {
+  if (predicate(root)) return root;
+
+  for (let node of root.items)
+  {
+    const result = findDescendent(node, predicate);
+    if (result) return result;    
+  }
+  return null;
+};
+
+const getCards = (node, searchDepth) => {
+  const card = {
+    fields: {
+      path: node.path,
+      depth: node.depth,
+
+    },
+    frontmatter: {
+      navTitle: node.navTitle,
+      title: node.title,
+      description: node.description,
+      iconName: node.iconName,
+      interactive: node.interactive,
+    },
+    children: searchDepth && node.items ? node.items.map(n => getCards(n, searchDepth-1)) : [],
+  };
+  return card;
+};
+
+const TileModes = {
+  None: 'none',
+  Simple: 'simple',
+  Full: 'full',
+};
+const Tiles = ({ mode, node }) => {
+  if (!node || !node.items) return null;
+  if (mode === TileModes.None) return null;
+
+  if (!mode) {
+    if (node.depth === 2) mode = TileModes.Full;
+    else if (node.depth >= 3) mode = TileModes.Simple;
+  }
+
+  if (Object.values(TileModes).includes(mode)) {
+    const tiles = node.items.map(n => getCards(n, mode === 'simple' ? 0 : 1));
+
+    return <CardDecks cards={tiles} cardType={mode} />;
+  }
+  return null;
+};
 
 const Sections = ({ sections }) => (
   <>
@@ -172,8 +225,16 @@ const DocTemplate = ({ data, pageContext }) => {
     navTree,
     prevNext,
   } = pageContext;
+  const navRoot = findDescendent(navTree, n => n.path === path);
   const versionArray = makeVersionArray(versions, path);
   const { product, version } = getProductAndVersion(path);
+
+  const {
+    iconName,
+    description,
+    indexCards
+  } = frontmatter;
+  
   const sections = depth === 2 ? buildSections(navTree) : null;
 
   let title = frontmatter.title;
@@ -189,7 +250,7 @@ const DocTemplate = ({ data, pageContext }) => {
 
   const pageMeta = {
     title: title,
-    description: frontmatter.description,
+    description: description,
     path: pagePath,
     isIndexPage: isIndexPage,
     canonicalPath: determineCanonicalPath(
@@ -210,7 +271,7 @@ const DocTemplate = ({ data, pageContext }) => {
             path={path}
             pagePath={pagePath}
             versionArray={versionArray}
-            iconName={frontmatter.iconName}
+            iconName={iconName}
           />
         </SideNavigation>
         <MainContent>
@@ -235,6 +296,7 @@ const DocTemplate = ({ data, pageContext }) => {
           <ContentRow>
             <Col xs={showToc ? 9 : 12}>
               <MDXRenderer>{body}</MDXRenderer>
+              <Tiles mode={indexCards} node={navRoot} />
             </Col>
 
             {showToc && (

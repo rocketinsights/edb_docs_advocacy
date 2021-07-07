@@ -1,0 +1,154 @@
+---
+title: "EDB Cloud Responsibility Model"
+---
+
+Security and confidentiality is a shared responsibility between EDB and our customers.
+
+The following EDB Cloud Responsibility Model describes the distribution of specific responsibilities between EDB Cloud and EDB Customers.
+
+
+## Planning and Operations Management
+
+
+<table>
+    <tr>
+        <td><strong>Task</strong>
+        </td>
+        <td><strong>EDB Cloud Responsibility</strong>
+        </td>
+        <td><strong>Customer Responsibility</strong>
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Cloud infrastructure availability</strong>: compute and network resources are operating properly - including performance - and can be scaled / reconfigured as necessary
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database service availability</strong>: customers can connect to a database cluster and read / write data
+        </td>
+        <td>Yes
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Planning database schema</strong>: database query performance is acceptable for the customer's business needs.
+        </td>
+        <td>No
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database cluster capacity planning</strong>: the database clusters deployed on the platform are allocated sufficient resources (CPU/RAM/disk) to achieve acceptable performance. Disk space is monitored for exhaustion.
+        </td>
+        <td>No
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database cluster backups</strong>: database clusters are configured to back up data at intervals that meet the customer's recovery point objective.
+        </td>
+        <td>No
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database cluster backups</strong>: data in database clusters is backed up and made available for restore in a timely manner consistent with the configuration of the database cluster.
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database cluster backups</strong>: database backups can be restored in a timely fashion consistent with the customer's recovery time objective.
+        </td>
+        <td>No
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+</table>
+
+
+
+## Security and Compliance
+
+
+
+<table>
+    <tr>
+        <td><strong>Task</strong>
+        </td>
+        <td><strong>EDB Cloud Responsibility</strong>
+        </td>
+        <td><strong>Customer Responsibility</strong>
+        </td>
+    </tr>
+    <tr>
+        <td><strong>SOC2 Audit Compliance</strong>
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Database cluster credential management</strong>: credentials for database clusters are kept secret and rotated as appropriate.
+        </td>
+        <td>Yes
+        </td>
+        <td>Yes
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Encryption of customer data at-rest</strong>: Data stored in database clusters is encrypted appropriately.
+        </td>
+        <td> Configuring encryption with appropriate keys
+        </td>
+        <td>Only in "bring your own key" configurations
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Vulnerability management</strong>: operating system kernels and packages on computers hosting customer database clusters and the control plane are kept up-to-date in accordance with policy.
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Vulnerability management</strong>: database software is kept up-to-date in accordance with policy.
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Network security</strong>: firewalls are configured to appropriately restrict east / west network traffic.
+        </td>
+        <td>Yes
+        </td>
+        <td>No
+        </td>
+    </tr>
+    <tr>
+        <td><strong>Network security</strong>: firewalls are configured to appropriately restrict north / south network traffic.
+        </td>
+        <td>Given a customer's network ingress configuration, EDB Cloud is responsible for implementing the correct set of firewall rules.
+        </td>
+        <td>Customers must configure network ingress policies via the EDB Cloud API to allow traffic only from appropriate sources.
+        </td>
+    </tr>
+</table>
+
+
+

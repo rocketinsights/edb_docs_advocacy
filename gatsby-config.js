@@ -20,6 +20,7 @@ const sourceToPluginConfig = {
   bart: { name: 'bart', path: 'product_docs/docs/bart' },
   bdr: { name: 'bdr', path: 'product_docs/docs/bdr' },
   harp: { name: 'harp', path: 'product_docs/docs/harp' },
+  edbcloud: { name: 'edbcloud', path: 'product_docs/docs/edbcloud' },
   efm: { name: 'efm', path: 'product_docs/docs/efm' },
   epas: { name: 'epas', path: 'product_docs/docs/epas' },
   eprs: { name: 'eprs', path: 'product_docs/docs/eprs' },
