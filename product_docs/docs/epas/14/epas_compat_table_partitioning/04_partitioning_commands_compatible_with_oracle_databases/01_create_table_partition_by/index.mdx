@@ -27,7 +27,7 @@ Where list_partition_definition is:
 
 Where subpartition_template_description is:
 
-        SUBPARTITION [<subpartition_name>] 
+      SUBPARTITION [<subpartition_name>] 
         VALUES (<value>[, <value>]...) 
         [TABLESPACE <tablespace_name>], ...
 ```
@@ -54,7 +54,7 @@ Where range_partition_definition is:
 
 Where subpartition_template_description is:
 
-        SUBPARTITION [<subpartition_name>] 
+      SUBPARTITION [<subpartition_name>] 
         VALUES LESS THAN (<value>[, <value>]...)
         [TABLESPACE <tablespace_name>], ...
 ```
@@ -75,13 +75,13 @@ CREATE TABLE [ schema. ]<table_name>
 
 Where hash_partition_definition is:
 
-      [PARTITION <partition_name>]
+      PARTITION [<partition_name>]
         [TABLESPACE <tablespace_name>]
         [(<subpartition>, ...)]
 
 Where subpartition_template_description is:
 
-        SUBPARTITION [<subpartition_name>] 
+      SUBPARTITION [<subpartition_name>] 
         [TABLESPACE <tablespace_name>], ...
 ```
 
