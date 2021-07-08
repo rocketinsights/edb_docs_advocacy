@@ -26,6 +26,7 @@
     "build-legacy-redirects-nginx": "gatsby clean && gatsby build --prefix-paths && python3 scripts/legacy_redirects/clean_up_output.py"
   },
   "dependencies": {
+    "@enterprisedb/icons": "^1.0.6",
     "@mdx-js/mdx": "^1.6.1",
     "@mdx-js/react": "^1.6.1",
     "algoliasearch": "^4.2.0",
