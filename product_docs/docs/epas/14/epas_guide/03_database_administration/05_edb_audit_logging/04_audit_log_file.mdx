@@ -10,17 +10,18 @@ The information in the audit log is based on the logging performed by PostgreSQL
 
 <https://www.postgresql.org/docs/current/static/runtime-config-logging.html>
 
-The following table lists the fields in the order they appear in the XML audit log format. The table contains the following information:
+The following table lists the fields in the order they appear in the CSV audit log format. The table contains the following information:
 
 -   **Field.** Name of the field as shown in the sample table definition in the PostgreSQL documentation as previously referenced.
--   **XML Element/Attribute.** For the XML format, name of the XML element and its attribute (if used), referencing the value. **Note:** `n/a` indicates that there is no XML representation for this field.
+-   **XML Element/Attribute.** For the XML format, name of the XML element and its attribute (if used), referencing the value.  
 -   **Data Type.** Data type of the field as given by the PostgreSQL sample table definition.
--   **Description.** Description of the field. For certain fields, no output is generated in the audit log as those fields are not supported by auditing. Those fields are indicated by “Not supported”.
+-   **Description.** Description of the field. 
 
 The fields that do not have any values for logging appear as consecutive commas (,,) in the CSV format.
 
 | Field                    | XML Element/Attribute          | Data Type                  | Description                                                                                                                |
 | ------------------------ | ------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `log_time`               | `event/log_time`               | `timestamp with time zone` | Log date/time of the statement.                                                                                            |
 | `user_name`              | `event/user`                   | `text`                     | Database user who executed the statement.                                                                                  |
 | `database_name`          | `event/database`               | `text`                     | Database in which the statement was executed.                                                                              |
 | `process_id`             | `event/process_id`             | `integer`                  | Operating system process ID in which the statement was executed.                                                           |
@@ -29,25 +30,24 @@ The fields that do not have any values for logging appear as consecutive commas 
 | `session_line_num`       | `event/session_line_num`       | `bigint`                   | Order of the statement within the session.                                                                                 |
 | `process_status`         | `event/process_status`         | `text`                     | Processing status.                                                                                                         |
 | `session_start_time`     | `event/session_start_time`     | `timestamp with time zone` | Date/time when the session was started.                                                                                    |
-| `log_time`               | `event/log_time`               | `timestamp with time zone` | Log date/time of the statement.                                                                                            |
 | `virtual_transaction_id` | `event/virtual_transaction_id` | `text`                     | Virtual transaction ID of the statement.                                                                                   |
 | `transaction_id`         | `event/transaction_id`         | `bigint`                   | Regular transaction ID of the statement.                                                                                   |
-| `type`                   | `event/type`                   | `text`                     | Determines the audit `event_type` to identify messages in the log.                                                         |
-| `sql_state_code`         | `event/sql_state_code`         | `text`                     | SQL state code returned for the statement. The `sql_state_code` is not logged when its value is 00000 for XML log format.  |
-| `command_tag`            | `event/command_tag`            | `text`                     | SQL command of the statement.                                                                                              |
-| `audit_tag`              | `event/audit_tag`              | `text`                     | Value specified by the `audit_tag` parameter in the configuration file.                                                    |
-| `application_name`       | `event/application_name`       | `text`                     | Name of the application from which the statement was executed. (for example, `psql.bin`).                                  |
-| `backend_type`           | `event/backend_type`           | `text`                     | The backend_type corresponds to what `pg_stat_activity.backend_type` shows and is added as a column to the csv log.        |
 | `error_severity`         | `error_severity`               | `text`                     | Statement severity. Values are `AUDIT` for audited statements and `ERROR` for any resulting error messages.                |
+| `sql_state_code`         | `event/sql_state_code`         | `text`                     | SQL state code returned for the statement. The `sql_state_code` is not logged when its value is 00000 for XML log format.  |
 | `message`                | `message`                      | `text`                     | The SQL statement that was attempted for execution.                                                                        |
 | `detail`                 | `detail`                       | `text`                     | Error message detail.                                                                                                      |
 | `hint`                   | `hint`                         | `text`                     | Hint for error.                                                                                                            |
 | `internal_query`         | `internal_query`               | `text`                     | Internal query that led to the error, if any.                                                                              |
 | `internal_query_pos`     | `internal_query_pos`           | `integer`                  | Character count of the error position therein.                                                                             |
 | `context`                | `context`                      | `text`                     | Error context.                                                                                                             |
-| `query`                  | `query`                        | `text`                     | User query that led to the error. For (For errors only)                                                                    |
+| `query`                  | `query`                        | `text`                     | User query that led to the error. (For errors only)                                                                        |
 | `query_pos`              | `query_pos`                    | `integer`                  | Character count of the error position therein. (For errors only)                                                           |
 | `location`               | `location`                     | `text`                     | Location of the error in the source code. The location field will be populated if `log_error_verbosity` is set to verbose. |
+| `application_name`       | `event/application_name`       | `text`                     | Name of the application from which the statement was executed. (for example, `psql.bin`).                                  |
+| `backend_type`           | `event/backend_type`           | `text`                     | The `backend_type` corresponds to what `pg_stat_activity.backend_type` shows and is added as a column to the csv log.      |
+| `command_tag`            | `event/command_tag`            | `text`                     | SQL command of the statement.                                                                                              |
+| `audit_tag`              | `event/audit_tag`              | `text`                     | Value specified by the `audit_tag` parameter in the configuration file.                                                    |
+| `type`                   | `event/type`                   | `text`                     | Determines the audit `event_type` to identify messages in the log.                                                         |
 
 The following examples are generated in the CSV and XML formats.
 

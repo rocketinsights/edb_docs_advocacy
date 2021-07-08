@@ -10,7 +10,7 @@ For any given row, to determine its children:
 
 1.  Evaluate `parent_expr` on the given row.
 
-2.  Evaluate `child_expr` on any other row resulting from the evaluation of *table_expression*.
+2.  Evaluate `child_expr` on any other row resulting from the evaluation of `table_expression`.
 
 3.  If `parent_expr = child_expr`, then this row is a child node of the given parent row.
 
