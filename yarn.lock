@@ -1158,6 +1158,13 @@
     ts-node "^9"
     tslib "^2"
 
+"@enterprisedb/icons@^1.0.6":
+  version "1.0.6"
+  resolved "https://npm.pkg.github.com/download/@enterprisedb/icons/1.0.6/0749803e4fdb7379db4c933cf9a4b6557ff016446e1e28b06c307c1f2b053fb9#03edd131d92409124be518b241ad0a3df0ee0d71"
+  integrity sha512-FHLM5EUVheZghamcRFoCTM/yws/+gPbACKF16sicspy0fiCdymOv8bS2IhrYrDgSXMJpS4foLiym7rnSIrRj0Q==
+  dependencies:
+    prop-types "^15.7.2"
+
 "@eslint/eslintrc@^0.4.0":
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-0.4.0.tgz#99cc0a0584d72f1df38b900fb062ba995f395547"
