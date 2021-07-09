@@ -36,7 +36,7 @@ In order to make use of the array, a *variable* must be declared with that array
 An element of the array is referenced using the following syntax.
 
 ```text
-<array>(<n>)[.<field> ]
+<array>(<n>)[<.field> ]
 ```
 
 `array` is the identifier of a previously declared array. `n` is the key value, type-compatible with the data type given in the `INDEX BY` clause. If the array type of `array` is defined from a record type or object type, then `[.field ]` must reference an individual field within the record type or attribute within the object type from which the array type is defined. Alternatively, the entire record can be referenced by omitting `[.field ]`.
