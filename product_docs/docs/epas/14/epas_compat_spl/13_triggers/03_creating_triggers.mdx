@@ -184,7 +184,7 @@ When you use syntax compatible with Oracle databases to create a trigger, the tr
 
  `REFERENCING` clause to reference old rows and new rows, but restricted in that `old` may only be replaced by an identifier named `old` or any equivalent that is saved in all lowercase (for example, `REFERENCING OLD AS old, REFERENCING OLD AS OLD`, or `REFERENCING OLD AS "old")`. Also, `new` may only be replaced by an identifier named `new` or any equivalent that is saved in all lowercase (for example, `REFERENCING NEW AS new, REFERENCING NEW AS NEW`, or `REFERENCING NEW AS "new")`.
 
- Either one, or both phrases `OLD AS old` and `NEW AS new` may be specified in the `REFERENCING` clause (for example, `REFERENCING NEW AS New OLD AS Old)`. This clause is not compatible with Oracle databases in that identifiers other than old or new may not be used.
+ Either one, or both phrases `OLD AS old` and `NEW AS new` may be specified in the `REFERENCING` clause (for example, `REFERENCING NEW AS New OLD AS Old)`. This clause is not compatible with Oracle databases in that identifiers other than `old` or `new` may not be used.
 
 `FOR EACH ROW`
 

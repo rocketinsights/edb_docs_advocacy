@@ -7,7 +7,7 @@ title: "Referencing an Object"
 Once an object variable is created and initialized, individual attributes can be referenced using dot notation of the form:
 
 ```text
-<object.attribute>
+<object>.<attribute>
 ```
 
 `object` is the identifier assigned to the object variable. `attribute` is the identifier of an object type attribute.
@@ -15,7 +15,7 @@ Once an object variable is created and initialized, individual attributes can be
 If `attribute`, itself, is of an object type, then the reference must take the form:
 
 ```text
-<object.attribute.attribute_inner>
+<object>.<attribute>.<attribute_inner>
 ```
 
 `attribute_inner` is an identifier belonging to the object type to which `attribute` references in its definition of `object`.
@@ -50,7 +50,7 @@ Methods are called in a similar manner as attributes.
 Once an object variable is created and initialized, member procedures or functions are called using dot notation of the form:
 
 ```text
-<object.prog_name>
+<object>.<prog_name>
 ```
 
 `object` is the identifier assigned to the object variable. `prog_name` is the identifier of the procedure or function.
@@ -58,7 +58,7 @@ Once an object variable is created and initialized, member procedures or functio
 Static procedures or functions are not called utilizing an object variable. Instead the procedure or function is called utilizing the object type name:
 
 ```text
-<object_type.prog_name>
+<object_type>.<prog_name>
 ```
 
 `object_type` is the identifier assigned to the object type. `prog_name` is the identifier of the procedure or function.

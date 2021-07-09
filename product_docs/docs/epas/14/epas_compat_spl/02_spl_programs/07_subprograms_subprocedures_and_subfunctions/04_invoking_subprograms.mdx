@@ -11,7 +11,7 @@ The subprogram may be invoked with none, one, or more qualifiers, which are the 
 The invocation is specified as a dot-separated list of qualifiers ending with the subprogram name and any of its arguments as shown by the following:
 
 ```text
-[[<qualifier_1.>][...]<qualifier_n.>]<subprog> [(<arguments>)]
+[[<qualifier_1>.][...]<qualifier_n>.]<subprog> [(<arguments>)]
 ```
 
 If specified, `qualifier_n` is the subprogram in which `subprog` has been declared in its declaration section. The preceding list of qualifiers must reside in a continuous path up the hierarchy from `qualifier_n` to `qualifier_1. qualifier_1` may be any ancestor subprogram in the path as well as any of the following:

@@ -24,10 +24,10 @@ and `subprogram_spec` is the following:
 { MEMBER | STATIC }
 { PROCEDURE <proc_name>
     [ ( [  SELF [ IN | IN OUT ] <name> ]
-        [, parm1 [ IN | IN OUT | OUT ] datatype1
-                 [ DEFAULT value1 ] ]
-        [, parm2 [ IN | IN OUT | OUT ] datatype2
-                 [ DEFAULT value2 ]
+        [, <parm1> [ IN | IN OUT | OUT ] <datatype1>
+                 [ DEFAULT <value1> ] ]
+        [, <parm2> [ IN | IN OUT | OUT ] <datatype2>
+                 [ DEFAULT <value2> ]
         ] ...)
     ]
 { IS | AS }
@@ -42,10 +42,10 @@ and `subprogram_spec` is the following:
 |
   FUNCTION <func_name>
     [ ( [  SELF [ IN | IN OUT ] <name> ]
-        [, parm1 [ IN | IN OUT | OUT ] datatype1
-                 [ DEFAULT value1 ] ]
-        [, parm2 [ IN | IN OUT | OUT ] datatype2
-                 [ DEFAULT value2 ]
+        [, <parm1> [ IN | IN OUT | OUT ] <datatype1>
+                 [ DEFAULT <value1> ] ]
+        [, <parm2> [ IN | IN OUT | OUT ] <datatype2>
+                 [ DEFAULT <value2> ]
         ] ...)
     ]
   RETURN <return_type>
@@ -65,10 +65,10 @@ where `constructor` is:
 ```text
 CONSTRUCTOR <func_name>
   [ ( [  SELF [ IN | IN OUT ] <name> ]
-      [, parm1 [ IN | IN OUT | OUT ] datatype1
-               [ DEFAULT value1 ] ]
-      [, parm2 [ IN | IN OUT | OUT ] datatype2
-               [ DEFAULT value2 ]
+      [, <parm1> [ IN | IN OUT | OUT ] <datatype1>
+               [ DEFAULT <value1> ] ]
+      [, <parm2> [ IN | IN OUT | OUT ] <datatype2>
+               [ DEFAULT <value2> ]
       ] ...)
   ]
 RETURN self AS RESULT

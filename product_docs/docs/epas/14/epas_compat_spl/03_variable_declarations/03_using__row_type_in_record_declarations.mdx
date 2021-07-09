@@ -11,7 +11,7 @@ A *record* is a named, ordered collection of fields. A *field* is similar to a v
 You can use the `%ROWTYPE` attribute to declare a record. The `%ROWTYPE` attribute is prefixed by a table name. Each column in the named table defines an identically named field in the record with the same data type as the column.
 
 ```text
-<record table>%ROWTYPE;
+<record> <table>%ROWTYPE;
 ```
 
 `record` is an identifier assigned to the record. `table` is the name of a table (or view) whose columns are to define the fields in the record. The following example shows how the `emp_sal_query` procedure from the prior section can be modified to use `emp%ROWTYPE` to create a record named `r_emp` instead of declaring individual variables for the columns in `emp`.

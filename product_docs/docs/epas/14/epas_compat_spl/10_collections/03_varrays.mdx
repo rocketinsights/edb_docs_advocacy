@@ -28,7 +28,7 @@ TYPE <varraytype> IS { VARRAY | VARYING ARRAY }(<maxsize>)
 The `CREATE TYPE` command can be used to define a varray type that is available to all SPL programs in the database. In order to make use of the varray, a *variable* must be declared of that varray type. The following is the syntax for declaring a varray variable:
 
 ```text
-<varray varraytype>
+<varray> <varraytype>
 ```
 
 `varray` is an identifier assigned to the varray. `varraytype` is the identifier of a previously defined varray type.

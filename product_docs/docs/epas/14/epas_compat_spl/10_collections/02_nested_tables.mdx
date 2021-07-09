@@ -22,12 +22,12 @@ TYPE <tbltype> IS TABLE OF { <datatype> | <rectype> | <objtype> };
 `tbltype` is an identifier assigned to the nested table type. `datatype` is a scalar data type such as `VARCHAR2` or `NUMBER`. `rectype` is a previously defined record type. `objtype` is a previously defined object type.
 
 !!! Note
-    You can use the `CREATE TYPE` command to define a nested table type that is available to all SPL programs in the database. See the *Database Compatibility for Oracle Developers Reference Guide* for more information about the `CREATE TYPE` command.
+    You can use the `CREATE TYPE` command to define a nested table type that is available to all SPL programs in the database. See the *Database Compatibility for Oracle Developers SQL Guide* for more information about the `CREATE TYPE` command.
 
 In order to make use of the table, a *variable* must be declared of that nested table type. The following is the syntax for declaring a table variable.
 
 ```text
-<table tbltype>
+<table> <tbltype>
 ```
 
 `table` is an identifier assigned to the nested table. `tbltype` is the identifier of a previously defined nested table type.

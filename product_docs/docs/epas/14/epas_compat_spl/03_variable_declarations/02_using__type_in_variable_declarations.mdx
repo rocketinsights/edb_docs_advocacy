@@ -14,10 +14,10 @@ Instead of coding the specific column data type into the variable declaration th
     The `%TYPE` attribute can be used with formal parameter declarations as well.
 
 ```text
-<name> { { <table> | <view> }<.column> | <variable> }%TYPE;
+<name> { { <table> | <view> }.<column> | <variable> }%TYPE;
 ```
 
-`name` is the identifier assigned to the variable or formal parameter that is being declared. `column` is the name of a column in `table` or `view.variable` is the name of a variable that was declared prior to the variable identified by `name`.
+`name` is the identifier assigned to the variable or formal parameter that is being declared. `column` is the name of a column in `table` or `view`. `variable` is the name of a variable that was declared prior to the variable identified by `name`.
 
 !!! Note
     The variable does not inherit any of the column’s other attributes such as might be specified on the column with the `NOT NULL` clause or the `DEFAULT` clause.

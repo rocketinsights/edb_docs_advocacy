@@ -7,7 +7,7 @@ title: "Creating Object Instances"
 To create an instance of an object type, you must first declare a variable of the object type, and then initialize the declared object variable. The syntax for declaring an object variable is:
 
 ```text
-<object obj_type>
+<object> <obj_type>
 ```
 
 `object` is an identifier assigned to the object variable.
@@ -17,7 +17,7 @@ To create an instance of an object type, you must first declare a variable of th
 After declaring the object variable, you must invoke a *constructor* *method* to initialize the object with values. Use the following syntax to invoke the constructor method:
 
 ```text
-[NEW] <obj_type> ({expr1 | NULL} [, {expr2 | NULL} ] [, ...])
+[NEW] <obj_type> ({<expr1> | NULL} [, {<expr2> | NULL} ] [, ...])
 ```
 
 `obj_type` is the identifier of the object type’s constructor method; the constructor method has the same name as the previously declared object type.
@@ -54,7 +54,7 @@ END;
     In Advanced Server, the following alternate syntax can be used in place of the constructor method.
 
 ```text
-[ ROW ] ({ expr1 | NULL } [, { expr2 | NULL } ] [, ...])
+[ ROW ] ({ <expr1> | NULL } [, { <expr2> | NULL } ] [, ...])
 ```
 
 `ROW` is an optional keyword if two or more terms are specified within the parenthesis-enclosed, comma-delimited list. If only one term is specified, then specification of the `ROW` keyword is mandatory.
