@@ -44,7 +44,7 @@ CREATE [ OR REPLACE ] TRIGGER <name>
   FOR { INSERT | UPDATE | DELETE | TRUNCATE }
         [ OR { INSERT | UPDATE | DELETE | TRUNCATE } ] [, ...]
            ON <table>
-       [ REFERENCING { OLD AS <old> | NEW AS <new. } ...]
+       [ REFERENCING { OLD AS <old> | NEW AS <new>. } ...]
        [ WHEN <condition> ]
        COMPOUND TRIGGER
        [ <private_declaration>; ] ...
@@ -80,11 +80,11 @@ PROCEDURE proc_name[ argument_list ]
 Where `procedure_body :=`
 
 ```text
-[ declaration; ] [, ...]
+[ <declaration>; ] [, ...]
 BEGIN
-  statement; [...]
+  <statement>; [...]
 [ EXCEPTION
-   { WHEN exception [OR exception] [...]] THEN statement; }
+   { WHEN <exception> [OR <exception>] [...]] THEN <statement>; }
    [...]
 ]
 ```
@@ -103,11 +103,11 @@ FUNCTION func_name [ argument_list ]
 Where `function_body :=`
 
 ```text
-[ declaration; ] [, ...]
+[ <declaration>; ] [, ...]
 BEGIN
-  statement; [...]
+  <statement>; [...]
 [ EXCEPTION
-  { WHEN exception [ OR exception ] [...] THEN statement; }
+  { WHEN <exception> [ OR <exception> ] [...] THEN <statement>; }
   [...]
 ]
 ```
@@ -129,11 +129,11 @@ Where `compound_trigger_event:=`
 Where `compound_trigger_body:=`
 
 ```text
-[ declaration; ] [, ...]
+[ <declaration>; ] [, ...]
 BEGIN
-  statement; [...]
+  <statement>; [...]
 [ EXCEPTION
-   { WHEN exception [OR exception] [...] THEN statement; }
+   { WHEN <exception> [OR <exception>] [...] THEN <statement>; }
    [...]
 ]
 ```
