@@ -97,7 +97,9 @@ Date and time input is accepted in ISO 8601 SQL-compatible format, the Oracle de
 
 Any date or time literal input needs to be enclosed in single quotes, like text strings. The following SQL standard syntax is also accepted:
 
- `type 'value'`
+```text
+type 'value'
+```
 
 `type` is either `DATE` or `TIMESTAMP`.
 
@@ -149,7 +151,7 @@ The following is an example of a time stamp which follows the ISO 8601 standard.
 
 ## Date/Time Output
 
-The default output format of the date/time types will be either (`dd-MON-yy`) referred to as the `Redwood date style`, compatible with Oracle databases, or (`yyyy-mm-dd`) referred to as the ISO 8601 format, depending upon the application interface to the database. Applications that use JDBC such as SQL Interactive always present the date in ISO 8601 form. Other applications such as PSQL present the date in Redwood form.
+The default output format of the date/time types will be either (`dd-MON-yy`) referred to as the *Redwood date style*, compatible with Oracle databases, or (`yyyy-mm-dd`) referred to as the ISO 8601 format, depending upon the application interface to the database. Applications that use JDBC such as SQL Interactive always present the date in ISO 8601 form. Other applications such as PSQL present the date in Redwood form.
 
 The following table shows examples of the output formats for the two styles, Redwood and ISO 8601:
 

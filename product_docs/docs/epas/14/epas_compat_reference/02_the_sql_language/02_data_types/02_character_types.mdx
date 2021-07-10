@@ -37,7 +37,7 @@ VARCHAR, VARCHAR2, NVARCHAR and NVARCHAR2
 
  If the string to be assigned is shorter than `n`, values of type `VARCHAR`, `VARCHAR2`, `NVARCHAR` and `NVARCHAR2` will store the shorter string without padding.
 
- **Note**: The trailing spaces `are` semantically significant in `VARCHAR` values.
+ **Note**: The trailing spaces *are* semantically significant in `VARCHAR` values.
 
  If you explicitly cast a value to a `VARCHAR` type, an over-length value will be truncated to `n` characters without raising an error (as specified by the SQL standard).
 
@@ -51,6 +51,6 @@ VARCHAR, VARCHAR2, NVARCHAR and NVARCHAR2
 
  Thus, usage of the `CLOB` type is limited by what can be done for `TEXT` such as a maximum size of approximately 1 GB.
 
- For usage of larger amounts of data, instead of using the `CLOB` data type, use the PostgreSQL `Large Objects` feature that relies on the `pg_largeobject` system catalog. For information on large objects, see the PostgreSQL core documentation at:
+ For usage of larger amounts of data, instead of using the `CLOB` data type, use the PostgreSQL *Large Objects* feature that relies on the `pg_largeobject` system catalog. For information on large objects, see the PostgreSQL core documentation at:
 
  <https://www.postgresql.org/docs/current/static/largeobjects.html>

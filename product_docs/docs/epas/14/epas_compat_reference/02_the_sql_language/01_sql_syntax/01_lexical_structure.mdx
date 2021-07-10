@@ -4,11 +4,11 @@ title: "Lexical Structure"
 
 <div id="lexical_structure" class="registered_link"></div>
 
-SQL input consists of a sequence of commands. A `command` is composed of a sequence of `tokens`, terminated by a semicolon (`;`). The end of the input stream also terminates a command. Which tokens are valid depends on the syntax of the particular command.
+SQL input consists of a sequence of commands. A *command* is composed of a sequence of *tokens*, terminated by a semicolon (`;`). The end of the input stream also terminates a command. Which tokens are valid depends on the syntax of the particular command.
 
-A token can be a `key word`, an `identifier`, a `quoted identifier`, a `literal` (or `constant`), or a special character symbol. Tokens are normally separated by `whitespace` (space, tab, new line), but need not be if there is no ambiguity (which is generally only the case if a special character is adjacent to some other token type).
+A token can be a *key word*, an *identifier*, a *quoted identifier*, a *literal* (or *constant*), or a special character symbol. Tokens are normally separated by *whitespace* (space, tab, new line), but need not be if there is no ambiguity (which is generally only the case if a special character is adjacent to some other token type).
 
-Additionally, `comments` can occur in SQL input. They are not tokens -they are effectively equivalent to whitespace.
+Additionally, *comments* can occur in SQL input. They are not tokens -they are effectively equivalent to whitespace.
 
 For example, the following is (syntactically) valid SQL input:
 

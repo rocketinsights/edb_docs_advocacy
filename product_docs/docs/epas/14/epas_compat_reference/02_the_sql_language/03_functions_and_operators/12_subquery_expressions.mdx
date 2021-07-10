@@ -36,7 +36,7 @@ dept.deptno);
 
 ## IN
 
-The right-hand side is a parenthesized subquery, which must return exactly one column. The left-hand expression is evaluated and compared to each row of the subquery result. The result of `IN` is `TRUE` if any equal subquery row is found. The result is FALSE if no equal row is found (including the special case where the subquery returns no rows).
+The right-hand side is a parenthesized subquery, which must return exactly one column. The left-hand expression is evaluated and compared to each row of the subquery result. The result of `IN` is `TRUE` if any equal subquery row is found. The result is `FALSE` if no equal row is found (including the special case where the subquery returns no rows).
 
 ```text
 expression IN (subquery)

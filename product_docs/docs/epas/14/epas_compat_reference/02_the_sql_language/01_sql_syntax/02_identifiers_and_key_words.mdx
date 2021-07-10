@@ -4,7 +4,7 @@ title: "Identifiers and Key Words"
 
 <div id="identifiers_and_key_words" class="registered_link"></div>
 
-Tokens such as `SELECT`, `UPDATE`, or `VALUES` in the example above are examples of `key words`, that is, words that have a fixed meaning in the SQL language. The tokens `MY_TABLE` and `A` are examples of `identifiers`. They identify names of tables, columns, or other database objects, depending on the command they are used in. Therefore they are sometimes simply called, `names`. Key words and identifiers have the same `lexical structure`, meaning that one cannot know whether a token is an identifier or a key word without knowing the language.
+Tokens such as `SELECT`, `UPDATE`, or `VALUES` in the example above are examples of *key words*, that is, words that have a fixed meaning in the SQL language. The tokens `MY_TABLE` and `A` are examples of *identifiers*. They identify names of tables, columns, or other database objects, depending on the command they are used in. Therefore they are sometimes simply called, “names”. Key words and identifiers have the same *lexical structure*, meaning that one cannot know whether a token is an identifier or a key word without knowing the language.
 
 SQL identifiers and key words must begin with a letter (`a-z` or `A-Z`). Subsequent characters in an identifier or key word can be letters, underscores, digits (`0-9`), dollar signs (`$`), or number signs (`#`).
 
@@ -26,7 +26,7 @@ A convention often used is to write key words in upper case and names in lower c
 UPDATE my_table SET a = 5;
 ```
 
-There is a second kind of identifier: the `delimited identifier` or `quoted identifier`. It is formed by enclosing an arbitrary sequence of characters in double-quotes ("). A delimited identifier is always an identifier, never a key word. So `"select"` could be used to refer to a column or table named `"select"`, whereas an unquoted select would be taken as a key word and would therefore provoke a parse error when used where a table or column name is expected. The example can be written with quoted identifiers like this:
+There is a second kind of identifier: the *delimited identifier* or *quoted identifier*. It is formed by enclosing an arbitrary sequence of characters in double-quotes ("). A delimited identifier is always an identifier, never a key word. So `"select"` could be used to refer to a column or table named `"select"`, whereas an unquoted select would be taken as a key word and would therefore provoke a parse error when used where a table or column name is expected. The example can be written with quoted identifiers like this:
 
 ```
 UPDATE "my_table" SET "a" = 5;
