@@ -44,7 +44,7 @@ A materialized view may be schema-qualified; if you specify a schema name when i
  Include a `build_clause` to specify when the view should be populated. Specify `BUILD IMMEDIATE`, or `BUILD DEFERRED`:
 
 -   `BUILD IMMEDIATE` instructs the server to populate the view immediately. This is the default behavior.
--   `BUILD DEFERRED` instructs the server to populate the view at a later time (during a REFRESH operation).
+-   `BUILD DEFERRED` instructs the server to populate the view at a later time (during a `REFRESH` operation).
 
 `create_mv_refresh`
 

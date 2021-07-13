@@ -37,14 +37,14 @@ and `subprogram_spec` is:
 { PROCEDURE <proc_name>
     [ ( [ SELF [ IN | IN OUT ] <name> ]
         [, <argname> [ IN | IN OUT | OUT ] <argtype>
-                   [ DEFAULT <value> ]
+                     [ DEFAULT <value> ]
         ] ...)
     ]
 |
   FUNCTION <func_name>
     [ ( [ SELF [ IN | IN OUT ] <name> ]
         [, <argname> [ IN | IN OUT | OUT ] <argtype>
-                   [ DEFAULT <value> ]
+                     [ DEFAULT <value> ]
         ] ...)
     ]
   RETURN <rettype>
@@ -75,9 +75,9 @@ CREATE [ OR REPLACE ] TYPE <name> { IS | AS }
 
 **Description**
 
-`CREATE TYPE` defines a new, user-defined data type. The types that can be created are an object type, a nested table type, a varray type, or a composite type. Nested table and varray types belong to the category of types known as `collections`.
+`CREATE TYPE` defines a new, user-defined data type. The types that can be created are an object type, a nested table type, a varray type, or a composite type. Nested table and varray types belong to the category of types known as *collections*.
 
-`Composite types` are not compatible with Oracle databases. However, composite types can be accessed by SPL programs as with other types described in this section.
+*Composite types* are not compatible with Oracle databases. However, composite types can be accessed by SPL programs as with other types described in this section.
 
 !!! Note
     -   For packages only, a composite type can be included in a user-defined record type declared with the `TYPE IS RECORD` statement within the package specification or package body. Such nested structure is not permitted in other SPL programs such as functions, procedures, triggers, etc.

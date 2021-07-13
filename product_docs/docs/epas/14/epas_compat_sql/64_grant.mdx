@@ -67,7 +67,7 @@ GRANT EXEMPT ACCESS POLICY
 
 The `GRANT` command has three basic variants: one that grants privileges on a database object (table, view, sequence, or program), one that grants membership in a role, and one that grants system privileges. These variants are similar in many ways, but they are different enough to be described separately.
 
-In Advanced Server, the concept of users and groups has been unified into a single type of entity called a `role`. In this context, a `user` is a role that has the `LOGIN` attribute – the role may be used to create a session and connect to an application. A `group` is a role that does not have the `LOGIN` attribute – the role may not be used to create a session or connect to an application.
+In Advanced Server, the concept of users and groups has been unified into a single type of entity called a *role*. In this context, a *user* is a role that has the `LOGIN` attribute – the role may be used to create a session and connect to an application. A *group* is a role that does not have the `LOGIN` attribute – the role may not be used to create a session or connect to an application.
 
 A role may be a member of one or more other roles, so the traditional concept of users belonging to groups is still valid. However, with the generalization of users and groups, users may “belong” to users, groups may “belong” to groups, and groups may “belong” to users, forming a general multi-level hierarchy of roles. User names and group names share the same namespace therefore it is not necessary to distinguish whether a grantee is a user or a group in the `GRANT` command.
 
@@ -193,7 +193,7 @@ GRANT CONNECT TO joe;
 
 ## GRANT on System Privileges
 
-This variant of the `GRANT` command gives a role the ability to perform certain `system` operations within a database. System privileges relate to the ability to create or delete certain database objects that are not necessarily within the confines of one schema. Only database superusers can grant system privileges.
+This variant of the `GRANT` command gives a role the ability to perform certain *system* operations within a database. System privileges relate to the ability to create or delete certain database objects that are not necessarily within the confines of one schema. Only database superusers can grant system privileges.
 
 **CREATE [PUBLIC] DATABASE LINK**
 

@@ -22,9 +22,9 @@ CREATE [ PUBLIC ] DATABASE LINK <name>
 
 `CREATE DATABASE LINK` creates a new database link. A database link is an object that allows a reference to a table or view in a remote database within a `DELETE`, `INSERT`, `SELECT` or `UPDATE` command. A database link is referenced by appending `@dblink` to the table or view name referenced in the SQL command where `dblink` is the name of the database link.
 
-Database links can be public or private. A `public database link` is one that can be used by any user. A `private database link` can be used only by the database link’s owner. Specification of the `PUBLIC` option creates a public database link. If omitted, a private database link is created.
+Database links can be public or private. A *public database link* is one that can be used by any user. A *private database link* can be used only by the database link’s owner. Specification of the `PUBLIC` option creates a public database link. If omitted, a private database link is created.
 
-When the `CREATE DATABASE LINK` command is given, the database link name and the given connection attributes are stored in the Advanced Server system table named, `pg_catalog.edb_dblink`. When using a given database link, the database containing the `edb_dblink` entry defining this database link is called the `local database`. The server and database whose connection attributes are defined within the `edb_dblink` entry is called the `remote database`.
+When the `CREATE DATABASE LINK` command is given, the database link name and the given connection attributes are stored in the Advanced Server system table named, `pg_catalog.edb_dblink`. When using a given database link, the database containing the `edb_dblink` entry defining this database link is called the *local database*. The server and database whose connection attributes are defined within the `edb_dblink` entry is called the *remote database*.
 
 A SQL command containing a reference to a database link must be issued while connected to the local database. When the SQL command is executed, the appropriate authentication and connection is made to the remote database to access the table or view to which the `@dblink` reference is appended.
 
@@ -303,7 +303,7 @@ emp@oralink e, dept@fdwlink d WHERE e.deptno = d.deptno ORDER BY 1, 3;
 
 When the oci-dblink is used to execute SQL statements on a remote Oracle database, there are certain circumstances where pushdown of the processing occurs on the foreign server.
 
-`Pushdown` refers to the occurrence of processing on the foreign (that is, the remote) server instead of the local client where the SQL statement was issued. Pushdown can result in performance improvement since the data is processed on the remote server before being returned to the local client.
+*Pushdown* refers to the occurrence of processing on the foreign (that is, the remote) server instead of the local client where the SQL statement was issued. Pushdown can result in performance improvement since the data is processed on the remote server before being returned to the local client.
 
 Pushdown applies to statements with the standard SQL join operations (inner join, left outer join, right outer join, and full outer join). Pushdown still occurs even when a sort is specified on the resulting data set.
 
