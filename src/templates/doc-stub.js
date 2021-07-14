@@ -7,7 +7,6 @@ import {
   IndexSubNav,
   Layout,
   MainContent,
-  TableOfContents,
   TopBar,
   VersionDropdown,
 } from '../components';
@@ -60,7 +59,7 @@ const determineCanonicalPath = (hasLatest, latestPath) => {
 };
 
 const DocTemplate = ({ data, pageContext }) => {
-  const { fields, body, tableOfContents } = data.mdx;
+  const { fields, body } = data.mdx;
   const { path, mtime } = fields;
   const {
     pagePath,
@@ -82,7 +81,7 @@ const DocTemplate = ({ data, pageContext }) => {
     ),
   };
 
-  const showToc = !!tableOfContents.items;
+  // const showToc = !!tableOfContents.items;
 
   return (
     <Layout pageMeta={pageMeta} background="white">
@@ -99,21 +98,20 @@ const DocTemplate = ({ data, pageContext }) => {
           </div>
           <VersionDropdown versionArray={versionArray} path={path} />
 
-          <h4 className="text-muted mt-5 mb-3 font-weight-normal">
-            The documentation for this product version is being migrated to EDB
-            Docs 2.0. The links below will take you to EDB Docs 1.0.
+          <h4 className="text-muted mt-5 mb-3 font-weight-normal w-75">
+            The documentation for this version is available in PDF
           </h4>
 
           <ContentRow>
-            <Col xs={showToc ? 9 : 12}>
+            <Col xs={12}>
               <MDXRenderer>{body}</MDXRenderer>
             </Col>
 
-            {showToc && (
+            {/* {showToc && (
               <Col xs={3}>
                 <TableOfContents toc={tableOfContents.items} />
               </Col>
-            )}
+            )} */}
           </ContentRow>
 
           <hr />
