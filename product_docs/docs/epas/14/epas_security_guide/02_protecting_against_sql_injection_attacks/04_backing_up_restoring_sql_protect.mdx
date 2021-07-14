@@ -141,7 +141,7 @@ edb=# SELECT sqlprotect.drop_queries('appuser');
 
 If the original and new databases reside in the same database server, then nothing needs to be done assuming you have not deleted any of these roles from the database server.
 
-**Step 7:** Run the function `import_sqlprotect('sqlprotect_file')` where `sqlprotect_file` is the fully qualified path to the file you created in `Step 2` of `Backing Up the Database`.
+**Step 7:** Run the function `import_sqlprotect('sqlprotect_file')` where `sqlprotect_file` is the fully qualified path to the file you created in Step 2 of *Backing Up the Database*.
 
 ```text
 newdb=# SELECT sqlprotect.import_sqlprotect('/tmp/sqlprotect.dmp');

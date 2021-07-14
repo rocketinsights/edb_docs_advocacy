@@ -8,15 +8,15 @@ This section contains an introduction to the different types of SQL injection at
 
 ## Types of SQL Injection Attacks
 
-There are a number of different techniques used to perpetrate SQL injection attacks. Each technique is characterized by a certain `signature`. SQL/Protect examines queries for the following signatures:
+There are a number of different techniques used to perpetrate SQL injection attacks. Each technique is characterized by a certain *signature*. SQL/Protect examines queries for the following signatures:
 
 **Unauthorized Relations**
 
-While Advanced Server allows administrators to restrict access to relations (tables, views, etc.), many administrators do not perform this tedious task. SQL/Protect provides a `learn` mode that tracks the relations a user accesses.
+While Advanced Server allows administrators to restrict access to relations (tables, views, etc.), many administrators do not perform this tedious task. SQL/Protect provides a *learn* mode that tracks the relations a user accesses.
 
 This allows administrators to examine the workload of an application, and for SQL/Protect to learn which relations an application should be allowed to access for a given user or group of users in a role.
 
-When SQL/Protect is switched to either `passive` or `active` mode, the incoming queries are checked against the list of learned relations.
+When SQL/Protect is switched to either *passive* or *active* mode, the incoming queries are checked against the list of learned relations.
 
 **Utility Commands**
 
@@ -40,32 +40,32 @@ A dangerous action taken during SQL injection attacks is the running of unbounde
 
 ## Monitoring SQL Injection Attacks
 
-This section describes how `SQL/Protect` monitors and reports on SQL injection attacks.
+This section describes how SQL/Protect monitors and reports on SQL injection attacks.
 
 ### Protected Roles
 
-Monitoring for SQL injection attacks involves analyzing SQL statements originating in database sessions where the current user of the session is a protected role. A `protected role` is an Advanced Server user or group that the database administrator has chosen to monitor using SQL/Protect. (In Advanced Server, users and groups are collectively referred to as `roles`.)
+Monitoring for SQL injection attacks involves analyzing SQL statements originating in database sessions where the current user of the session is a protected role. A *protected role* is an Advanced Server user or group that the database administrator has chosen to monitor using SQL/Protect. (In Advanced Server, users and groups are collectively referred to as *roles*.)
 
 Each protected role can be customized for the types of SQL injection attacks for which it is to be monitored, thus providing different levels of protection by role and significantly reducing the user maintenance load for DBAs.
 
 A role with the superuser privilege cannot be made a protected role. If a protected non-superuser role is subsequently altered to become a superuser, certain behaviors are exhibited whenever an attempt is made by that superuser to issue any command:
 
 -   A warning message is issued by SQL/Protect on every command issued by the protected superuser.
--   The statistic in column superusers of `edb_sql_protect_stats` is incremented with every command issued by the protected superuser. See `Attack Attempt Statistics` for information on the `edb_sql_protect_stats` view.
+-   The statistic in column superusers of `edb_sql_protect_stats` is incremented with every command issued by the protected superuser. See *Attack Attempt Statistics* for information on the `edb_sql_protect_stats` view.
 -   When SQL/Protect is in active mode, all commands issued by the protected superuser are prevented from running.
 
 A protected role that has the superuser privilege should either be altered so that it is no longer a superuser, or it should be reverted back to an unprotected role.
 
 ### Attack Attempt Statistics
 
-Each usage of a command by a protected role that is considered an attack by SQL/Protect is recorded. Statistics are collected by type of SQL injection attack as discussed in `Types of SQL Injection Attacks`.
+Each usage of a command by a protected role that is considered an attack by SQL/Protect is recorded. Statistics are collected by type of SQL injection attack as discussed in *Types of SQL Injection Attacks*.
 
 These statistics are accessible from view `edb_sql_protect_stats` that can be easily monitored to identify the start of a potential attack.
 
 The columns in `edb_sql_protect_stats` monitor the following:
 
 -   **username.** Name of the protected role.
--   **superusers.** Number of SQL statements issued when the protected role is a superuser. In effect, any SQL statement issued by a protected superuser increases this statistic. See `Protected Roles` for information on protected superusers.
+-   **superusers.** Number of SQL statements issued when the protected role is a superuser. In effect, any SQL statement issued by a protected superuser increases this statistic. See *Protected Roles* for information on protected superusers.
 -   **relations.** Number of SQL statements issued referencing relations that were not learned by a protected role. (That is, relations that are not in a role’s protected relations list.)
 -   **commands.** Number of DDL statements issued by a protected role.
 -   **tautology.** Number of SQL statements issued by a protected role that contained a tautological condition.

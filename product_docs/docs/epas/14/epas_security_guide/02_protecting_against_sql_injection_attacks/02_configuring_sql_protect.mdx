@@ -188,7 +188,7 @@ If you are using `SQL/Protect` for the first time, set `edb_sql_protect.level` t
 
 Once you have configured SQL/Protect in a database, added roles to the protected roles list, and set the desired protection level, you can then activate SQL/Protect in either `learn` mode, `passive` mode, or `active` mode. You can then start running your applications.
 
-With a new SQL/Protect installation, the first step is to determine the relations that protected roles should be permitted to access during normal operation. Learn mode allows a role to run applications during which time SQL/Protect is recording the relations that are accessed. These are added to the role’s `protected relations list` stored in table `edb_sql_protect_rel`.
+With a new SQL/Protect installation, the first step is to determine the relations that protected roles should be permitted to access during normal operation. Learn mode allows a role to run applications during which time SQL/Protect is recording the relations that are accessed. These are added to the role’s *protected relations list* stored in table `edb_sql_protect_rel`.
 
 Monitoring for protection against attack begins when SQL/Protect is run in passive or active mode. In passive and active modes, the role is permitted to access the relations in its protected relations list as these were determined to be the relations the role should be able to access during typical usage.
 
@@ -304,7 +304,7 @@ edb_sql_protect.enabled = on
 edb_sql_protect.level = passive
 ```
 
-**Step 2:** Reload the configuration file as shown in `Step 2` of the [Learn Mode](#learn-mode) section.
+**Step 2:** Reload the configuration file as shown in Step 2 of the [Learn Mode](#learn-mode) section.
 
 Now SQL/Protect is in passive mode. For relations that have been learned such as the `dept` and `emp` tables of the prior examples, SQL statements are permitted with no special notification to the client by `SQL/Protect` as shown by the following queries run by user `appuser`:
 
@@ -351,7 +351,7 @@ f1
 
 **Step 3:** Monitor the statistics for suspicious activity.
 
-By querying the view `edb_sql_protect_stats`, you can see the number of times SQL statements were executed that referenced relations that were not in a role’s protected relations list, or contained SQL injection attack signatures. See `Attack Attempt Statistics` for more information on view `edb_sql_protect_stats`.
+By querying the view `edb_sql_protect_stats`, you can see the number of times SQL statements were executed that referenced relations that were not in a role’s protected relations list, or contained SQL injection attack signatures. See *Attack Attempt Statistics* for more information on view `edb_sql_protect_stats`.
 
 The following is a query on `edb_sql_protect_stats`:
 
@@ -367,7 +367,7 @@ edb=# SELECT * FROM edb_sql_protect_stats;
 
 **Step 4:** View information on specific attacks.
 
-By querying the `edb_sql_protect_queries` view, you can see the SQL statements that were executed that referenced relations that were not in a role’s protected relations list, or contained SQL injection attack signatures. See `Attack Attempt Queries` for more information on view `edb_sql_protect_queries`.
+By querying the `edb_sql_protect_queries` view, you can see the SQL statements that were executed that referenced relations that were not in a role’s protected relations list, or contained SQL injection attack signatures. See *Attack Attempt Queries* for more information on view `edb_sql_protect_queries`.
 
 The following code sample shows a query on `edb_sql_protect_queries`:
 
@@ -417,9 +417,9 @@ edb_sql_protect.enabled = on
 edb_sql_protect.level = active
 ```
 
-**Step 2:** Reload the configuration file as shown in `Step 2` of the [Learn Mode](#learn-mode) section.
+**Step 2:** Reload the configuration file as shown in Step 2 of the [Learn Mode](#learn-mode) section.
 
-The following example illustrates SQL statements similar to those given in the examples of `Step 2` in `Passive Mode`, but executed by user `appuser` when `edb_sql_protect.level` is set to `active`:
+The following example illustrates SQL statements similar to those given in the examples of Step 2 in `Passive Mode`, but executed by user `appuser` when `edb_sql_protect.level` is set to `active`:
 
 ```text
 edb=> CREATE TABLE appuser_tab_3 (f1 INTEGER);

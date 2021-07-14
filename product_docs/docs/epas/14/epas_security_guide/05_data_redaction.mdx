@@ -210,7 +210,7 @@ edb=> SELECT * FROM employees WHERE substring(ssn from 0 for 4) = '123';
 
 **Caveats**
 
-1.  The data redaction policy created on inheritance hierarchies will not be cascaded. For example, if the data redaction policy is created for a parent, it will not be applied to the child table, which inherits it and vice versa. Someone who has access to these child tables can see the non-redacted data. For information about inheritance hierarchies, see `Inheritance` in the PostgreSQL Core Documentation available at:
+1.  The data redaction policy created on inheritance hierarchies will not be cascaded. For example, if the data redaction policy is created for a parent, it will not be applied to the child table, which inherits it and vice versa. Someone who has access to these child tables can see the non-redacted data. For information about inheritance hierarchies, see *Inheritance* in the PostgreSQL Core Documentation available at:
 
      <https://www.postgresql.org/docs/current/static/ddl-inherit.html>
 
@@ -399,7 +399,7 @@ To drop the data redaction policy called `redact_policy_personal_info` on the ta
 DROP REDACTION POLICY redact_policy_personal_info ON employees;
 ```
 
-**Compatibilities**
+**Compatibility**
 
 `DROP REDACTION POLICY` is an EDB extension.
 
