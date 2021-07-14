@@ -1,7 +1,7 @@
 ---
 title: "Configuring the MySQL Foreign Data Wrapper"
-redirects: 
-  - '/mysql_data_adapter/2.5.5/06_configuring_the_mysql_data_adapter/'
+redirects:
+  - "/mysql_data_adapter/2.5.5/06_configuring_the_mysql_data_adapter/"
 ---
 
 <div id="configuring_the_mysql_data_adapter" class="registered_link"></div>
@@ -268,6 +268,7 @@ For more information about using the `CREATE FOREIGN TABLE` command, see:
 > <https://www.postgresql.org/docs/current/static/sql-createforeigntable.html>
 
 !!! Note
+
     MySQL foreign data wrapper supports the write capability feature.
 
 <div id="data_type_mappings" class="registered_link"></div>
@@ -292,11 +293,14 @@ When using the foreign data wrapper, you must create a table on the Postgres ser
 | VARCHAR()   | VARCHAR()/CHARCTER VARYING() |
 
 !!! Note
-    For `ENUM` data type:
 
-    MySQL accepts `enum` value in string form. You must create exactly same `enum` listing on Advanced Server as that is present on MySQL server. Any sort of inconsistency will result in an error while fetching rows with values not known on the local server.
+For `ENUM` data type:
 
-    Also, when the given `enum` value is not present at MySQL side but present at Postgres/Advanced Server side, an empty string (`''`) is inserted as a value at MySQL side for the `enum` column. To select from such a table having enum value as `''`, create an `enum` type at Postgres side with all valid values and `''`.
+MySQL accepts `enum` value in string form. You must create exactly same `enum` listing on Advanced Server as that is present on MySQL server. Any sort of inconsistency will result in an error while fetching rows with values not known on the local server.
+
+Also, when the given `enum` value is not present at MySQL side but present at Postgres/Advanced Server side, an empty string (`''`) is inserted as a value at MySQL side for the `enum` column. To select from such a table having enum value as `''`, create an `enum` type at Postgres side with all valid values and `''`.
+
+!!!
 
 <div id="import_foreign_schema" class="registered_link"></div>
 

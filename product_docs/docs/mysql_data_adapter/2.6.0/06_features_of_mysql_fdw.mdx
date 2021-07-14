@@ -11,6 +11,7 @@ The key features of the MySQL Foreign Data Wrapper are listed below:
 MySQL Foreign Data Wrapper provides the write capability. Users can insert, update and delete data in the remote MySQL tables by inserting, updating and deleting the data locally in the foreign tables. MySQL foreign data wrapper uses the Postgres type casting mechanism to provide opposite type casting between MySQL and Postgres data types.
 
 !!! Note
+
     The first column of MySQL table must have unique/primary key for DML to work.
 
 See also:
@@ -56,8 +57,11 @@ For more information, see [DROP EXTENSION](https://www.postgresql.org/docs/curre
 MySQL Foreign Data Wrapper supports join push-down. It pushes the joins between the foreign tables of the same remote MySQL server to that remote MySQL server, thereby enhancing the performance.
 
 !!! Note
-    -   Currently, joins involving only relational and arithmetic operators in join-clauses are pushed down to avoid any potential join failure.
-    -   Only the INNER and LEFT/RIGHT OUTER joins are supported.
+
+- Currently, joins involving only relational and arithmetic operators in join-clauses are pushed down to avoid any potential join failure.
+- Only the INNER and LEFT/RIGHT OUTER joins are supported.
+
+!!!
 
 See also:
 

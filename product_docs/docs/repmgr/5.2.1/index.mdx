@@ -10,13 +10,14 @@ repmgr (Replication Manager) is among the most popular open-source tools for man
 repmgr is distributed under GNU GPL 3 and maintained by EDB. repmgr is developed, tested and certified with PostgreSQL and EDB Postgres Extended. repmgr is not certified with EDB Postgres Advanced.
 
 !!! Note
-   Looking for repmgr documentation? Head over to [repmgr.org](https://repmgr.org/)
-!!!
+
+    Looking for repmgr documentation? Head over to [repmgr.org](https://repmgr.org/)
 
 Key capabilities include:
-* Perform automatic failover by detecting failure of the primary and promoting the most suitable standby server
-* Monitoring and recording replication performance
-* User defined scripts can be triggered by cluster events to perform tasks such as sending email alerts
-* Witness servers can improve repmgr failure assessment and resolution, especially in deployments involving multiple data centers
-* A "location" configuration option can restrict potential promotion candidates to a single location, e.g., when nodes are spread over multiple data centers
-* Supports multiple methods to determine node availability: PostgreSQL ping, query execution, or new connection
+
+- Perform automatic failover by detecting failure of the primary and promoting the most suitable standby server
+- Monitoring and recording replication performance
+- User defined scripts can be triggered by cluster events to perform tasks such as sending email alerts
+- Witness servers can improve repmgr failure assessment and resolution, especially in deployments involving multiple data centers
+- A "location" configuration option can restrict potential promotion candidates to a single location, e.g., when nodes are spread over multiple data centers
+- Supports multiple methods to determine node availability: PostgreSQL ping, query execution, or new connection

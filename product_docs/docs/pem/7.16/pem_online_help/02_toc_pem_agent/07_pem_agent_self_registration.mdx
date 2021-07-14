@@ -8,8 +8,8 @@ Each PEM agent must be `registered` with the PEM server. The registration proces
 
 The RPM installer places the PEM worker utility in the `/usr/edb/pem/agent/bin` directory. Use the following commands to register an agent:
 
--   **On Linux**: pemworker −−register-agent \[register-options]
--   **On Windows**: pemworker.exe REGISTER \[register-options]
+- **On Linux**: pemworker −−register-agent \[register-options]
+- **On Windows**: pemworker.exe REGISTER \[register-options]
 
 The following information is required when registering an agent with the PEM Server; you will be prompted for information if it is not provided on the command line:
 
@@ -28,6 +28,7 @@ The following information is required when registering an agent with the PEM Ser
 | **Agent User**               | −−pem-agent-user                   | Yes      | Use this user to connect the PEM database server. Specify, it when you would like to use a connection pooler between PEM Agent and PEM database server. It will generate the SSL Ceriticates, which will used by the pemworker to connect to the PEM database server instead, for this user instead of the default agent user.<br /><br />**NOTE:** Specified user must be a member of 'pem_agent' role.<br /> |                                                |
 
 !!! Note
+
     You can use the `PEM_SERVER_PASSWORD` environment variable to set the password of the `PEM Admin User`. If the `PEM_SERVER_PASSWORD` is not set, the server will use the `PGPASSWORD` or `pgpass file` when connecting to the **PEM Database Server**.
 
 Example:

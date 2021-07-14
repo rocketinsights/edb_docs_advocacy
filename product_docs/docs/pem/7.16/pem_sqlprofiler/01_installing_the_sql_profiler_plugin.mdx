@@ -39,6 +39,7 @@ When the installation is complete, the SQL Profiler plugin is ready to be config
 ## Using an RPM Package to Install SQL Profiler
 
 !!! Note
+
     You may be required to add the `sslutils` package to your PostgreSQL database servers before installing SQL Profiler.
 
 If you have already configured the EDB repository on your system, you can use `yum` or `dnf` to install SQL Profiler:
@@ -58,6 +59,7 @@ For detailed information about configuring the EDB repository, please see the [P
 ## Installing SQL Profiler on Debian/Ubuntu
 
 !!! Note
+
     You may be required to add the `sslutils` package to your PostgreSQL database servers before installing SQL Profiler.
 
 You can use an `apt` command to install SQL Profiler using DEB on Debian 9.x or Ubuntu 18; assume root privileges and enter:
@@ -86,8 +88,8 @@ Use the following steps to enable the plugin:
 
 3.  Using the `Query Tool` or the `psql` command line interface, run the `sql-profiler.sql` script in the database specified as the `Maintenance Database` on the server you wish to profile. If you are using:
 
-    -   PostgreSQL, the default maintenance database is `postgres`.
-    -   Advanced Server, the default maintenance database is `edb`.
+    - PostgreSQL, the default maintenance database is `postgres`.
+    - Advanced Server, the default maintenance database is `edb`.
 
     To use the PEM Query Tool to run the script, highlight the name of the maintenance database in the `Browser` tree control, and navigate through the `Tools` menu to select `Query tool`. When the Query Tool opens, use the `Open` option on the `Files` menu to open a web browser and navigate to the `sql-profiler.sql` script. By default, the `sql-profiler.sql` script is located in the `contrib` folder, under your Postgres installation.
 
@@ -107,7 +109,7 @@ Use the following steps to enable the plugin:
 
     To access SQL Profiler functionality, highlight the name of the database in the PEM `Browser` tree control; navigate through `Server` option under `Tools` menu to the `SQL Profiler` pull-aside menu. Menu options allow you to manage your SQL traces:
 
-    -   Select `Create trace`… to define a new trace.
-    -   Select `Open trace`… to open an existing trace.
-    -   Select `Delete trace(s)`… to delete one or more traces.
-    -   Select `View scheduled trace(s)`… to review a list of scheduled traces.
+    - Select `Create trace`… to define a new trace.
+    - Select `Open trace`… to open an existing trace.
+    - Select `Delete trace(s)`… to delete one or more traces.
+    - Select `View scheduled trace(s)`… to review a list of scheduled traces.

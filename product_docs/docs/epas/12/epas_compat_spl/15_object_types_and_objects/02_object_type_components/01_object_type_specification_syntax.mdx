@@ -69,9 +69,11 @@ RETURN self AS RESULT
 ```
 
 !!! Note
-    -   The `OR REPLACE` option cannot be currently used to add, delete, or modify the attributes of an existing object type. Use the `DROP TYPE` command to first delete the existing object type. The `OR REPLACE` option can be used to add, delete, or modify the methods in an existing object type.
 
-    -   The PostgreSQL form of the `ALTER TYPE ALTER ATTRIBUTE` command can be used to change the data type of an attribute in an existing object type. However, the `ALTER TYPE` command cannot add or delete attributes in the object type.
+- The `OR REPLACE` option cannot be currently used to add, delete, or modify the attributes of an existing object type. Use the `DROP TYPE` command to first delete the existing object type. The `OR REPLACE` option can be used to add, delete, or modify the methods in an existing object type.
+- The PostgreSQL form of the `ALTER TYPE ALTER ATTRIBUTE` command can be used to change the data type of an attribute in an existing object type. However, the `ALTER TYPE` command cannot add or delete attributes in the object type.
+
+!!!
 
 `name` is an identifier (optionally schema-qualified) assigned to the object type.
 
@@ -88,11 +90,13 @@ If the `AUTHID` clause is omitted or `DEFINER` is specified, the rights of the o
 Following the closing parenthesis of the `CREATE TYPE` definition, `[ NOT ] FINAL` specifies whether or not a subtype can be derived from this object type. `FINAL`, which is the default, means that no subtypes can be derived from this object type. Specify `NOT FINAL` if you want to allow subtypes to be defined under this object type.
 
 !!! Note
+
     Even though the specification of `NOT FINAL` is accepted in the `CREATE TYPE` command, SPL does not currently support the creation of subtypes.
 
 Following the closing parenthesis of the `CREATE TYPE` definition, `[ NOT ] INSTANTIABLE` specifies whether or not an object instance can be created of this object type. `INSTANTIABLE`, which is the default, means that an instance of this object type can be created. Specify `NOT INSTANTIABLE` if this object type is to be used only as a parent “template” from which other specialized subtypes are to be defined. If `NOT INSTANTIABLE` is specified, then `NOT FINAL` must be specified as well. If any method in the object type contains the `NOT INSTANTIABLE` qualifier, then the object type, itself, must be defined with `NOT INSTANTIABLE` and `NOT FINAL`.
 
 !!! Note
+
     Even though the specification of `NOT INSTANTIABLE` is accepted in the `CREATE TYPE` command, SPL does not currently support the creation of subtypes.
 
 `method_spec` denotes the specification of a member method or static method.
@@ -113,16 +117,16 @@ Include the `CONSTRUCTOR` keyword and function definition to define a constructo
 
 The following points should be noted about an object type specification:
 
--   There must be at least one attribute defined in the object type.
+- There must be at least one attribute defined in the object type.
 
--   There may be none, one, or more methods defined in the object type.
+- There may be none, one, or more methods defined in the object type.
 
--   For each member method there is an implicit, built-in parameter named `SELF`, whose data type is that of the object type being defined.
+- For each member method there is an implicit, built-in parameter named `SELF`, whose data type is that of the object type being defined.
 
-    `SELF` refers to the object instance that is currently invoking the method. `SELF` can be explicitly declared as an `IN` or `IN OUT` parameter in the parameter list (for example as `MEMBER FUNCTION (SELF IN OUT object_type ...)).`
+  `SELF` refers to the object instance that is currently invoking the method. `SELF` can be explicitly declared as an `IN` or `IN OUT` parameter in the parameter list (for example as `MEMBER FUNCTION (SELF IN OUT object_type ...)).`
 
-    If `SELF` is explicitly declared, `SELF` must be the first parameter in the parameter list. If `SELF` is not explicitly declared, its parameter mode defaults to `IN OUT` for member procedures and `IN` for member functions.
+  If `SELF` is explicitly declared, `SELF` must be the first parameter in the parameter list. If `SELF` is not explicitly declared, its parameter mode defaults to `IN OUT` for member procedures and `IN` for member functions.
 
--   A static method cannot be overridden (`OVERRIDING` and `STATIC` cannot be specified together in `method_spec`).
+- A static method cannot be overridden (`OVERRIDING` and `STATIC` cannot be specified together in `method_spec`).
 
--   A static method must be instantiable (`NOT INSTANTIABLE` and `STATIC` cannot be specified together in `method_spec`).
+- A static method must be instantiable (`NOT INSTANTIABLE` and `STATIC` cannot be specified together in `method_spec`).
