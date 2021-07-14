@@ -25,10 +25,156 @@ SELECT <select_list> FROM <table_expression> [ WHERE ...]
   [ <other> ...]
 ```
 
-`select_list` is one or more expressions that comprise the fields of the result set. `table_expression` is one or more tables or views from which the rows of the result set originate. `other` is any additional legal `SELECT` command clauses. The clauses pertinent to hierarchical queries, `START WITH, CONNECT BY`, and `ORDER SIBLINGS BY` are described in the following sections.
+`select_list` is one or more expressions that comprise the fields of the result set. `table_expression` is one or more tables or views from which the rows of the result set originate. `other` is any additional legal `SELECT` command clauses. 
 
-!!! Note
-    At this time, Advanced Server does not support the use of `AND` (or other operators) in the `CONNECT BY` clause.
+If a table contains the result set in a hierarchical order, then you can select rows using the hierarchical query clause:
+
+```text
+{ CONNECT BY <condition> }
+```
+
+`CONNECT BY` specifies the relation between a parent record and its child records of the hierarchy. 
+
+-  In a hierarchical query, one expression in the `CONNECT BY` clause must be qualified with the `PRIOR` operator. For example:
+
+```text
+PRIOR expr = expr
+or
+expr = PRIOR expr
+```
+
+-  If the `CONNECT BY condition` is compound, then only one condition requires the `PRIOR` operator, although there can be multiple `PRIOR` conditions.
+
+-  The `PRIOR` keyword can be on either side of the operator.
+
+-  `PRIOR` is a unary operator and has the same precedence as `+` and `-` operators. It evaluates the parent row in a parent-child relation in a hierarchical query.
+
+-  `CURRVAL` and `NEXTVAL` are not valid `PRIOR` expressions, therefore `PRIOR` expression cannot refer to a sequence.
+
+You can further enhance the functionality of the `CONNECT BY [PRIOR]` condition by using the `CONNECT_BY_ROOT` operator. This operator not only returns immediate parent rows but also all ancestors rows in the hierarchy. For more information, see [Retrieving the Root Node with CONNECT_BY_ROOT](../05_hierarchical_queries/06_retrieving_the_root_node_with_connect_by_root/#retrieving_the_root_node_with_connect_by_root).
+
+**Example**
+
+The following example uses the `CONNECT BY` clause with `PRIOR` to define relationship between employees and managers. Using the `LEVEL` value, the employee names are indented to further emphasize the depth in the hierarchy of each row.
+
+```text
+SELECT LPAD(ename,length(ename)+2 *(LEVEL - 1),' ') as employee, empno, mgr, LEVEL 
+FROM emp 
+CONNECT BY PRIOR empno = mgr AND PRIOR emp.deptno = emp.deptno;
+```
+
+The output from this query follows.
+
+```text
+employee    | empno | mgr  | level 
+------------+-------+------+-------
+ SMITH      |  7369 | 7902 |     1
+ ALLEN      |  7499 | 7698 |     1
+ WARD       |  7521 | 7698 |     1
+ JONES      |  7566 | 7839 |     1
+   FORD     |  7902 | 7566 |     2
+     SMITH  |  7369 | 7902 |     3
+   SCOTT    |  7788 | 7566 |     2
+     ADAMS  |  7876 | 7788 |     3
+ MARTIN     |  7654 | 7698 |     1
+ BLAKE      |  7698 | 7839 |     1
+   WARD     |  7521 | 7698 |     2
+   TURNER   |  7844 | 7698 |     2
+   MARTIN   |  7654 | 7698 |     2
+   JAMES    |  7900 | 7698 |     2
+   ALLEN    |  7499 | 7698 |     2
+ CLARK      |  7782 | 7839 |     1
+   MILLER   |  7934 | 7782 |     2
+ SCOTT      |  7788 | 7566 |     1
+   ADAMS    |  7876 | 7788 |     2
+ KING       |  7839 |      |     1
+   CLARK    |  7782 | 7839 |     2
+     MILLER |  7934 | 7782 |     3
+ TURNER     |  7844 | 7698 |     1
+ ADAMS      |  7876 | 7788 |     1
+ JAMES      |  7900 | 7698 |     1
+ FORD       |  7902 | 7566 |     1
+   SMITH    |  7369 | 7902 |     2
+ MILLER     |  7934 | 7782 |     1
+(28 rows)
+```
+
+The following example adds `ORDER BY` clause and `AND` operator with `CONNECT BY` clause to show employee and manager hierarchy.
+
+```text
+SELECT LPAD(ename,length(ename)+2 *(LEVEL - 1),' ') as employee, empno, mgr, LEVEL
+FROM emp
+CONNECT BY PRIOR empno = mgr AND LEVEL <= 3
+ORDER BY LEVEL, ename;
+```
+
+The output from this query follows.
+
+```text
+employee    | empno | mgr  | level 
+------------+-------+------+-------
+ ADAMS      |  7876 | 7788 |     1
+ ALLEN      |  7499 | 7698 |     1
+ BLAKE      |  7698 | 7839 |     1
+ CLARK      |  7782 | 7839 |     1
+ FORD       |  7902 | 7566 |     1
+ JAMES      |  7900 | 7698 |     1
+ JONES      |  7566 | 7839 |     1
+ KING       |  7839 |      |     1
+ MARTIN     |  7654 | 7698 |     1
+ MILLER     |  7934 | 7782 |     1
+ SCOTT      |  7788 | 7566 |     1
+ SMITH      |  7369 | 7902 |     1
+ TURNER     |  7844 | 7698 |     1
+ WARD       |  7521 | 7698 |     1
+   ADAMS    |  7876 | 7788 |     2
+   ALLEN    |  7499 | 7698 |     2
+   BLAKE    |  7698 | 7839 |     2
+   CLARK    |  7782 | 7839 |     2
+   FORD     |  7902 | 7566 |     2
+   JAMES    |  7900 | 7698 |     2
+   JONES    |  7566 | 7839 |     2
+   MARTIN   |  7654 | 7698 |     2
+   MILLER   |  7934 | 7782 |     2
+   SCOTT    |  7788 | 7566 |     2
+   SMITH    |  7369 | 7902 |     2
+   TURNER   |  7844 | 7698 |     2
+   WARD     |  7521 | 7698 |     2
+     ADAMS  |  7876 | 7788 |     3
+     ALLEN  |  7499 | 7698 |     3
+     FORD   |  7902 | 7566 |     3
+     JAMES  |  7900 | 7698 |     3
+     MARTIN |  7654 | 7698 |     3
+     MILLER |  7934 | 7782 |     3
+     SCOTT  |  7788 | 7566 |     3
+     SMITH  |  7369 | 7902 |     3
+     TURNER |  7844 | 7698 |     3
+     WARD   |  7521 | 7698 |     3
+(37 rows)
+```
+
+The following example uses `CONNECT BY` clause with optional `PRIOR` statement to show the level value.
+
+```text
+SELECT LEVEL
+FROM DUAL
+CONNECT BY LEVEL <= 5;
+```
+
+The output from this query follows.
+
+```text
+level 
+--------
+     1
+     2
+     3
+     4
+     5
+(5 rows)
+```
+
+The clauses pertinent to hierarchical queries, `START WITH, CONNECT BY`, and `ORDER SIBLINGS BY` are described in the following sections.
 
 <div class="toctree" maxdepth="3">
 
