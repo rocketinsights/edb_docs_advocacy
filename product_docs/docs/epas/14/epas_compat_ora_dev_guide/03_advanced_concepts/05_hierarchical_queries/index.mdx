@@ -33,9 +33,9 @@ If a table contains the result set in a hierarchical order, then you can select 
 { CONNECT BY <condition> }
 ```
 
-`CONNECT BY` specifies the relation between a parent record and its child records of the hierarchy. 
+`CONNECT BY` specifies the relationship between a parent record and its child records of the hierarchy. 
 
--  In a hierarchical query, one expression in the `CONNECT BY` clause must be qualified with the `PRIOR` operator. For example:
+-  At least one expression in the `CONNECT BY` clause must be qualified with the `PRIOR` operator in a hierarchical query. For example:
 
 ```text
 PRIOR expr = expr
@@ -43,19 +43,19 @@ or
 expr = PRIOR expr
 ```
 
--  If the `CONNECT BY condition` is compound, then only one condition requires the `PRIOR` operator, although there can be multiple `PRIOR` conditions.
+-  If the `CONNECT BY condition` is compound, only one condition requires the `PRIOR` operator, although there can be multiple `PRIOR` conditions.
 
 -  The `PRIOR` keyword can be on either side of the operator.
 
--  `PRIOR` is a unary operator and has the same precedence as `+` and `-` operators. It evaluates the parent row in a parent-child relation in a hierarchical query.
+-  `PRIOR` is a unary operator that can be used to evaluate the parent row in a parent-child relationship in a hierarchical query. `PRIOR` takes the same precedence as `+` and `-` operators.
 
--  `CURRVAL` and `NEXTVAL` are not valid `PRIOR` expressions, therefore `PRIOR` expression cannot refer to a sequence.
+-  `CURRVAL` and `NEXTVAL` are not valid `PRIOR` expressions; therefore `PRIOR` expression cannot refer to a sequence.
 
-You can further enhance the functionality of the `CONNECT BY [PRIOR]` condition by using the `CONNECT_BY_ROOT` operator. This operator not only returns immediate parent rows but also all ancestors rows in the hierarchy. For more information, see [Retrieving the Root Node with CONNECT_BY_ROOT](../05_hierarchical_queries/06_retrieving_the_root_node_with_connect_by_root/#retrieving_the_root_node_with_connect_by_root).
+You can further enhance the functionality of the `CONNECT BY [PRIOR]` condition by using the `CONNECT_BY_ROOT` operator. This operator returns not only immediate parent rows but also all ancestors rows in the hierarchy. For more information, see [Retrieving the Root Node with CONNECT_BY_ROOT](../05_hierarchical_queries/06_retrieving_the_root_node_with_connect_by_root/#retrieving_the_root_node_with_connect_by_root).
 
-**Example**
+**Examples**
 
-The following example uses the `CONNECT BY` clause with `PRIOR` to define relationship between employees and managers. Using the `LEVEL` value, the employee names are indented to further emphasize the depth in the hierarchy of each row.
+The following example uses the `CONNECT BY` clause with `PRIOR` to define a relationship between employees and managers. Using the `LEVEL` value, the employee names are indented to further emphasize the depth in the hierarchy of each row.
 
 ```text
 SELECT LPAD(ename,length(ename)+2 *(LEVEL - 1),' ') as employee, empno, mgr, LEVEL 
@@ -153,7 +153,7 @@ employee    | empno | mgr  | level
 (37 rows)
 ```
 
-The following example uses `CONNECT BY` clause with optional `PRIOR` statement to show the level value.
+The following example uses `CONNECT BY` clause with an optional `PRIOR` statement to show the level value.
 
 ```text
 SELECT LEVEL
