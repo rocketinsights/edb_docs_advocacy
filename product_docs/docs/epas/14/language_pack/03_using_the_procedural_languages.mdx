@@ -4,7 +4,7 @@ title: "Using the Procedural Languages"
 
 <div id="using_the_procedural_langauges" class="registered_link"></div>
 
-The Postgres procedural languages (PL/Perl, PL/Python, and PL/Java) are installed by the Language Pack installer. You can also use an RPM package to add procedural language functionality to your EDB Postgres Advanced Server installation. For more information about using an RPM package, please see the EDB Postgres Advanced Server Installation Guide, available at the [EDB website](/epas/latest/).
+The Postgres procedural languages (PL/Perl, PL/Python, and PL/Java) are installed by the Language Pack installer. You can also use an RPM package to add procedural language functionality to your EDB Postgres Advanced Server installation. For more information about using an RPM package, please see the *EDB Postgres Advanced Server Installation Guide*, available at the [EDB website](/epas/latest/).
 
 ## PL/Perl
 
@@ -17,8 +17,7 @@ You must install PL/Perl in each database (or in a template database) before cre
 You can now use a Postgres client application to access the features of the PL/Perl language. The following PL/Perl example creates a function named `perl_max` that returns the larger of two integer values:
 
 ```text
-CREATE OR REPLACE FUNCTION perl_max (integer, integer) RETURNS integer
-AS
+CREATE OR REPLACE FUNCTION perl_max (integer, integer) RETURNS integer AS
 $$
 if ($_[0] > $_[1])
 { return $_[0]; }
@@ -57,8 +56,7 @@ After installing PL/Python in your database, you can use the features of the PL/
 The following PL/Python example creates a function named `pymax` that returns the larger of two integer values:
 
 ```text
-CREATE OR REPLACE FUNCTION pymax (a integer, b integer) RETURNS
-integer AS
+CREATE OR REPLACE FUNCTION pymax (a integer, b integer) RETURNS integer AS
 $$
 if a > b:
 return a
@@ -96,8 +94,8 @@ After creating the `pltcl` language, you can use the features of the PL/Tcl lang
 The following PL/Tcl example creates a function named `tcl_max` that returns the larger of two integer values:
 
 ```text
-CREATE OR REPLACE FUNCTION tcl_max(integer, integer) RETURNS integer
-AS $$
+CREATE OR REPLACE FUNCTION tcl_max(integer, integer) RETURNS integer AS 
+$$
 if {[argisnull 1]} {
 if {[argisnull 2]} { return_null }
 return $2
