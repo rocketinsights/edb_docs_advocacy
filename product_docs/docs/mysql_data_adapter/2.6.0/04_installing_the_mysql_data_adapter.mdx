@@ -6,17 +6,20 @@ title: "Installing the MySQL Foreign Data Wrapper"
 
 The MySQL Foreign Data Wrapper can be installed with an RPM package. During the installation process, the installer will satisfy software prerequisites.
 
-<div id="using_an_rpm_package_to_install_the_data_adapter" class="registered_link"></div>
+<div
+  id="using_an_rpm_package_to_install_the_data_adapter"
+  class="registered_link"
+></div>
 
 ## Installing the MySQL Foreign Data Wrapper using an RPM Package
 
 You can install the MySQL Foreign Data Wrapper using an RPM package on the following platforms:
 
--   [RHEL 7](#rhel7)
--   [RHEL 7 PPCLE](#centos7_PPCLE)
--   [RHEL 8](#rhel8)
--   [CentOS 7](#centos7)
--   [CentOS 8](#centos8)
+- [RHEL 7](#rhel7)
+- [RHEL 7 PPCLE](#centos7_PPCLE)
+- [RHEL 8](#rhel8)
+- [CentOS 7](#centos7)
+- [CentOS 8](#centos8)
 
 <div id="rhel7" class="registered_link"></div>
 
@@ -26,13 +29,13 @@ Before installing the MySQL Foreign Data Wrapper, you must install the following
 
 Install the `epel-release` package:
 
-```text
+```sh
 yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 ```
 
 Enable the optional, extras, and HA repositories:
 
-```text
+```sh
 subscription-manager repos --enable "rhel-*-optional-rpms" --enable "rhel-*-extras-rpms"  --enable "rhel-ha-for-rhel-*-server-rpms"
 ```
 
@@ -42,25 +45,25 @@ You must also have credentials that allow access to the EDB repository. For info
 
 After receiving your repository credentials you can:
 
-1.  Create the repository configuration file.
-2.  Modify the file, providing your user name and password.
-3.  Install the MySQL Foreign Data Wrapper.
+1. Create the repository configuration file.
+1. Modify the file, providing your user name and password.
+1. Install the MySQL Foreign Data Wrapper.
 
-**Creating a Repository Configuration File**
+#### Creating a Repository Configuration File
 
 To create the repository configuration file, assume superuser privileges, and invoke the following command:
 
-```text
+```sh
 yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
 ```
 
 The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
 
-**Modifying the file, providing your user name and password**
+#### Modifying the file, providing your user name and password
 
 After creating the `edb.repo` file, use your choice of editor to ensure that the value of the `enabled` parameter is `1`, and replace the `username` and `password` placeholders in the `baseurl` specification with the name and password of a registered EDB user.
 
-```text
+```sh
 [edb]
 name=EnterpriseDB RPMs $releasever - $basearch
 baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
@@ -70,24 +73,25 @@ repo_gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
 ```
 
-**Installing MySQL Foreign Data Wrapper**
+#### Installing MySQL Foreign Data Wrapper
 
 1. Before installing MySQL FDW, download and install the MySQL repo using the following commands:
- 
-   ```text
+
+   ```sh
    yum -y install https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
    ```
 
-2. Use the following command to enable the appropriate subrepository and install the MySQL Foreign data Wrapper:
- - For MySQL 8:
-   ```text
-   yum -y install --enablerepo=mysql80-community --disablerepo=mysql57-community edb-as<xx>-mysql8_fdw
-   ```
- - For MySQL 5: 
-   ```text
-   yum -y install --enablerepo=mysql57-community --disablerepo=mysql80-community edb-as<xx>-mysql5_fdw
-   ```
-Where `xx` is the server version number i.e. 13.
+1. Use the following command to enable the appropriate subrepository and install the MySQL Foreign data Wrapper:
+
+   - For MySQL 8:
+     ```sh
+     yum -y install --enablerepo=mysql80-community --disablerepo=mysql57-community edb-as<xx>-mysql8_fdw
+     ```
+   - For MySQL 5:
+     ```sh
+     yum -y install --enablerepo=mysql57-community --disablerepo=mysql80-community edb-as<xx>-mysql5_fdw
+     ```
+     Where `xx` is the server version number i.e. 13.
 
 When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
 
@@ -98,57 +102,60 @@ During the installation, yum may encounter a dependency that it cannot resolve. 
 ### On RHEL 7 PPCLE
 
 Before installing the MySQL Foreign Data Wrapper, you must install the following prerequisite packages, and request credentials from EDB:
+
 1. Use the following commands to install Advance Toolchain:
-```text
-rpm --import https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHEL7/gpg-pubkey-6976a827-5164221b
 
-cat > /etc/yum.repos.d/advance-toolchain.repo <<EOF
-# Begin of configuration file
-[advance-toolchain]
-name=Advance Toolchain IBM FTP
-baseurl=https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHEL7
-failovermethod=priority
-enabled=1
-gpgcheck=1
-repo_gpgcheck=1
-gpgkey=ftp://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHELX/gpg-pubkey-6976a827-5164221b
-# End of
-```
+   ```sh
+   rpm --import https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHEL7/gpg-pubkey-6976a827-5164221b
 
-2. Install the `epel-release` package:
+   cat > /etc/yum.repos.d/advance-toolchain.repo <<EOF
+   # Begin of configuration file
+   [advance-toolchain]
+   name=Advance Toolchain IBM FTP
+   baseurl=https://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHEL7
+   failovermethod=priority
+   enabled=1
+   gpgcheck=1
+   repo_gpgcheck=1
+   gpgkey=ftp://public.dhe.ibm.com/software/server/POWER/Linux/toolchain/at/redhat/RHELX/gpg-pubkey-6976a827-5164221b
+   # End of
+   ```
 
-```text
-yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-```
+1. Install the `epel-release` package:
+
+   ```sh
+   yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+   ```
 
 !!! Note
+
     You may need to enable the `[extras]` repository definition in the `CentOS-Base.repo` file (located in `/etc/yum.repos.d`).
 
 You must also have credentials that allow access to the EDB repository. For information about requesting credentials, visit:
 
- <https://info.enterprisedb.com/rs/069-ALB-339/images/Repository%20Access%2004-09-2019.pdf>
+<https://info.enterprisedb.com/rs/069-ALB-339/images/Repository%20Access%2004-09-2019.pdf>
 
 After receiving your repository credentials you can:
 
-1.  Create the repository configuration file.
-2.  Modify the file, providing your user name and password.
-3.  Install the MySQL Foreign Data Wrapper.
+1. Create the repository configuration file.
+1. Modify the file, providing your user name and password.
+1. Install the MySQL Foreign Data Wrapper.
 
-**Creating a Repository Configuration File**
+#### Creating a Repository Configuration File
 
 To create the repository configuration file, assume superuser privileges, and invoke the following command:
 
-```text
+```sh
 yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
 ```
 
 The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
 
-**Modifying the file, providing your user name and password**
+#### Modifying the file, providing your user name and password
 
 After creating the `edb.repo` file, use your choice of editor to ensure that the value of the `enabled` parameter is `1`, and replace the `username` and `password` placeholders in the `baseurl` specification with the name and password of a registered EDB user.
 
-```text
+```sh
 [edb]
 name=EnterpriseDB RPMs $releasever - $basearch
 baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
@@ -158,15 +165,18 @@ repo_gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
 ```
 
-**Installing MySQL Foreign Data Wrapper**
+#### Installing MySQL Foreign Data Wrapper
 
 Use the following command to install the MySQL Foreign Data Wrapper:
-  ```text
-   yum install edb-as<xx>-mysql5_fdw
-   ```
-where `xx` is the server version number i.e. 13. 
 
- !!! Note
+```sh
+ yum install edb-as<xx>-mysql5_fdw
+```
+
+where `xx` is the server version number i.e. 13.
+
+!!! Note
+
     MySQL 8.0 RPMs are not available for CentOS 7 PPCLE platform.
 
 When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
@@ -181,13 +191,13 @@ Before installing the MySQL Foreign Data Wrapper, you must install the following
 
 Install the `epel-release` package:
 
-```text
+```sh
 dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 ```
 
 Enable the `codeready-builder-for-rhel-8-\*-rpms` repository:
 
-```text
+```sh
 ARCH=$( /bin/arch )
 subscription-manager repos --enable "codeready-builder-for-rhel-8-${ARCH}-rpms"
 ```
@@ -198,25 +208,25 @@ You must also have credentials that allow access to the EDB repository. For info
 
 After receiving your repository credentials you can:
 
-1.  Create the repository configuration file.
-2.  Modify the file, providing your user name and password.
-3.  Install the MySQL Foreign Data Wrapper.
+1. Create the repository configuration file.
+1. Modify the file, providing your user name and password.
+1. Install the MySQL Foreign Data Wrapper.
 
-**Creating a Repository Configuration File**
+#### Creating a Repository Configuration File
 
 To create the repository configuration file, assume superuser privileges, and invoke the following command:
 
-```text
+```sh
 dnf -y https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
 ```
 
 The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
 
-**Modifying the file, providing your user name and password**
+#### Modifying the file, providing your user name and password
 
 After creating the `edb.repo` file, use your choice of editor to ensure that the value of the `enabled` parameter is `1`, and replace the `username` and `password` placeholders in the `baseurl` specification with the name and password of a registered EDB user.
 
-```text
+```sh
 [edb]
 name=EnterpriseDB RPMs $releasever - $basearch
 baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
@@ -225,19 +235,20 @@ gpgcheck=1
 repo_gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
 ```
-**Installing MySQL Foreign Data Wrapper**
+
+#### Installing MySQL Foreign Data Wrapper
 
 After saving your changes to the configuration file, use the below command to install the MySQL Foreign Data Wrapper:
 
-```text
+```sh
 dnf install edb-as<xx>-mysql8_fdw
 ```
+
 Where `xx` is the server version number i.e. 13.
 
 When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
 
 During the installation, yum may encounter a dependency that it cannot resolve. If it does, it will provide a list of the required dependencies that you must manually resolve.
-
 
 <div id="centos7" class="registered_link"></div>
 
@@ -247,11 +258,12 @@ Before installing the MySQL Foreign Data Wrapper, you must install the following
 
 Install the `epel-release` package:
 
-```text
+```sh
 yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 ```
 
 !!! Note
+
     You may need to enable the `[extras]` repository definition in the `CentOS-Base.repo` file (located in `/etc/yum.repos.d`).
 
 You must also have credentials that allow access to the EDB repository. For information about requesting credentials, visit:
@@ -260,25 +272,25 @@ You must also have credentials that allow access to the EDB repository. For info
 
 After receiving your repository credentials you can:
 
-1.  Create the repository configuration file.
-2.  Modify the file, providing your user name and password.
-3.  Install the MySQL Foreign Data Wrapper.
+1. Create the repository configuration file.
+1. Modify the file, providing your user name and password.
+1. Install the MySQL Foreign Data Wrapper.
 
-**Creating a Repository Configuration File**
+#### Creating a Repository Configuration File
 
 To create the repository configuration file, assume superuser privileges, and invoke the following command:
 
-```text
+```sh
 yum -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
 ```
 
 The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
 
-**Modifying the file, providing your user name and password**
+#### Modifying the file, providing your user name and password
 
 After creating the `edb.repo` file, use your choice of editor to ensure that the value of the `enabled` parameter is `1`, and replace the `username` and `password` placeholders in the `baseurl` specification with the name and password of a registered EDB user.
 
-```text
+```sh
 [edb]
 name=EnterpriseDB RPMs $releasever - $basearch
 baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
@@ -288,22 +300,22 @@ repo_gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
 ```
 
-**Installing MySQL Foreign Data Wrapper**
+#### Installing MySQL Foreign Data Wrapper
 
 1. Before installing MySQL FDW, download and install the MySQL repo using the following commands:
-   ```text
+   ```sh
    yum -y install https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm
    ```
-2. Use the following command to enable the appropriate subrepository and install the MySQL Foreign data Wrapper:
- - For MySQL 8:
-   ```text
-   yum -y install --enablerepo=mysql80-community --disablerepo=mysql57-community edb-as<xx>-mysql8_fdw
-   ```
- - For MySQL 5: 
-   ```text
-   yum -y install --enablerepo=mysql57-community --disablerepo=mysql80-community edb-as<xx>-mysql5_fdw
-   ```
-Where `xx` is the server version number i.e. 13.
+1. Use the following command to enable the appropriate subrepository and install the MySQL Foreign data Wrapper:
+   - For MySQL 8:
+     ```sh
+     yum -y install --enablerepo=mysql80-community --disablerepo=mysql57-community edb-as<xx>-mysql8_fdw
+     ```
+   - For MySQL 5:
+     ```sh
+     yum -y install --enablerepo=mysql57-community --disablerepo=mysql80-community edb-as<xx>-mysql5_fdw
+     ```
+     Where `xx` is the server version number i.e. 13.
 
 When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
 
@@ -317,13 +329,13 @@ Before installing the MySQL Foreign Data Wrapper, you must install the following
 
 Install the `epel-release` package:
 
-```text
+```sh
 dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 ```
 
 Enable the `PowerTools` repository:
 
-```text
+```sh
 dnf config-manager --set-enabled PowerTools
 ```
 
@@ -333,25 +345,25 @@ You must also have credentials that allow access to the EDB repository. For info
 
 After receiving your repository credentials you can:
 
-1.  Create the repository configuration file.
-2.  Modify the file, providing your user name and password.
-3.  Install the MySQL Foreign Data Wrapper.
+1. Create the repository configuration file.
+1. Modify the file, providing your user name and password.
+1. Install the MySQL Foreign Data Wrapper.
 
-**Creating a Repository Configuration File**
+#### Creating a Repository Configuration File
 
 To create the repository configuration file, assume superuser privileges, and invoke the following command:
 
-```text
+```sh
 dnf -y install https://yum.enterprisedb.com/edbrepos/edb-repo-latest.noarch.rpm
 ```
 
 The repository configuration file is named `edb.repo`. The file resides in `/etc/yum.repos.d`.
 
-**Modifying the file, providing your user name and password**
+#### Modifying the file, providing your user name and password
 
 After creating the `edb.repo` file, use your choice of editor to ensure that the value of the `enabled` parameter is `1`, and replace the `username` and `password` placeholders in the `baseurl` specification with the name and password of a registered EDB user.
 
-```text
+```sh
 [edb]
 name=EnterpriseDB RPMs $releasever - $basearch
 baseurl=https://<username>:<password>@yum.enterprisedb.com/edb/redhat/rhel-$releasever-$basearch
@@ -361,13 +373,14 @@ repo_gpgcheck=1
 gpgkey=file:///etc/pki/rpm-gpg/ENTERPRISEDB-GPG-KEY
 ```
 
-**Installing MySQL Foreign Data Wrapper**
+#### Installing MySQL Foreign Data Wrapper
 
 After saving your changes to the configuration file, use the following command to install the MySQL Foreign Data Wrapper:
 
-```text
+```sh
 dnf install edb-as<xx>-mysql8_fdw
 ```
+
 Where `xx` is the server version number i.e. 13.
 
 When you install an RPM package that is signed by a source that is not recognized by your system, yum may ask for your permission to import the key to your local server. If prompted, and you are satisfied that the packages come from a trustworthy source, enter `y`, and press `Return` to continue.
@@ -381,100 +394,102 @@ To install the MySQL Foreign Data Wrapper on a Debian or Ubuntu host, you must h
 The following steps will walk you through on using the EDB apt repository to install a DEB package. When using the commands, replace the `username` and `password` with the credentials provided by EDB.
 
 1.  Assume superuser privileges:
-   ```text
-   sudo su –
-   ```
+    ```sh
+    sudo su –
+    ```
+1.  Configure the EnterpriseDB repository:
 
-2.  Configure the EnterpriseDB repository:
+    - On Debian 9:
 
-    On Debian 9:
+      ```sh
+      sh -c 'echo "deb https://username:password@apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+      ```
 
-    ```text
-    sh -c 'echo "deb https://username:password@apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+    - On Debian 10, Ubuntu 18, and Ubuntu 20:
+
+      1.  Set up the EDB repository:
+
+          ```sh
+          sh -c 'echo "deb [arch=amd64] https://apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+          ```
+
+      1.  Substitute your EDB credentials for the `username` and `password` in the following command:
+
+          ```sh
+          sh -c 'echo "machine apt.enterprisedb.com login <username> password <password>" > /etc/apt/auth.conf.d/edb.conf'
+          ```
+
+1.  Add support to your system for secure APT repositories:
+
+    ```sh
+    apt-get install apt-transport-https
     ```
 
-    On Debian 10, Ubuntu 18, and Ubuntu 20:
+1.  Add the EBD signing key:
 
-    1.  Set up the EDB repository:
-
-    ```text
-    sh -c 'echo "deb [arch=amd64] https://apt.enterprisedb.com/$(lsb_release -cs)-edb/ $(lsb_release -cs) main" > /etc/apt/sources.list.d/edb-$(lsb_release -cs).list'
+    ```sh
+    wget -q -O - https://username:password@apt.enterprisedb.com/edb-deb.gpg.key | apt-key add -
     ```
 
-    2.  Substitute your EDB credentials for the `username` and `password` in the following command:
+1.  If there is `libmysqlclient-dev` already installed on your system, remove it by using the following command:
 
-    ```text
-    sh -c 'echo "machine apt.enterprisedb.com login <username> password <password>" > /etc/apt/auth.conf.d/edb.conf'
+    ```sh
+    sudo apt-get remove  libmysqlclient-dev
     ```
 
-3.  Add support to your system for secure APT repositories:
+1.  Enable the MySQL repo by using the apporpriate command:
 
-   ```text
-   apt-get install apt-transport-https
-   ```
+    - For Debian 9:
 
-4.  Add the EBD signing key:
+      - For MySQL 8:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/debian/stretch mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
+        ```
+      - For MySQL 5:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/debian/stretch mysql-5.7" | sudo tee  /etc/apt/sources.list.d/mysql.list
+        ```
 
-   ```text
-   wget -q -O - https://username:password@apt.enterprisedb.com/edb-deb.gpg.key | apt-key add -
-   ```
-5. If there is `libmysqlclient-dev` already installed on your system, remove it by using the following command:
-   ```text
-   sudo apt-get remove  libmysqlclient-dev
-   ```
+    - For Debian 10:
 
-6. Enable the MySQL repo by using the apporpriate command:
-- For Debian 9:
-    - For MySQL 8: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/debian/stretch mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
+      - For MySQL 8:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/debian/buster mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
+        ```
+      - For MySQL 5:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/debian/buster mysql-5.7" | sudo tee  /etc/apt/sources.list.d/mysql.list
+        ```
+
+    - For Ubuntu 18:
+
+      - For MySQL 8:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/ubuntu/bionic mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
+        ```
+      - For MySQL 5:
+        ```sh
+        sudo echo "deb http://repo.mysql.com/apt/ubuntu/bionic mysql-5.7" | sudo tee /etc/apt/sources.list.d/mysql.list
+        ```
+
+    Note that you do not need to enable the MySQL repo on Ubuntu 20.
+
+1.  Add the mysql repo key using the following commands:
+
+    ```sh
+    sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 5072E1F5
     ```
-    - For MySQL 5: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/debian/stretch mysql-5.7" | sudo tee  /etc/apt/sources.list.d/mysql.list
+
+1.  Update the repository metadata:
+
+    ```sh
+    apt-get update
     ```
 
-- For Debian 10:
-    - For MySQL 8: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/debian/buster mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
-    ```
-    - For MySQL 5: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/debian/buster mysql-5.7" | sudo tee  /etc/apt/sources.list.d/mysql.list
+1.  Install DEB package:
+
+    ```sh
+    apt-get install edb-as<xx>-mysql<y>-fdw
     ```
 
-- For Ubuntu 18:
-    - For MySQL 8: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/ubuntu/bionic mysql-8.0" | sudo tee  /etc/apt/sources.list.d/mysql.list
-    ```
-    - For MySQL 5: 
-    ```text
-    sudo echo "deb http://repo.mysql.com/apt/ubuntu/bionic mysql-5.7" | sudo tee /etc/apt/sources.list.d/mysql.list
-    ```
-  Note that you do not need to enable the MySQL repo on Ubuntu 20.
-
-7.  Add the mysql repo key using the following commands:
-
-   ```text
-   sudo apt-key adv --keyserver pgp.mit.edu --recv-keys 5072E1F5
-   ```
-8. Update the repository metadata:
-
-   ```text
-   apt-get update
-   ```
-
-9.  Install DEB package:
-
-   ```text
-   apt-get install edb-as<xx>-mysql<y>-fdw
-   ```
-  Where `xx` is the server version number i.e. 13 and `y` is the MySQL version i.e. 5 or 8.
-
-
-
-
-
-
+    Where `xx` is the server version number i.e. 13 and `y` is the MySQL version i.e. 5 or 8.
