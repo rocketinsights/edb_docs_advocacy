@@ -1,0 +1,25 @@
+---
+title: "Failover Manager"
+---
+
+Failover Manager is a high-availability module that monitors the health
+of a Postgres streaming replication cluster and verifies failures
+quickly. When a database failure occurs, Failover Manager can
+automatically promote a streaming replication Standby node into a
+writable Primary node to ensure continued performance and protect
+against data loss with minimal service interruption.
+
+A Failover Manager cluster is comprised of Failover Manager processes
+that reside on the following hosts on a network:
+
+-   A Primary node is the Primary database server that is servicing
+    database clients.
+
+-   One or more Standby nodes are streaming replication servers
+    associated with the Primary node.
+
+-   The Witness node confirms assertions of either the Primary or a
+    Standby in a failover scenario. If during a failure situation, the
+    Primary finds itself in a partition with half or more of the nodes,
+    it will stay Primary. As such, Failover Manager supports running in
+    a cluster with an even number of agents.

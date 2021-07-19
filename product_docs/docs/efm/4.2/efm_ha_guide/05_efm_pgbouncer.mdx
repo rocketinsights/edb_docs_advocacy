@@ -1,0 +1,352 @@
+---
+title: "Failover Manager with PgBouncer"
+---
+
+You can use Failover Manager and PgBouncer to provide high availability
+in an on-premises setup as well as a cloud setup. PgBouncer is a popular
+connection pooler, but it is not enough to achieve PostgreSQL High
+Availability by itself as it doesn't have multi-host configuration,
+failover, or detection.
+
+For an on-premises setup, use the connection libraries to provide high
+availability by using a connection string with multiple hosts.
+
+![Failover Manager with VIP](/images/efm_with_vip.png)
+
+*Figure 3: Failover Manager's traffic routing using PgBouncer on-premises*
+
+For a cloud setup, you can use NLB (Network Load Balancer) in place of
+VIP to provide high availability.
+
+![Failover Manager with VIP](/images/efm_with_vip.png)
+
+*Figure 4: Failover Manager's traffic routing using PgBouncer in cloud*
+
+
+Using Failover Manager with PgBouncer
+-------------------------------------
+
+### Installing
+
+Install and configure Advanced Server database, Failover Manager, and PgBouncer on AWS Virtual Machines as following:
+
+ 
+   Systems            | Components
+  --------------------| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  PgDB srv 1, 2, 3    | Primary / standby node running Advanced Server 13 and Failover Manager 4.2
+  PgBouncer srv 1, 2  | PgBouncer node running PgBouncer 1.15. These 2 nodes should be registered as targets in the Target Group. Note that there could be more, but 2 is the minimum, and is sufficient for most cases.
+  
+
+Note that for multiple reasons EDB does not support this architecture
+with PgBouncer and Failover Manager/PostgreSQL running on the same
+machines:
+
+-   A restriction with Cloud Network Load Balancers ([Azure](https://docs.microsoft.com/en-us/azure/load-balancer/load-balancer-troubleshoot-backend-traffic#cause-4-accessing-the-internal-load-balancer-frontend-from-the-participating-load-balancer-backend-pool-vm)\])
+    does not route traffic properly when source and destination reside
+    on the same machines
+
+-   In mixed architecture, traffic between PgBouncer and Postgres could
+    become unbalanced (sometimes local, sometimes networked)
+
+-   PgBouncer and PostgreSQL compete for resources
+
+-   A master failure would impact both routing (PgBouncer) and Database
+    when these two components are combined on the same machines.
+
+### Configuring Failover Manager
+
+Use the instructions provided in the *[EFM documentation](https://www.enterprisedb.com/docs/efm/latest/efm_user/)*
+to configure Failover Manager. Perform the following steps in addition
+to those instructions:
+
+1. Create an integration script that connects to every (remote)
+PgBouncer host and runs the redirect script. The script should be
+located at `/usr/edb/efm-4.2/bin/efm_pgbouncer_functions`, should be
+executable by the `efm` user, and should have the following contents:
+
+``` text
+    #!/bin/bash
+    set -e
+    IFS=', ' read -r -a PGB_HOSTS <<< "$3"
+    FAILED_PGB_HOST=''
+    for PGB_HOST in "${PGB_HOSTS[@]}"; do
+    echo "redirecting to '$2' on enterprisedb@${PGB_HOST}"
+    ssh "enterprisedb@${PGB_HOST}" /usr/edb/pgbouncer1.15/bin/redirect.sh "$2" || FAILED_PGB_HOST="$FAILED_PGB_HOST $PGB_HOST" < /dev/null
+    done
+
+    # return exit code to inform EFM agent about failure. The agent would send a failure
+    # notification accordingly for manual intervention
+    if [ ! -z "$FAILED_PGB_HOST" ]; then
+	    echo "Failed to redirect to '$2' on '$FAILED_PGB_HOST'"
+	    exit 1
+    fi
+
+
+```
+2\. Set script.load.balancer.attach to the custom script in the efm
+properties file:
+
+> script.load.balancer.attach=/usr/edb/efm-4.2/bin/efm\_pgbouncer\_functions
+> attach %h \<pgbs1\>,\<pgbs2\>
+
+Where \<pgbs1\> is the hostname or IP address for PgBouncer server 1,
+and \<pgbs2\> is the hostname or IP address for PgBouncer server 2.
+
+### Configuring PgBouncer
+
+You can use the instructions provided in the [[PgBouncer
+documentation]{.underline}](https://www.enterprisedb.com/docs/pgbouncer/latest/02_configuration_and_usage/)
+to configure PgBouncer. Perform the following steps in addition to those
+instructions:
+
+1.  Append the following line to the edb-pgbouncer-1.15.ini file:
+
+\%include /etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini
+
+2.  In the edb-pgbouncer-1.15.ini file, set the value of listen\_addr to
+    \*:
+
+> listen\_addr = \*
+
+3.  Leave the \[databases\] section empty in the edb-pgbouncer-1.15.ini
+    file, and configure this section in a separate file
+    /etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini. Ensure that this
+    extra config file is readable and writable by enterprisedb.
+
+> The following is an example of the bash commands to create the file:
+>
+> echo \"\[databases\]\" \>
+> /etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini
+>
+> echo \"edb= host=srv1\" \>\>
+> /etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini
+>
+> chown enterprisedb: /etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini
+
+4: Create a script /usr/edb/pgbouncer1.15/bin/redirect.sh that can be
+used to reconfigure the databases chapter and reload pgbouncer. The
+script should be owned by root, and be readable/executable by
+user/group/other (0755). The script should have the following content:
+
+#!/bin/bash
+set -e
+
+#Some defaults
+PGBOUNCER_DATABASE_INI=/etc/edb/pgbouncer1.15/edb-pgbouncer-databases.ini
+
+PGMSTR=${1:-localhost}
+
+# enterprisedb user does not have permissions to write in folder directly, so `sed -i` will not work
+TMPFILE=$(mktemp)
+sed "s/host=[A-Za-z0-9.]*/host=${PGMSTR}/" "${PGBOUNCER_DATABASE_INI}" > "${TMPFILE}"
+if ! diff -q "${PGBOUNCER_DATABASE_INI}" "${TMPFILE}" >/dev/null; then
+  cat "${TMPFILE}" > "${PGBOUNCER_DATABASE_INI}"
+  pkill -SIGHUP pgbouncer
+fi
+
+
+
++-----------------------------------------------------------------------+
+| \#!/bin/bash                                                          |
+|                                                                       |
+| set -e                                                                |
+|                                                                       |
+| \#Some defaults                                                       |
+|                                                                       |
+| PGBOUNCER\_DATABASE\_INI=/etc/edb/pgbouncer1.15/edb-pgbouncer-databas |
+| es.ini                                                                |
+|                                                                       |
+| PGMSTR=\${1:-localhost}                                               |
+|                                                                       |
+| \# enterprisedb user does not have permissions to write in folder     |
+| directly, so \`sed -i\` will not work                                 |
+|                                                                       |
+| TMPFILE=\$(mktemp)                                                    |
+|                                                                       |
+| sed \"s/host=\[A-Za-z0-9.\]\*/host=\${PGMSTR}/\"                      |
+| \"\${PGBOUNCER\_DATABASE\_INI}\" \> \"\${TMPFILE}\"                   |
+|                                                                       |
+| if ! diff -q \"\${PGBOUNCER\_DATABASE\_INI}\" \"\${TMPFILE}\"         |
+| \>/dev/null; then                                                     |
+|                                                                       |
+| cat \"\${TMPFILE}\" \> \"\${PGBOUNCER\_DATABASE\_INI}\"               |
+|                                                                       |
+| pkill -SIGHUP pgbouncer                                               |
+|                                                                       |
+| fi                                                                    |
++-----------------------------------------------------------------------+
+
+### Configuring passwordless ssh
+
+For the PgBouncer integration, passwordless ssh access is required.
+There are multiple ways to configure this setting. Follow your
+organization's recommended process to configure the passwordless ssh.
+The following is an example of the process to configure password ssh.
+
+#### Configuring on PgBouncer hosts
+
+1.  On every PgBouncer host, temporarily set a password for the
+    enterprisedb user. As root, run \`passwd enterprisedb\` and enter
+    the temporary password twice.
+
+2.  Make sure that Passwordless ssh is enabled. You can check with the
+    following command:
+
+grep \^PasswordAuthentication /etc/ssh/sshd\_config
+
+Make sure it is set to yes. If needed, change and restart ssh.
+
+#### Configuring on Failover Manager/PostgreSQL hosts
+
+On every Failover Manager/postgres host, as the efm user:
+
+1.  Run the following command:
+
+ssh-keygen -P \"\" -f \~/.ssh/id\_rsa
+
+2.  For every PgBouncer host, copy the ssh key with the following
+    command:
+
+> ssh-copy-id enterprisedb\@pgbouncerhost
+>
+> Note:- The default home directory for the enterprisedb user is
+> /var/lib/edb. If this directory is not already present, create the
+> directory manually. As a sudo user, run the following commands on each
+> PgBouncer host:
+>
+> mkdir -p /var/lib/edb
+>
+> chown -R enterprisedb:enterprisedb /var/lib/edb
+
+#### Resetting temporary passwords on PgBouncer hosts
+
+You can reset the temporary password for the enterprisedb user on every
+PgBouncer host by running the following command as root:
+
+passwd -d enterprisedb
+
+### Configuring the Network Load Balancer
+
+For the Failover Manager PgBouncer integration using Network Load
+Balancer in AWS or Azure, you need to perform additional steps.
+
+Add the following rules to the security groups to be used by the PgBouncer and database instances.
+
+<div id="sg_rules_pgbouncer" class="registered_link"></div>
+
+-   Rules for the security group to be used by the PgBouncer instances
+    (SG PgBouncer).
+
+ 
+    Type      | Protocol      |   Port range   |   Source       |   Description
+  ------------|---------------|----------------|----------------|-------------------
+  Custom TCP  | TCP           | 6432           |  Entire Subnet |  PgBouncer
+  Custom TCP  |  TCP          |   22           |  Entire Subnet |  ssh
+  
+
+ In addition to these rules, add the rules for SSH and Ping as per your
+ requirement.
+
+-   Rules for the security group used by the database instances (SG DB):
+
+  
+    Type      | Protocol      |   Port range   |   Source       |   Description
+  ------------|---------------|----------------|----------------|-------------------
+  Custom TCP  | TCP           | 7800           | Entire Subnet  | Failover Manager
+  Custom TCP  | TCP           | 5444           | Entire Subnet  |Postgres
+  Custom TCP  | TCP           | 22             | Entire Subnet  | ssh
+ 
+
+> This ensures that the ports required to run the database, Failover
+> Manager, and PgBouncer are open for communication between the nodes
+> and the Load Balancer for traffic routing and health monitoring.
+>
+> In addition to these rules, add the rules for SSH and Ping as per your
+> requirement.
+
+If you are using Azure, proceed to the following section. If using AWS,
+see [Configuring NLB in AWS](#sg_rules_pgbouncer).
+
+#### Configuring NLB in Azure
+
+After configuring the rules described in [[Creating rules for security
+groups]{.underline}](#add-the-following-rules-to-the-security-groups-to-be-used-by-the-pgbouncer-and-database-instances.),
+follow the Azure documentation to:
+
+-   Create a Backend pool consisting of the two virtual machines running
+    the PgBouncer instances. Use the private IPs of the virtual machines
+    to create the Backend pool.
+
+-   Add a health probe to check if the PgBouncer instance is available
+    on the virtual machines. Select **Protocol** as TCP and **Port**
+    as 6432.
+
+-   Add a Load balancing rule for port 6432. This rule should ensure
+    that the network traffic coming towards that particular port gets
+    distributed evenly among all the virtual machines present in the
+    Backend pool. Select the **Type** as Public Load Balancer or
+    Internal Load Balancer.
+
+After completing these configurations, you can connect to the database
+on the IP address of the Network Load Balancer using port 6432. If a
+failure occurs on the Primary database server, Failover Manager will
+promote a new Primary and then reconfigure PgBouncer to redistribute
+traffic. If any one of the PgBouncer processes is not available to
+accept traffic anymore, the Network Load Balancer will redistribute all
+the traffic to the remaining PgBouncer processes. Make sure that
+`max_client_conn` parameter is tuned to compensate for the higher number
+of connections in case of failover.
+
+ 
+
+#### Configuring NLB in AWS
+
+The following sample configuration assumes:
+
+-   All the EC2 instances and the Loadbalancer are deployed in the same
+    Subnet. Note that if required, the database nodes could be added to
+    another Subnet, but that requires a more complex configuration and
+    might have a performance impact.
+
+-   There is a security group for PgBouncer and a security group for the
+    database instances.
+
+After configuring the rules described in [Creating rules for security groups](#sg_rules_pgbouncer), follow the AWS documentation to
+
+-   Create a target group with the following details:
+
+    -   **Name:** pgbouncer
+
+    -   **Type**: Instances
+
+    -   **Protocol**: TCP
+
+    -   **Port**: 6432
+
+    -   **VPC:** Select the VPC to which the instances are connected.
+
+    -   Leave the rest of the settings (Health check TCP and Advanced
+        health check settings) as default.
+
+Register the created Target Groups with the instances that are running
+PgBouncer.
+
+-   Create a Load Balancer with the following details:
+
+    -   **Type:** Public or Internal. EDB recommends using an Internal
+        Load Balancer.
+
+    -   **VPC:** Choose a VPC and map it to the desired zones.
+
+    -   **Listener:** Create a listener with **TCP** as 6432, and
+        forward it to the target group pgbouncer.
+
+After completing the configurations, you can connect to the database on
+the IP address of the Network Load Balancer on port 6432. If a failure
+occurs on the Primary database server, Failover Manager promotes a new
+Primary and then reconfigures PgBouncer to redistribute traffic. If any
+one of the PgBouncer processes is not available to accept traffic
+anymore, the Network Load Balancer will redistribute all the traffic to
+the remaining PgBouncer processes. Make sure that max\_client\_conn
+parameter is tuned to compensate for the higher number of connections in
+case of failover.

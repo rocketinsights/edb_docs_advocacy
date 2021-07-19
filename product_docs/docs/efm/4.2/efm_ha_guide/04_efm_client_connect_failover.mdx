@@ -1,0 +1,159 @@
+---
+title: "Failover Manager with client connect failover"
+---
+
+Most of the PostgreSQL connection libraries (such as \...) support
+client connection failover. These libraries support connection strings
+with more than one database server. On first connection attempt or
+during a failure scenario (after the connection is lost), the client
+driver will connect to the supplied hosts one by one, until they find a
+read-write connection. Do note that the speed on reconnecting to the new
+master is highly dependent on the connection timeouts as configured in
+the driver and tcp layer.
+
+![Failover Manager with VIP](/images/efm_with_vip.png)
+
+*Figure 2: Failover Manager's traffic routing using client connect failover*
+----------------------------------------------------------------------------
+
+
+Using Failover Manager with Client Connection Failover 
+-------------------------------------------------------
+
+### Installing
+
+Install and configure Advanced Server database and Failover Manager on 3
+servers as following:
+
+  ------------------------------------------ -----------------------------------------------------------------------------
+  **Systems**                                **Components**
+  PG Primary, PG Standby1, and PG Standby2   Primary / standby nodes running Advanced Server 13 and Failover Manager 4.2
+  ------------------------------------------ -----------------------------------------------------------------------------
+
+Note that the virtual IP configuration in efm.properties (virtual.ip,
+virtual.ip.interface, virtual.ip.prefix, and virtual.ip.single) are not
+required to be configured.
+
+### Configuring Client Connection Failover
+
++-----------------+-----------------+-----------------+-----------------+
+| **Driver**      | **Client        | **Version       | **Configuration |
+|                 | Connection      | supported**     | **              |
+|                 | Failover        |                 |                 |
+|                 | support**       |                 |                 |
++-----------------+-----------------+-----------------+-----------------+
+| jdbc            | Yes             | All supported   | Supply multiple |
+|                 |                 | versions        | hosts in the    |
+|                 |                 |                 | connection      |
+|                 |                 |                 | string, and set |
+|                 |                 |                 | the             |
+|                 |                 |                 | targetServerTyp |
+|                 |                 |                 | e               |
+|                 |                 |                 | attribute as    |
+|                 |                 |                 | primary.        |
+|                 |                 |                 |                 |
+|                 |                 |                 | Example:        |
+|                 |                 |                 |                 |
+|                 |                 |                 | > jdbc:postgres |
+|                 |                 |                 | ql://host1:5444 |
+|                 |                 |                 | ,host2:5444/acc |
+|                 |                 |                 | ounting?targetS |
+|                 |                 |                 | erverType=prima |
+|                 |                 |                 | ry              |
+|                 |                 |                 |                 |
+|                 |                 |                 | More            |
+|                 |                 |                 | information:    |
+|                 |                 |                 | [[https://jdbc. |
+|                 |                 |                 | postgresql.org/ |
+|                 |                 |                 | documentation/h |
+|                 |                 |                 | ead/connect.htm |
+|                 |                 |                 | l\#connection-f |
+|                 |                 |                 | ailover]{.under |
+|                 |                 |                 | line}](https:// |
+|                 |                 |                 | jdbc.postgresql |
+|                 |                 |                 | .org/documentat |
+|                 |                 |                 | ion/head/connec |
+|                 |                 |                 | t.html#connecti |
+|                 |                 |                 | on-failover)    |
++-----------------+-----------------+-----------------+-----------------+
+| []{#w3cnqladbrj | Yes             | 10 and above    | Supply multiple |
+| 8               |                 |                 | hosts in the    |
+| .anchor}libpq   |                 |                 | connection      |
+|                 |                 |                 | string, and set |
+|                 |                 |                 | the             |
+|                 |                 |                 | target\_session |
+|                 |                 |                 | \_attrs         |
+|                 |                 |                 | attribute as    |
+|                 |                 |                 | read-write.     |
+|                 |                 |                 |                 |
+|                 |                 |                 | Example:        |
+|                 |                 |                 |                 |
+|                 |                 |                 | > postgresql:// |
+|                 |                 |                 | host1:5444,host |
+|                 |                 |                 | 2:5444/edb?targ |
+|                 |                 |                 | et\_session\_at |
+|                 |                 |                 | trs=read-write  |
+|                 |                 |                 |                 |
+|                 |                 |                 | More            |
+|                 |                 |                 | information:    |
+|                 |                 |                 | [[https://www.p |
+|                 |                 |                 | ostgresql.org/d |
+|                 |                 |                 | ocs/current/lib |
+|                 |                 |                 | pq-connect.html |
+|                 |                 |                 | \#LIBPQ-CONNSTR |
+|                 |                 |                 | ING]{.underline |
+|                 |                 |                 | }](https://www. |
+|                 |                 |                 | postgresql.org/ |
+|                 |                 |                 | docs/current/li |
+|                 |                 |                 | bpq-connect.htm |
+|                 |                 |                 | l#LIBPQ-CONNSTR |
+|                 |                 |                 | ING)            |
++-----------------+-----------------+-----------------+-----------------+
+| .NET            | Yes             | 6.0 and above   | Supply multiple |
+|                 |                 |                 | hosts in the    |
+|                 |                 |                 | connection      |
+|                 |                 |                 | string, and set |
+|                 |                 |                 | the Target      |
+|                 |                 |                 | Session         |
+|                 |                 |                 | Attributes      |
+|                 |                 |                 | attribute as    |
+|                 |                 |                 | primary.        |
+|                 |                 |                 |                 |
+|                 |                 |                 | Example:        |
+|                 |                 |                 |                 |
+|                 |                 |                 | > Host=host1,ho |
+|                 |                 |                 | st2;Username=te |
+|                 |                 |                 | st;Password=tes |
+|                 |                 |                 | t;Target        |
+|                 |                 |                 | > Session       |
+|                 |                 |                 | > Attributes=pr |
+|                 |                 |                 | imary           |
+|                 |                 |                 |                 |
+|                 |                 |                 | More            |
+|                 |                 |                 | information:    |
+|                 |                 |                 | [[https://www.n |
+|                 |                 |                 | pgsql.org/doc/f |
+|                 |                 |                 | ailover-and-loa |
+|                 |                 |                 | d-balancing.htm |
+|                 |                 |                 | l]{.underline}] |
+|                 |                 |                 | (https://www.np |
+|                 |                 |                 | gsql.org/doc/fa |
+|                 |                 |                 | ilover-and-load |
+|                 |                 |                 | -balancing.html |
+|                 |                 |                 | )               |
++-----------------+-----------------+-----------------+-----------------+
+| ODBC            | Yes             |                 | The EDB ODBC    |
+|                 |                 |                 | driver is based |
+|                 |                 |                 | on libpq, so    |
+|                 |                 |                 | see libpq for   |
+|                 |                 |                 | more details.   |
++-----------------+-----------------+-----------------+-----------------+
+| OCL             | Yes             | 10 and above    | OCL is based on |
+|                 |                 |                 | libpq, hence    |
+|                 |                 |                 | check           |
+|                 |                 |                 | [[libpq]{.under |
+|                 |                 |                 | line}](#w3cnqla |
+|                 |                 |                 | dbrj8)          |
+|                 |                 |                 | for more        |
+|                 |                 |                 | details.        |
++-----------------+-----------------+-----------------+-----------------+

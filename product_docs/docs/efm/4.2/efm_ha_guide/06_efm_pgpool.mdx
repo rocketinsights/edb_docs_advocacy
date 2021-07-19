@@ -1,0 +1,327 @@
+---
+title: "Failover Manager with Pgpool"
+---
+
+You can use Failover Manager and Pgpool-II together to achieve high
+availability and horizontal read scalability in an on-premises setup as
+well as a cloud setup.
+
+For an on-premises setup, use VIP to provide high availability. Disable
+the automatic failover of Pgpool and configure settings for Failover
+Manager and Pgpool.
+
+![Failover Manager with Pgpool on-premises](/images/efm_with_pgpool_on_premises.png)
+
+*Figure 5: Failover Manager's traffic routing using Pgpool on-premises*
+
+For a cloud setup, you can use NLB (Network Load Balancer) in place of
+VIP to provide high availability.
+
+![Failover Manager with Pgpool in cloud](/images/efm_with_pgpool_on_cloud.png)
+
+*Figure 6: Failover Manager's traffic routing using Pgpool in cloud*
+
+## Using Failover Manager with Pgpool 
+
+
+### Installing
+
+Install and configure Advanced Server database, Failover Manager, and
+Pgpool as following:
+
+  
+  **Systems**                           |  **Components**
+  --------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  PgDB server 1, server2, and server 3  | Primary / standby node running Advanced Server 13 and Failover Manager 4.2
+  Pgpool                                |Pgpool node running Pgpool 4.2 in a watchdog configuration. These 3 nodes should be registered as targets in the Target Group. Note that there could be more, but 3 is the minimum, and is sufficient for most cases.
+  
+  
+
+Note that EDB does not support this architecture with Pgpool-II and
+Failover Manager/PostgreSQL running on the same machines for the
+following reasons:
+
+-   A restriction with Cloud Network Load Balancers does not route
+    traffic properly when source and destination reside on the same
+    machines.
+
+-   In mixed architecture, traffic between Pgpool and Postgres could
+    become unbalanced.
+
+-   Pgpool and PostgreSQL could compete for resources.
+
+### Configuring Failover Manager
+
+Failover Manager provides functionality that will remove failed database
+nodes from Pgpool load balancing; it can also re-attach nodes to Pgpool
+when returned to the Failover Manager cluster. To configure Failover
+Manager for high availability using Pgpool, you must set the following
+properties in the cluster properties file:
+
+``` text
+    pgpool.enable = `true/false`
+
+    pcp.user = `User that would be invoking PCP commands`
+
+    pcp.host = `Virtual IP that would be used by pgpool. Same as pgpool parameter 'delegate_IP'`
+
+    pcp.port = `The port on which pgpool listens for pcp commands`
+
+    pcp.pass.file = `Absolute path of PCPPASSFILE`
+
+    pgpool.bin = `Absolute path of pgpool bin directory`
+```
+### Configuring Pgpool
+
+The section lists the configuration of some important parameters in the
+pgpool.conf file to integrate Pgpool-II with Failover Manager.
+
+#### Backend node setting
+
+There are three PostgreSQL backend nodes, one Primary and two Standby
+nodes. Configure using backend_* configuration parameters in
+pgpool.conf, and use the equal backend weights for all nodes. This will
+make the read queries to be distributed equally among all nodes.
+``` text
+
+    backend_hostname0 = 'server1_IP'
+
+    backend_port0 = 5444
+
+    backend_weight0 = 1
+
+    backend_flag0 = 'ALLOW_TO_FAILOVER'
+
+    backend_hostname1 = 'server2_IP'
+
+    backend_port1 = 5444
+
+    backend_weight1 = 1
+
+    backend_flag1 = 'ALLOW_TO_FAILOVER'
+
+    backend_hostname2 = 'server3_IP'
+
+    backend_port2 = 5444
+
+    backend_weight2 = 1
+
+    backend_flag2 = 'ALLOW_TO_FAILOVER'
+
+```
+
+#### Enabling Load-balancing and streaming replication mode
+
+Set the following configuration parameter in the pgpool.conf file to enable load balancing and streaming replication mode:
+
+-   For Pgpool version 4.2:
+
+    ``` text 
+        backend_clustering_mode = 'streaming_replication'
+
+        load_balance_mode = on
+    ```
+
+-  For Pgpool versions prior to 4.2:
+
+    ``` text
+        master_slave_mode = on
+
+        master_slave_sub_mode = 'stream'
+
+        load_balance_mode = on
+    ```
+#### Disabling health-checking and failover
+
+Health-checking and failover must be handled by Failover Manager and
+hence, these must be disabled on Pgpool-II side. To disable the
+health-check and failover on Pgpool-II side, assign the following
+values:
+
+``` text
+
+    health_check_period = 0
+
+    failover_on_backend_error = off
+
+    failover_if_affected_tuples_mismatch = off
+
+    failover_command = ''
+
+    failback_command = ''
+
+```
+
+Ensure the following while setting up the values in the pgpool.conf
+file:
+
+-   Keep the value of wd\_priority in pgpool.conf different on each
+    node. The node with the highest value gets the highest priority.
+
+-   The properties backend\_hostname0 , backend\_hostname1,
+    backend\_hostname2, and so on are shared properties (in EFM terms)
+    and should hold the same value for all the nodes in pgpool.conf
+    file.
+
+-   Update the correct interface value in if\_ \* and arping cmd props
+    in the pgpool.conf file.
+
+-   Add the properties heartbeat\_destination0, heartbeat\_destination1,
+    heartbeat\_destination2, and so on as per the number of nodes in
+    pgpool.conf file on every node. Here heartbeat\_destination0 should
+    be the ip/hostname of the local node.
+
+#### Setting up PCP
+
+The script uses the PCP interface, so you need to set up the PCP and
+.PCPPASS file to allow PCP connections without a password prompt.
+
+To setup PCP, see:
+[[http://www.pgpool.net/docs/latest/en/html/configuring-pcp-conf.html]{.underline}](http://www.pgpool.net/docs/latest/en/html/configuring-pcp-conf.html)
+
+To setup PCPPASS, see:
+[[https://www.pgpool.net/docs/latest/en/html/pcp-commands.html]{.underline}](https://www.pgpool.net/docs/latest/en/html/pcp-commands.html)
+
+Note that the load-balancing is turned on to ensure read scalability by
+distributing read traffic across the standby nodes.
+
+The health checking and error-triggered backend failover have been
+turned off, as Failover Manager will be responsible for performing
+health checks and triggering failover. It is not advisable for Pgpool to
+perform health checking in this case, so as not to create a conflict
+with Failover Manager, or prematurely perform failover.
+
+Finally, `search_primary_node_timeout` has been set to a low value to
+ensure prompt recovery of Pgpool services upon a Failover
+Manager-triggered failover.
+
+#### Using Virtual IP Addresses
+
+Both Pgpool-II and Failover Manager provide the functionality to employ
+a virtual IP for seamless failover. While both provide this capability,
+the Pgpool-II leader is the process that receives the Application
+connections through the Virtual IP. As in this design, such Virtual IP
+management is performed by the Pgpool-II watchdog system. Failover
+Manager VIP has no beneficial effect in this design and it must be
+disabled.
+
+Note that in a failure situation of the active instance of Pgpool (the
+Primary Pgpool Server in our sample architecture), the next available
+Standby Pgpool instance (according to watchdog priority) is activated
+and takes charge as the leader Pgpool instance.
+
+### Configuring Network Load Balancer
+
+For Failover Manager Pgpool integration using Network Load Balancer in
+AWS or Azure, you need to perform some additional steps.
+
+<div id="sg_rules_pgpool" class="registered_link"></div>
+
+Add the following rules to the security groups to be used by the Pgpool instances:
+
+-   Rules for the security group to be used by the Pgpool instances (SG
+    Pgpool).
+
+  ------------ -------------- ---------------- --------------- -----------------
+  **Type**     **Protocol**   **Port range**   **Source**      **Description**
+  Custom TCP   TCP            9000             Entire Subnet   Watchdog
+  Custom TCP   TCP            9694             Entire Subnet   Heartbeat
+  Custom TCP   TCP            9898             Entire Subnet   pcp
+  Custom TCP   TCP            9999             Entire Subnet   Pgpool
+  ------------ -------------- ---------------- --------------- -----------------
+
+ In addition to the above rules, add the rules for SSH and Ping as per your requirement.
+
+-   Rules for the security group to be used by the database instances
+    (SG DB):
+
+  ------------ -------------- ---------------- --------------- ------------------
+  **Type**     **Protocol**   **Port range**   **Source**      **Description**
+  Custom TCP   TCP            7800             Entire Subnet   Failover Manager
+  Custom TCP   TCP            5444             Entire Subnet   Postgres
+  ------------ -------------- ---------------- --------------- ------------------
+
+ This ensures that the ports required to run the database, Failover  Manager, and Pgpool are open for communication between the nodes and
+ the Load Balancer for traffic routing and health monitoring.
+
+ In addition to these rules, add the rules for SSH and Ping as per your requirement.
+
+#### Configuring NLB in Azure
+
+After configuring the rules described in [Creating rules for security groups](#pe7p0p4hkjo), follow the Azure documentation to:
+
+-  Create a Backend pool consisting of all the virtual machines running Pgpool instances. Use the private IPs of the virtual machines to create the Backend pool.
+
+-  Add a health probe to check if the Pgpool instance is available on the virtual machines. Select Protocol as `TCP` and Port as `9999`.
+
+-  Add two Load balancing rules - one each for port `9898` and port `9999`. These rules should ensure that the network traffic coming towards that particular port gets distributed evenly among all the virtual machines present in the Backend pool. Select the Type as `Public` Load Balancer or `Internal` Load Balancer.
+
+After completing these configurations, you can connect to the database
+on the IP address of the Network Load Balancer on port 9999. If a
+failure occurs on the Primary database server, Failover Manager will
+promote a new Primary and then reconfigure Pgpool to redistribute
+traffic. If any one of the Pgpool processes is not available to accept
+traffic anymore, the Network Load Balancer will redistribute all the
+traffic to the remaining two Pgpool processes. Make sure that
+`listen_backlog_multiplier` parameter is tuned to compensate for the
+higher number of connections in case of failover.
+
+#### Configuring NLB in AWS
+
+The following assumptions have been taken for the sample configuration
+that is :
+
+-  All the EC2 instances and the Loadbalancer are deployed in the same
+    Subnet. Note that if required, the database nodes could be added to
+    another Subnet, but that requires a more complex configuration and
+    might have a performance impact.
+
+-  There is a security group for Pgpool and a security group for the
+    database instances.
+
+After configuring the rules described in [Creating rules for security groups](#add-the-following-rules-to-the-security-groups-to-be-used-by-the-pgbouncer-and-database-instances.)ollow
+the AWS documentation to
+
+-   Create two target groups with the following details:
+
+    First target group:
+
+    -  **Name:** pcp
+    -  **Type**: Instances
+    -  **Protocol**: TCP
+    -  **Port**: 9898
+    -  **VPC:** Select the VPC to which the instances are connected.
+    
+    Second target group:
+
+    -  **Name:**  `pgpool`
+    -  **Type**: `Instances`
+    -  **Protocol**: `TCP`
+    -  **Port**: `9999`
+    -  **VPC:** Select the VPC to which the instances are connected.
+    
+    Leave the rest of the settings (Health check TCP and Advanced health check settings) as default.
+
+    Register the created Target Groups with the instances that are running PgBouncer.
+
+-   Create a Load Balancer with the following details:
+
+    -  **Type:** `Public` or `Internal`. EDB recommends using an Internal Load Balancer.
+
+    -  **VPC:** Choose a VPC and map it to the desired zones.
+
+    -  **Listener:** Create two listeners with the following settings:
+
+         - TCP: `9898`, forward to target group `pcp`.
+
+         - TCP: `9999`, forward to target group `pgpool`.
+
+After completing the configurations, you can connect to the database on
+the IP address of the Network Load Balancer on port 9999. If a failure
+occurs on the Primary database server, Failover Manager will promote a
+new Primary and then reconfigure Pgpool to redistribute traffic. If any
+one of the Pgpool processes is not available to accept traffic anymore,
+the Network Load Balancer will redistribute all the traffic to the
+remaining two Pgpool processes. Make sure that
+listen\_backlog\_multiplier is tuned to compensate for the higher number
+of connections in case of failover.
