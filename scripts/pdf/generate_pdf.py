@@ -194,7 +194,7 @@ def write_content(content, output):
     for line in content.split(os.linesep):
         if "toctree" in line:
             break
-        line = f"#{line}" if (line.startswith("# ") or line.startswith("## ")) else line
+        line = f"#{line}" if line.startswith("#") else line
         lines.append(line + os.linesep)
     output.writelines(lines)
     output.write(os.linesep)
