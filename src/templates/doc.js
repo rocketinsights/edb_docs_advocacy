@@ -18,7 +18,7 @@ import { products } from "../constants/products";
 import Icon from "../components/icon";
 
 export const query = graphql`
-  query ($nodeId: String!, $potentialLatestNodePath: String) {
+  query($nodeId: String!, $potentialLatestNodePath: String) {
     mdx(id: { eq: $nodeId }) {
       fields {
         path

@@ -279,3 +279,4 @@ Option 2: on GitHub
 
 1. Edit a file on GitHub.
 2. Submit changes as a PR on a new branch.
+

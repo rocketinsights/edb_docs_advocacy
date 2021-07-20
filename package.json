@@ -85,7 +85,8 @@
     "remark-stringify": "^8.1.1",
     "semver-compare": "^1.0.0",
     "to-vfile": "^6.1.0",
-    "typescript": "^4.1.3"
+    "typescript": "^4.1.3",
+    "yarn": "^1.22.10"
   },
   "repository": {
     "type": "git",
