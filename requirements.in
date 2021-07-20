@@ -1,0 +1,3 @@
+pdftotext
+pip-tools
+pytest
